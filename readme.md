@@ -1,0 +1,1 @@
+New-ModuleManifest -Path .\easy-audit.psd1 -RootModule easy-audit.psm1
