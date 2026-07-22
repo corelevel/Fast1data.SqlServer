@@ -111,7 +111,7 @@ function Get-ImportState {
 		[Microsoft.Data.SqlClient.SqlConnection]$SqlConn,
 
 		[Parameter(Mandatory)]
-		[array]$AuditGuids
+		[guid[]]$AuditGuids
 	)
 
 	$sqlCmd = $null
@@ -132,12 +132,16 @@ function Get-ImportState {
         $p.Value = $tvp
 		$sqlReader = $sqlCmd.ExecuteReader()
 
+		$importStatesMap = @{}
+
 		while ($sqlReader.Read()) {
-			[PSCustomObject]@{
+			$importStatesMap[$sqlReader['audit_guid']] = [PSCustomObject]@{
 				FileName = $sqlReader['file_name']
-				AuditFileOffset = $sqlReader['audit_file_offset']
-			}
+				AuditRecordOffset = $sqlReader['audit_record_offset']
+				}
 		}
+
+		$importStatesMap
 	}
 	finally {
 		if ($null -ne $sqlReader) {
@@ -150,28 +154,93 @@ function Get-ImportState {
 	}
 }
 
-function Import-SqlAudit {
+function Import-SqlAuditFiles {
+	[CmdletBinding()]
+	param (
+		[Parameter(Mandatory)]
+		[Microsoft.Data.SqlClient.SqlConnection]$SqlConn,
+
+		[Parameter(Mandatory)]
+		[string]$FileName,
+
+		[bigint]$RecordOffset
+	)
+
+	$sqlCmd = $null
+	$sqlReader = $null
+
+	try {
+		$tvp = New-Object System.Data.DataTable
+		[void]$tvp.Columns.Add("value", [Guid])
+
+		foreach ($guid in $AuditGuids) {
+			[void]$tvp.Rows.Add($guid)
+		}
+
+		$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new('dbo.stp_import_audit_files', $SqlConn)
+		$sqlCmd.CommandType = [System.Data.CommandType]::StoredProcedure
+		$sqlCmd.Parameters.Add("@file_pattern", [System.Data.SqlDbType]::NVarChar, 260).Value = $FileName
+		$sqlReader = $sqlCmd.ExecuteNonQuery()
+	}
+	finally {
+		if ($null -ne $sqlReader) {
+			$sqlReader.Close()
+			$sqlReader.Dispose()
+		}
+		if ($null -ne $sqlCmd) {
+			$sqlCmd.Dispose()
+		}
+	}
+}
+
+function Invoke-EasyAudit {
 	[CmdletBinding()]
 	param (
 		[Parameter(Mandatory)]
 		[string]$ConnStr,
 
 		[Parameter(Mandatory)]
-		[string]$Folder
+		[string]$Folder,
+
+		[string]$LogFile
 	)
+
+	Set-StrictMode -Version Latest
 
 	$sqlConn = $null
 	try {
 		$auditFiles = Get-SqlAuditFiles -Folder $Folder
-		$auditGuid = $auditFiles.AuditGuid | Sort-Object -Unique
+		if (-not $auditFiles) {
+			Write-LogMessage -Message "No audit files found in $Folder"	`
+				-LogFile $LogFile
+			return
+		}
+		$auditsToProcess = $auditFiles.AuditGuid |
+			Sort-Object -Unique |
+			ForEach-Object {
+				[PSCustomObject]@{
+					AuditGuid  = $_
+					IsProcessed = $false
+				}
+			}
 
 		$sqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
 		$sqlConn.ConnectionString = $ConnStr
-
 		$sqlConn.Open()
 
-		$state = @(Get-ImportState -SqlConn $sqlConn -AuditGuids $auditGuid)
-		$state.Count
+		$importStatesMap = Get-ImportState -SqlConn $sqlConn -AuditGuids ([Guid[]]$auditsToProcess.AuditGuid)
+
+		foreach($audit in $auditsToProcess) {
+			if ($audit.IsProcessed) {
+				continue
+			}
+			if ($importStatesMap.ContainsKey($auditFile.AuditGuid)) {
+				
+			}
+			else {
+
+			}
+		}
 	}
 	finally {
 		if ($null -ne $sqlConn) {

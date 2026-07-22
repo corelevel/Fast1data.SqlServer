@@ -67,7 +67,7 @@ create table dbo.import_state
 (
 	import_state_id		int identity(1, 1),
 	[file_name]			nvarchar(260) not null,
-    audit_file_offset	bigint not null,
+    audit_record_offset	bigint not null,
 	audit_guid			uniqueidentifier not null,
     modified_at			datetime2(7) not null
 )
