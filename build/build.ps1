@@ -1,8 +1,10 @@
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
 $rids = @(
 	'win-x64',
 	'linux-x64',
-	'osx-x64',
-	'osx-arm64'
+	'osx-x64'
 )
 
 foreach ($rid in $rids) {
@@ -13,7 +15,7 @@ foreach ($rid in $rids) {
 		--self-contained false
 
 	$source = Join-Path $PSScriptRoot "\bin\Release\net8.0\$rid\publish"
-	$dest = Join-Path $PSScriptRoot "..\lib\$rid"
+	$dest = Join-Path $PSScriptRoot "..\Fast1data.SqlServer\lib\$rid"
 
 	Remove-Item $dest -Recurse -Force -ErrorAction Ignore
 

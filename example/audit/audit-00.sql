@@ -1,12 +1,12 @@
-create server audit [easy_audit_00]
-to file (filepath = 'C:\Temp\', maxsize = 1024 MB, max_files = 4, reserve_disk_space = off)
+create server audit [fast1_audit_00]
+to file (filepath = 'C:\Temp\', maxsize = 1024 MB, max_rollover_files = 4, reserve_disk_space = off)
 with (queue_delay = 1000, on_failure = continue)
 go
-alter server audit [easy_audit_00] with (state = on)
+alter server audit [fast1_audit_00] with (state = on)
 go
 
-create server audit specification [easy_audit_spec_00]
-for server audit [easy_audit_00]
+create server audit specification [fast1_audit_spec_00]
+for server audit [fast1_audit_00]
 add (audit_change_group),
 add (database_change_group),
 
