@@ -79,13 +79,13 @@ Phase names are looked up exactly rather than as wildcard patterns. Duplicate sc
 
 ### Parameters
 
-| Parameter | Required | Description |
-| --- | --- | --- |
-| `ConnStr` | Yes | SQL Server connection string for the target database. |
-| `BasePath` | Yes | Directory containing `migration.json` and phase directories. |
-| `Phase` | Yes | Migration phase to execute. |
-| `IgnoreScripts` | No | Script names to skip. |
-| `ForceScripts` | No | Script names to execute even when already recorded. |
+| Parameter       | Required | Description                                                  |
+| --------------- | -------- | ------------------------------------------------------------ |
+| `ConnStr`       | Yes      | SQL Server connection string for the target database.        |
+| `BasePath`      | Yes      | Directory containing `migration.json` and phase directories. |
+| `Phase`         | Yes      | Migration phase to execute.                                  |
+| `IgnoreScripts` | No       | Script names to skip.                                        |
+| `ForceScripts`  | No       | Script names to execute even when already recorded.          |
 
 Script comparisons for `IgnoreScripts` and `ForceScripts` are case-insensitive,
 and both `/` and `\` separators are accepted.
@@ -161,22 +161,6 @@ Do not commit database passwords or access tokens to source control.
 
 ## Usage
 
-```powershell
-$connectionString = @'
-Data Source=<server>;
-Initial Catalog=<database>;
-Encrypt=True;
-TrustServerCertificate=True;
-Integrated Security=True;
-Application Name=Fast1data.SqlServer;
-'@
+An executable example is available in [`example/migration/deploy-tempdb.ps1`](example/migration/deploy-tempdb.ps1).
 
-Invoke-Fast1Migration `
-	-ConnStr $connectionString `
-	-BasePath '.\migrations' `
-	-Phase 'phase01' `
-	-Verbose
-```
-
-An executable example is available in
-[`example/migration/deploy-tempdb.ps1`](example/migration/deploy-tempdb.ps1).
+Review its connection string before running it.

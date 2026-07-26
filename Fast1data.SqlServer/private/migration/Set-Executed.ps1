@@ -1,3 +1,5 @@
+using module ../shared/EasySqlParam.psm1
+
 <#
 .SYNOPSIS
 Records a successfully executed migration script.
@@ -47,8 +49,6 @@ function Set-Executed {
 	)
 
 	$sqlConn = $null
-	$sqlCmd = $null
-
 	try {
 		$sqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
 		$sqlConn.ConnectionString = $ConnStr
@@ -74,20 +74,28 @@ values(@script_name, @phase, @checksum)
 		}
 
 		$sqlConn.Open()
-		$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new($query, $sqlConn)
-		$sqlCmd.CommandType = [System.Data.CommandType]::Text
-		$pScriptName = $sqlCmd.Parameters.Add('@script_name', [System.Data.SqlDbType]::NVarChar)
-		$pScriptName.Value = $ScriptName
-		$pPhase = $sqlCmd.Parameters.Add('@phase', [System.Data.SqlDbType]::NVarChar, 32)
-		$pPhase.Value = $Phase
-		$pChecksum = $sqlCmd.Parameters.Add('@checksum', [System.Data.SqlDbType]::Char, 64)
-		$pChecksum.Value = $Checksum
-		[void]$sqlCmd.ExecuteNonQuery()
+		Invoke-EasySqlQuery `
+			-SqlConn $sqlConn `
+			-Query $query `
+			-Parameters @{
+				script_name = [EasySqlParam]@{
+					Value = $ScriptName
+					Type = [System.Data.SqlDbType]::NVarChar
+					Size = 255
+				}
+				phase = [EasySqlParam]@{
+					Value = $Phase
+					Type = [System.Data.SqlDbType]::NVarChar
+					Size = 32
+				}
+				checksum = [EasySqlParam]@{
+					Value = $Checksum
+					Type = [System.Data.SqlDbType]::Char
+					Size = 64
+				}
+			}
 	}
 	finally {
-		if ($null -ne $sqlCmd) {
-			$sqlCmd.Dispose()
-		}
 		if ($null -ne $sqlConn) {
 			$sqlConn.Dispose()
 		}

@@ -24,8 +24,10 @@ $supportedRids = @(
 $requiredPaths = @(
 	(Join-Path $sourceModuleRoot 'Fast1data.SqlServer.psd1')
 	(Join-Path $sourceModuleRoot 'Fast1data.SqlServer.psm1')
-	(Join-Path $sourceModuleRoot 'README.md')
-	(Join-Path $sourceModuleRoot 'LICENSE')
+	(Join-Path $projectRoot 'README.md')
+	(Join-Path $projectRoot 'Fast1Audit.md')
+	(Join-Path $projectRoot 'Fast1Migration.md')
+	(Join-Path $projectRoot 'LICENSE')
 	(Join-Path $sourceModuleRoot 'public')
 	(Join-Path $sourceModuleRoot 'private')
 	(Join-Path $sourceModuleRoot 'schema')
@@ -59,8 +61,10 @@ $null = New-Item -Path $moduleRoot -ItemType Directory
 
 Copy-Item -LiteralPath (Join-Path $sourceModuleRoot 'Fast1data.SqlServer.psd1') -Destination $moduleRoot
 Copy-Item -LiteralPath (Join-Path $sourceModuleRoot 'Fast1data.SqlServer.psm1') -Destination $moduleRoot
-Copy-Item -LiteralPath (Join-Path $sourceModuleRoot 'README.md') -Destination $moduleRoot
-Copy-Item -LiteralPath (Join-Path $sourceModuleRoot 'LICENSE') -Destination $moduleRoot
+Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md') -Destination $moduleRoot
+Copy-Item -LiteralPath (Join-Path $projectRoot 'Fast1Audit.md') -Destination $moduleRoot
+Copy-Item -LiteralPath (Join-Path $projectRoot 'Fast1Migration.md') -Destination $moduleRoot
+Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination $moduleRoot
 Copy-Item -LiteralPath (Join-Path $sourceModuleRoot 'public') -Destination $moduleRoot -Recurse
 Copy-Item -LiteralPath (Join-Path $sourceModuleRoot 'private') -Destination $moduleRoot -Recurse
 Copy-Item -LiteralPath (Join-Path $sourceModuleRoot 'schema') -Destination $moduleRoot -Recurse

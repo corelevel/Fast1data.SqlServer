@@ -2,8 +2,9 @@
 
 Fast1data.SqlServer is a PowerShell module for SQL Server administration and deployment workflows. It currently provides:
 
-- [Fast1 Audit](Fast1Audit.md) — resumable import of SQL Server Audit (`.sqlaudit`) files into a SQL Server database.
+- [Fast1 Audit](Fast1Audit.md) — resumable import of [SQL Server Audit](https://learn.microsoft.com/en-us/sql/relational-databases/security/auditing/sql-server-audit-database-engine) (`.sqlaudit`) files into a SQL Server database.
 - [Fast1 Migration](Fast1Migration.md) — ordered, checksum-protected execution of SQL Server migration scripts.
+- [Fast1 Archiving](Fast1Archiving.md) — resumable, batch-based archiving and purging between SQL Server databases.
 
 ## Requirements
 
@@ -52,6 +53,12 @@ Use `Invoke-Fast1Migration` to execute scripts in configured order, record their
 
 See [Fast1Migration.md](Fast1Migration.md) for schema setup, configuration, execution behavior, and CI/CD examples.
 
+### SQL Server archiving
+
+Use `Invoke-Fast1Archiving` to copy and optionally purge configured table data in resumable batches.
+
+See [Fast1Archiving.md](Fast1Archiving.md) for prerequisites, database setup, table-group configuration, limitations, and usage.
+
 ## Help
 
 PowerShell command help is available after importing the module:
@@ -59,6 +66,7 @@ PowerShell command help is available after importing the module:
 ```powershell
 Get-Help Invoke-Fast1Audit -Full
 Get-Help Invoke-Fast1Migration -Full
+Get-Help Invoke-Fast1Archiving -Full
 ```
 
 ## License

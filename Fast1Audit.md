@@ -36,11 +36,11 @@ SQL Server must also be able to read the audit files through `sys.fn_get_audit_f
 
 ### Parameters
 
-| Parameter | Required | Description |
-| --- | --- | --- |
-| `ConnStr` | Yes | `Microsoft.Data.SqlClient` connection string for the target database. |
-| `Folder` | Yes | Existing directory containing `.sqlaudit` files. |
-| `LogFile` | No | File to which progress messages are appended. |
+| Parameter | Required | Description                                                           |
+| --------- | -------- | --------------------------------------------------------------------- |
+| `ConnStr` | Yes      | `Microsoft.Data.SqlClient` connection string for the target database. |
+| `Folder`  | Yes      | Existing directory containing `.sqlaudit` files.                      |
+| `LogFile` | No       | File to which progress messages are appended.                         |
 
 Detailed command help is also available:
 
@@ -102,8 +102,7 @@ values
 
 ## Usage
 
-An example server audit and audit specification is available in
-[`example/audit/audit-00.sql`](example/audit/audit-00.sql).
+An example server audit and audit specification is available in [`example/audit/audit-00.sql`](example/audit/audit-00.sql).
 
 Review its destination path, audit actions, retention settings, and failure behavior before running it. Creating server audits requires suitable SQL Server permissions.
 

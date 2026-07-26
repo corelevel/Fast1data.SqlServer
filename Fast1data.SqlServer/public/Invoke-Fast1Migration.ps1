@@ -1,59 +1,57 @@
-function Invoke-Fast1Migration {
-	<#
-	.SYNOPSIS
-		Deploys migration scripts to the target SQL Server
-		https://github.com/corelevel/easy-migration
+<#
+.SYNOPSIS
+	Deploys migration scripts to the target SQL Server
 
-	.DESCRIPTION
-		Deploys migration scripts to the target SQL Server in order
-		Detects checksum drift and stops on mismatch
+.DESCRIPTION
+	Deploys migration scripts to the target SQL Server in order
+	Detects checksum drift and stops on mismatch
 
-		Requires PowerShell 7.0+
-		Requires SQL Server PowerShell module
-		https://learn.microsoft.com/en-us/powershell/sql-server/download-sql-server-ps-module
+	Requires PowerShell 7.4+
+	Requires SQL Server PowerShell module
+	https://learn.microsoft.com/en-us/powershell/sql-server/download-sql-server-ps-module
 
-	.PARAMETER ConnStr
-		SQL Server connection string
+.PARAMETER ConnStr
+	SQL Server connection string
 
-	.PARAMETER BasePath
-		Folder containing config file and migration scripts
+.PARAMETER BasePath
+	Folder containing config file and migration scripts
 
-	.PARAMETER Phase
-		Migration phase to execute
+.PARAMETER Phase
+	Migration phase to execute
 
-	.PARAMETER IgnoreScripts
-		Optional list of scripts to skip during execution
-		Filenames must match entries defined in the configuration file
-		Example: "001-fix-that.sql", "000-fix-this.sql"
+.PARAMETER IgnoreScripts
+	Optional list of scripts to skip during execution
+	Filenames must match entries defined in the configuration file
+	Example: "001-fix-that.sql", "000-fix-this.sql"
 
-	.PARAMETER ForceScripts
-		Optional list of migration script filenames to force execution even if
-			they were previously recorded in the migration history table
-		Filenames must match entries defined in the configuration file
-		Example: "job007/000-kill-all-user-processes.sql"
+.PARAMETER ForceScripts
+	Optional list of migration script filenames to force execution even if
+		they were previously recorded in the migration history table
+	Filenames must match entries defined in the configuration file
+	Example: "job007/000-kill-all-user-processes.sql"
 
-	.INPUTS
-		{
-			"phase01": {
-				"scripts": [
-					"001-fix-that.sql",
-					"000-fix-this.sql",
-					"job007/000-kill-all-user-processes.sql"
-				]
-			},
-			"phase02": {
-				"scripts": [
-					"000-do-cool-stuff.sql"
-				]
-			},
-			"phase03": {
-				"scripts": [
-					"000-fix-this.sql"
-				]
-			}
+.INPUTS
+	{
+		"phase01": {
+			"scripts": [
+				"001-fix-that.sql",
+				"000-fix-this.sql",
+				"job007/000-kill-all-user-processes.sql"
+			]
+		},
+		"phase02": {
+			"scripts": [
+				"000-do-cool-stuff.sql"
+			]
+		},
+		"phase03": {
+			"scripts": [
+				"000-fix-this.sql"
+			]
 		}
-	#>
-
+	}
+#>
+function Invoke-Fast1Migration {
 	[CmdletBinding(SupportsShouldProcess = $true)]
 	param (
 		[Parameter(Mandatory)]

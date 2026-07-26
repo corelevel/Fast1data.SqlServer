@@ -11,7 +11,7 @@
 RootModule = 'Fast1data.SqlServer.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.1'
+ModuleVersion = '0.0.2'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -29,7 +29,7 @@ CompanyName = 'fast1data'
 Copyright = '(c) Ilya Baybikov. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Imports SQL Server Audit files into a SQL Server database with resumable file-offset checkpoints.'
+Description = 'SQL Server Audit, Migrations and Archiving built on modern PowerShell 7 and Microsoft.Data.SqlClient'
 
 # Minimum version of the PowerShell engine required by this module
 PowerShellVersion = '7.4'
@@ -72,7 +72,8 @@ RequiredModules = @(
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(
 	'Invoke-Fast1Audit',
-	'Invoke-Fast1Migration'
+	'Invoke-Fast1Migration',
+	'Invoke-Fast1Archiving'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
