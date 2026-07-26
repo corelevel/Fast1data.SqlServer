@@ -24,8 +24,8 @@ Note: **only one process should import a given audit directory at a time.**
 
 Create the target database, connect to it, and execute these scripts in order:
 
-1. [`schema/audit/tables.sql`](schema/audit/tables.sql)
-2. [`schema/audit/sprocs.sql`](schema/audit/sprocs.sql)
+1. [`schema/audit/tables.sql`](Fast1data.SqlServer/schema/audit/tables.sql)
+2. [`schema/audit/sprocs.sql`](Fast1data.SqlServer/schema/audit/sprocs.sql)
 
 The module login needs permission to execute:
 
@@ -102,7 +102,8 @@ values
 
 ## Usage
 
-An example server audit and audit specification is available in [`example/audit/audit-00.sql`](../example/audit/audit-00.sql).
+An example server audit and audit specification is available in
+[`example/audit/audit-00.sql`](example/audit/audit-00.sql).
 
 Review its destination path, audit actions, retention settings, and failure behavior before running it. Creating server audits requires suitable SQL Server permissions.
 

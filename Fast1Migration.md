@@ -27,7 +27,7 @@ It is designed for migration scripts that are idempotent and safe to rerun. This
 
 Connect to the target database and execute:
 
-[`schema/migration/tables.sql`](schema/migration/tables.sql)
+[`schema/migration/tables.sql`](Fast1data.SqlServer/schema/migration/tables.sql)
 
 The script creates `dbo.fast1_migration_history` if it does not already exist. Include this table in the target database project or other schema-management process so it is not removed accidentally.
 
@@ -178,4 +178,5 @@ Invoke-Fast1Migration `
 	-Verbose
 ```
 
-An executable example is available in [`example/migration/deploy-tempdb.ps1`](../example/migration/deploy-tempdb.ps1).
+An executable example is available in
+[`example/migration/deploy-tempdb.ps1`](example/migration/deploy-tempdb.ps1).

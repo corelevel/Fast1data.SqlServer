@@ -23,13 +23,13 @@ The module bundles `Microsoft.Data.SqlClient` for these runtime identifiers:
 Build the bundled SQL client libraries if `lib` is not already populated:
 
 ```powershell
-..\build\build.ps1
+.\build\build.ps1
 ```
 
 Import the module directly from the repository:
 
 ```powershell
-Import-Module .\Fast1data.SqlServer.psd1 -Force
+Import-Module .\Fast1data.SqlServer\Fast1data.SqlServer.psd1 -Force
 ```
 
 Confirm that the public commands are available:
