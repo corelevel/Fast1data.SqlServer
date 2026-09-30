@@ -13,8 +13,8 @@ Fast1 Audit imports [SQL Server Audit](https://learn.microsoft.com/en-us/sql/rel
 
 The audit path is used by two processes:
 
-- PowerShell scans it to discover audit files.
-- The SQL Server service reads it through `sys.fn_get_audit_file`.
+- PowerShell scans it to discover audit files
+- The SQL Server service reads it through `sys.fn_get_audit_file`
 
 For a remote SQL Server, use a UNC path accessible to both the PowerShell user and the SQL Server service account.
 
@@ -36,11 +36,11 @@ SQL Server must also be able to read the audit files through `sys.fn_get_audit_f
 
 ### Parameters
 
-| Parameter | Required | Description                                                           |
-| --------- | -------- | --------------------------------------------------------------------- |
-| `ConnStr` | Yes      | `Microsoft.Data.SqlClient` connection string for the target database. |
-| `Folder`  | Yes      | Existing directory containing `.sqlaudit` files.                      |
-| `LogFile` | No       | File to which progress messages are appended.                         |
+| Parameter | Required | Description                                     |
+| --------- | -------- | ----------------------------------------------- |
+| `ConnStr` | Yes      | Cconnection string for the target database      |
+| `Folder`  | Yes      | Existing directory containing `.sqlaudit` files |
+| `LogFile` | No       | File to which progress messages are appended    |
 
 Detailed command help is also available:
 
@@ -52,14 +52,13 @@ Get-Help Invoke-Fast1Audit -Full
 
 For each unique audit GUID discovered in the directory, the module:
 
-1. Retrieves the last saved filename and offset.
-2. Calls `sys.fn_get_audit_file` through `dbo.stp_import_audit_files`.
-3. Applies the configured ignore rules.
-4. Inserts accepted records into `dbo.fast1_audit`.
-5. Updates the checkpoint in `dbo.import_state`.
+1. Retrieves the last saved filename and offset
+2. Calls `sys.fn_get_audit_file` through `dbo.stp_import_audit_files`
+3. Applies the configured ignore rules
+4. Inserts accepted records into `dbo.fast1_audit`
+5. Updates the checkpoint in `dbo.import_state`
 
-The checkpoint advances for every processed record, including ignored records.
-This prevents ignored records at the end of a file from being read repeatedly.
+The checkpoint advances for every processed record, including ignored records. This prevents ignored records at the end of a file from being read repeatedly.
 
 With `-Verbose`, progress resembles:
 
@@ -81,9 +80,7 @@ These tables control which records are excluded:
 - `dbo.ignored_database_name`
 - `dbo.ignored_action_id_class_type`
 
-Entries are scoped by `server_instance_name`. Statement, principal, and
-database values use SQL `LIKE`, so wildcard patterns such as `%text%` are
-supported.
+Entries are scoped by `server_instance_name`. Statement, principal, and database values use SQL `LIKE`, so wildcard patterns such as `%text%` are supported.
 
 Example:
 
@@ -102,10 +99,9 @@ values
 
 ## Usage
 
-An example server audit and audit specification is available in [`example/audit/audit-00.sql`](example/audit/audit-00.sql).
-
-Review its destination path, audit actions, retention settings, and failure behavior before running it. Creating server audits requires suitable SQL Server permissions.
-
+- An example server audit and audit specification is available in [`example/audit/audit-00.sql`](example/audit/audit-00.sql)
+- Review its destination path, audit actions, retention settings, and failure behavior before running it. Creating server audits requires suitable SQL Server permissions
+- Run
 ```powershell
 $connectionString = @'
 Data Source=<server>;
@@ -122,3 +118,4 @@ Invoke-Fast1Audit `
 	-LogFile '.\fast1-audit.log' `
 	-Verbose
 ```
+- Imported audit data will be in the `dbo.fast1_audit` table

@@ -34,13 +34,13 @@ function Invoke-Fast1Audit {
 	[int]$rowsImported = 0
 	$sqlConn = $null
 	try {
-		$auditFiles = Get-SqlAuditFile -Folder $Folder
+		$auditFiles = @(Get-SqlAuditFile -Folder $Folder)
 		if (-not $auditFiles) {
 			Write-LogMessage -Message "No audit files found in $Folder" `
 				-LogFile $LogFile
 			return
 		}
-		$auditsToProcess = $auditFiles.AuditGuid | Sort-Object -Unique
+		$auditsToProcess = @($auditFiles.AuditGuid | Sort-Object -Unique)
 		Write-LogMessage -Message "$($auditFiles.Count) audit file(s) found in the $Folder" `
 			-LogFile $LogFile
 		Write-LogMessage -Message "$($auditsToProcess.Count) unique audit GUID(s) found" `

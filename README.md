@@ -19,22 +19,25 @@ The module bundles `Microsoft.Data.SqlClient` for these runtime identifiers:
 - `linux-x64`
 - `osx-x64`
 
+## Install from PowerShell Gallery
+
+- Simply run
+```powershell
+Install-Module -Name Fast1data.SqlServer
+```
+
 ## Install from source
 
-Build the bundled SQL client libraries if `lib` is not already populated:
-
+- Clone the repository
+- Build the bundled SQL client libraries if `lib` is not already populated:
 ```powershell
 .\build\build.ps1
 ```
-
-Import the module directly from the repository:
-
+- Import the module directly from the repository:
 ```powershell
 Import-Module .\Fast1data.SqlServer\Fast1data.SqlServer.psd1 -Force
 ```
-
-Confirm that the public commands are available:
-
+- Confirm that the public commands are available:
 ```powershell
 Get-Command -Module Fast1data.SqlServer
 ```
