@@ -12,7 +12,12 @@ Specifies the Microsoft.Data.SqlClient connection string for the Fast1 Audit
 database.
 
 .PARAMETER Folder
-Specifies the folder containing the SQL Server Audit files to process.
+Specifies the folder containing SQL Server Audit files.
+Supports local and UNC paths on Windows and UNC paths on Linux.
+
+.PARAMETER Credential
+Specifies the credentials used to access the SMB share.
+Required on Linux and not used on Windows.
 
 .PARAMETER LogFile
 Specifies an optional file to which Fast1 Audit log messages are appended.
@@ -24,8 +29,9 @@ function Invoke-Fast1Audit {
 		[string]$ConnStr,
 
 		[Parameter(Mandatory)]
-		[ValidateScript({ Test-Path $_ -PathType Container })]
 		[string]$Folder,
+
+		[PSCredential]$Credential,
 
 		[string]$LogFile
 	)
@@ -34,7 +40,7 @@ function Invoke-Fast1Audit {
 	[int]$rowsImported = 0
 	$sqlConn = $null
 	try {
-		$auditFiles = @(Get-SqlAuditFile -Folder $Folder)
+		$auditFiles = @(Get-SqlAuditFile -Folder $Folder -Credential $Credential)
 		if (-not $auditFiles) {
 			Write-LogMessage -Message "No audit files found in $Folder" `
 				-LogFile $LogFile

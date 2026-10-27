@@ -41,7 +41,7 @@ function Import-SqlAuditFile {
 
 	$sqlCmd = $null
 	$sqlReader = $null
-	$filePattern = Join-Path $Folder "*$AuditGuid*.sqlaudit"
+	$filePattern = "$($Folder.TrimEnd('\', '/'))\*$AuditGuid*.sqlaudit"
 
 	try {
 		$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new('dbo.stp_import_audit_files', $SqlConn)
