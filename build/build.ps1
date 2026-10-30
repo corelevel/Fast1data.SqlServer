@@ -1,6 +1,8 @@
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
+$targetFramework = ([xml](Get-Content -LiteralPath "$PSScriptRoot\SqlClientLoader.csproj" -Raw)).Project.PropertyGroup.TargetFramework
+
 $rids = @(
 	'win-x64',
 	'linux-x64',
@@ -14,8 +16,12 @@ foreach ($rid in $rids) {
 		-r $rid `
 		--self-contained false
 
-	$source = Join-Path $PSScriptRoot "\bin\Release\net8.0\$rid\publish"
-	$dest = Join-Path $PSScriptRoot "..\Fast1data.SqlServer\lib\$rid"
+	if ($LASTEXITCODE -ne 0) {
+		throw "dotnet publish failed for $rid"
+	}
+
+	$source = Join-Path $PSScriptRoot "bin/Release/$targetFramework/$rid/publish"
+    $dest = Join-Path $PSScriptRoot "../Fast1data.SqlServer/lib/$rid"
 
 	Remove-Item $dest -Recurse -Force -ErrorAction Ignore
 

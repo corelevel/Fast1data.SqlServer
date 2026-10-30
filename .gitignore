@@ -7,5 +7,4 @@ out/Fast1data.SqlServer
 *.swp
 .DS_Store
 Thumbs.db
-.vscode/
 .idea/

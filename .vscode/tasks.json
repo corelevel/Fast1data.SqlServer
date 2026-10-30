@@ -1,0 +1,44 @@
+
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Publish Module",
+			"type": "process",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-NonInteractive",
+				"-File",
+				"${workspaceFolder}/out/publish.ps1"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Project",
+			"type": "process",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-NonInteractive",
+				"-File",
+				"${workspaceFolder}/build/build.ps1"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			},
+			"problemMatcher": []
+		}
+	]
+}
