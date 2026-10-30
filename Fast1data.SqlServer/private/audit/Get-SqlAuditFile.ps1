@@ -8,6 +8,12 @@ and returns objects containing the full file path and audit GUID.
 
 On Windows, uses Get-ChildItem to enumerate files.
 On Linux, uses smbclient to enumerate files on an SMB share.
+Linux requires supplied credentials and smbclient in PATH. Discovery is
+nonrecursive and interprets filenames only. Successful no-match listings emit
+no objects; invalid requests and listing failures terminate before any results.
+Temporary process PASSWD is restored on every Linux exit, including failures.
+Serialize discovery calls within a host process. SQL Server reads the files
+independently using its own service-account permissions.
 
 .PARAMETER Folder
 Specifies the folder containing SQL Server Audit files.
@@ -47,73 +53,23 @@ function Get-SqlAuditFile {
 		[PSCredential]$Credential
 	)
 
+	# Prefix: Nonempty; may contain underscores and spaces.
+	# GUID: Hexadecimal GUID in standard 8-4-4-4-12 layout; either letter case.
+	# Sequence: Nonempty digits; no conversion, ordering, or range rule.
+	# Ticks: Nonempty digits; no conversion, timestamp validation, or range rule.
+	# Extension: Existing lowercase `.sqlaudit` baseline; no new case-support promise.
+	# FileName: Candidate's complete full path.
+	# AuditGuid: GUID value extracted by the authoritative filename rule.
 	$regex = '^(?<AuditName>.+?)_(?<AuditGuid>[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})_(?<Sequence>\d+)_(?<Ticks>\d+)\.sqlaudit$'
 
-	if ($IsWindows) {
-		Get-ChildItem -LiteralPath $Folder -Filter '*.sqlaudit' -File -ErrorAction Stop | ForEach-Object {
-			if ($_.Name -match $regex) {
-				[PSCustomObject]@{
-					FileName = $_.FullName
-					AuditGuid = [Guid]$Matches.AuditGuid
-				}
+	# Complete the listing before publishing any discovery results.
+	$entries = @(Get-SqlAuditFileEntry -Folder $Folder -Credential $Credential)
+	foreach ($entry in $entries) {
+		if ($entry.Name -match $regex) {
+			[PSCustomObject]@{
+				FileName = $entry.FullName
+				AuditGuid = [Guid]$Matches.AuditGuid
 			}
 		}
-	}
-	elseif ($IsLinux) {
-		if (-not (Get-Command smbclient -ErrorAction SilentlyContinue)) {
-			throw 'smbclient is not installed or not available in PATH'
-		}
-		if (-not $Credential -or $Credential -eq [PSCredential]::Empty) {
-			throw 'Credential is required for Linux and cannot be empty'
-		}
-
-		$parts = $Folder.Trim().Trim('\', '/') -split '[\\/]+'
-		if ($parts.Count -lt 2 -or
-			[string]::IsNullOrWhiteSpace($parts[0]) -or
-			[string]::IsNullOrWhiteSpace($parts[1])) {
-			throw "Invalid UNC path: $Folder"
-		}
-
-		$share = "//$($parts[0])/$($parts[1])"
-		$directory = ($parts | Select-Object -Skip 2) -join '/'
-
-		$smbArgs = @(
-			$share
-			'-U', $Credential.UserName
-			'-c', 'ls *.sqlaudit'
-		)
-
-		if ($directory) {
-			$smbArgs += @('-D', $directory)
-		}
-
-		try {
-			$env:PASSWD = $Credential.GetNetworkCredential().Password
-			$output = @(& smbclient @smbArgs 2>&1 | ForEach-Object { $_.ToString() })
-			$exitCode = $LASTEXITCODE
-		}
-		finally {
-			Remove-Item Env:PASSWD -ErrorAction SilentlyContinue
-		}
-
-		if ($exitCode -ne 0) {
-			throw "smbclient failed (exit code $exitCode):`n$($output -join "`n")"
-		}
-
-		# Extract filenames and GUIDs
-		foreach ($line in $output) {
-			if ($line -match '^\s*(.+?\.sqlaudit)\s+') {
-				$name = $Matches[1]
-				if ($name -match $regex) {
-					[PSCustomObject]@{
-						FileName = "$($Folder.TrimEnd('\', '/'))\$name"
-						AuditGuid = [Guid]$Matches.AuditGuid
-					}
-				}
-			}
-		}
-	}
-	else {
-		throw 'Unsupported operating system. This function only supports Windows and Linux'
 	}
 }

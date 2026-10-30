@@ -18,7 +18,13 @@ The audit path is used by two processes:
 
 For a remote SQL Server, use a UNC path accessible to both the PowerShell user and the SQL Server service account.
 
+Discovery supports Windows local/UNC directories using the current Windows identity, and Linux UNC shares using `smbclient` installed in PATH and a supplied `PSCredential`. Linux roots may include nested directories and spaces. Credentials supplied on Windows are unused. Discovery inspects filenames only; SQL Server reads audit contents independently under its service account. Discovery credentials do not grant SQL Server file access.
+
+A successful listing with no valid audit filenames returns no files. An unreadable directory, invalid Linux request, missing `smbclient`, or failed listing terminates discovery before any files are offered for import. Check the folder/share path, PowerShell identity or Linux listing credentials, network access, and executable installation before retrying. A native failure includes its exit code and available diagnostic context. Resolve SQL Server service-account read permissions separately if discovery succeeds but importing fails. Audit discovery is unsupported on other operating systems.
+
 Note: **only one process should import a given audit directory at a time.**
+
+Linux discovery temporarily supplies the SMB password through process `PASSWD`, then restores its previous presence and value after success, no matches, process failure, or invocation failure. Passwords are excluded from process arguments and redacted from listing errors. Serialize discovery calls within a host process because they borrow process environment state. Supply credentials interactively with `Get-Credential` or from an approved secret store; keep passwords out of scripts and logs.
 
 ## Database setup
 
@@ -36,11 +42,12 @@ SQL Server must also be able to read the audit files through `sys.fn_get_audit_f
 
 ### Parameters
 
-| Parameter | Required | Description                                     |
-| --------- | -------- | ----------------------------------------------- |
-| `ConnStr` | Yes      | Cconnection string for the target database      |
-| `Folder`  | Yes      | Existing directory containing `.sqlaudit` files |
-| `LogFile` | No       | File to which progress messages are appended    |
+| Parameter    | Required | Description                                     |
+| ------------ | -------- | ----------------------------------------------- |
+| `ConnStr`    | Yes      | Cconnection string for the target database      |
+| `Folder`     | Yes      | Existing directory containing `.sqlaudit` files |
+| `LogFile`    | No       | File to which progress messages are appended    |
+| `Credential` | On Linux | SMB listing credentials; unused on Windows      |
 
 Detailed command help is also available:
 

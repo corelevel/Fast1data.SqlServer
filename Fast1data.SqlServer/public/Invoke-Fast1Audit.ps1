@@ -7,6 +7,13 @@ Discovers SQL Server Audit files in a folder, retrieves the saved import state
 for each unique audit GUID, imports new records, and reports processed and
 imported record counts through the verbose stream.
 
+Discovery supports Windows local/UNC folders and Linux UNC shares. Linux
+requires smbclient in PATH and supplied listing credentials. A successful
+listing with no matching filenames returns without importing; invalid requests
+and listing failures terminate. Linux restores prior process PASSWD on every
+exit; serialize discovery in a host process. SQL Server reads audit contents
+independently under its service account and needs its own file permissions.
+
 .PARAMETER ConnStr
 Specifies the Microsoft.Data.SqlClient connection string for the Fast1 Audit
 database.

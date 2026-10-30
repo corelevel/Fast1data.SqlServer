@@ -78,6 +78,14 @@ setup order, limitations, and recovery behavior affected by a change.
 5. Review code, schemas, help, and examples together for contract consistency and constitution
    compliance before merging. Breaking changes MUST include upgrade guidance and an explicit
    release-version decision.
+6. All modified PowerShell files (.ps1, .psm1, and .psd1) MUST be validated using
+   Invoke-ScriptAnalyzer before the task is considered complete.
+7. The project's PSScriptAnalyzer configuration MUST be used when available.
+8. All newly introduced errors and warnings MUST be resolved.
+9. Existing findings unrelated to the changes SHOULD NOT block completion but MUST be reported.
+10. PSScriptAnalyzer rules MUST NOT be disabled or suppressed solely to bypass validation.
+11. If PSScriptAnalyzer is unavailable or cannot run, this limitation MUST be explicitly reported.
+    Validation MUST NOT be reported as successful.
 
 ## Governance
 

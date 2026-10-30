@@ -3,18 +3,15 @@ BeforeAll {
 	$modulePath = Join-Path $script:moduleRoot 'Fast1data.SqlServer.psd1'
 	Import-Module $modulePath -Force
 
-	$script:testConnectionString = $env:FAST1_SQLSERVER_TEST_CONNECTION_STRING
-	if ([string]::IsNullOrWhiteSpace($script:testConnectionString)) {
-		$script:testConnectionString = @(
-			'Data Source=(local)'
-			'Initial Catalog=pester'
-			'User ID=pester'
-			'Password=pester'
-			'Encrypt=False'
-			'TrustServerCertificate=True'
-			'Application Name=Fast1data.SqlServer.Tests'
-		) -join ';'
-	}
+	$script:testConnectionString = @(
+		'Data Source=(local)'
+		'Initial Catalog=pester_migration'
+		'User ID=pester'
+		'Password=pester'
+		'Encrypt=False'
+		'TrustServerCertificate=True'
+		'Application Name=Fast1data.SqlServer.Migration.Tests'
+	) -join ';'
 
 	function Invoke-TestSql {
 		param(

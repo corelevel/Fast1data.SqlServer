@@ -3,43 +3,25 @@ BeforeAll {
 	$modulePath = Join-Path $script:moduleRoot 'Fast1data.SqlServer.psd1'
 	Import-Module $modulePath -Force
 
-	$script:configConnectionString = @(
-		'Data Source=(local)'
-		'Initial Catalog=pester_archiving'
-		'User ID=pester'
-		'Password=pester'
-		'Encrypt=False'
-		'TrustServerCertificate=True'
-		'Application Name=Fast1data.SqlServer.Archiving.Tests'
-	) -join ';'
-
-	$script:sourceConnectionString = @(
-		'Data Source=(local)'
-		'Initial Catalog=pester'
-		'User ID=pester'
-		'Password=pester'
-		'Encrypt=False'
-		'TrustServerCertificate=True'
-		'Application Name=Fast1data.SqlServer.Archiving.Tests'
-	) -join ';'
-
-	$script:destinationConnectionString = @(
-		'Data Source=(local)'
-		'Initial Catalog=pester_arc'
-		'User ID=pester'
-		'Password=pester'
-		'Encrypt=False'
-		'TrustServerCertificate=True'
-		'Application Name=Fast1data.SqlServer.Archiving.Tests'
-	) -join ';'
+	$script:serverName = '(local)'
+	$script:userId = 'pester'
+	$script:password = 'pester'
+	$script:applicationName = 'Fast1data.SqlServer.Archiving.Tests'
+	$script:configDatabase = 'pester_archiving_config'
+	$script:sourceDatabase = 'pester_archiving_src'
+	$script:destinationDatabase = 'pester_archiving_dst'
 
 	$script:connectionOptions = @(
-		'User ID=pester'
-		'Password=pester'
+		"User ID=$script:userId"
+		"Password=$script:password"
 		'Encrypt=False'
 		'TrustServerCertificate=True'
-		'Application Name=Fast1data.SqlServer.Archiving.Tests'
+		"Application Name=$script:applicationName"
 	) -join ';'
+
+	$script:configConnectionString = "Data Source=$script:serverName;Initial Catalog=$script:configDatabase;$script:connectionOptions"
+	$script:sourceConnectionString = "Data Source=$script:serverName;Initial Catalog=$script:sourceDatabase;$script:connectionOptions"
+	$script:destinationConnectionString = "Data Source=$script:serverName;Initial Catalog=$script:destinationDatabase;$script:connectionOptions"
 
 	function Invoke-ArchivingTestSql {
 		param (
@@ -176,11 +158,11 @@ insert dbo.TableGroup
 values
 (
 	@group_name,
-	N'(local)',
-	N'pester',
+	N'$script:serverName',
+	N'$script:sourceDatabase',
 	@connection_options,
-	N'(local)',
-	N'pester_arc',
+	N'$script:serverName',
+	N'$script:destinationDatabase',
 	@connection_options,
 	0
 );

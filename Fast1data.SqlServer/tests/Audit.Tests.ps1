@@ -1,14 +1,22 @@
 BeforeAll {
 	$projectRoot = Split-Path -Parent $PSScriptRoot
 	$modulePath = Join-Path $projectRoot 'Fast1data.SqlServer.psd1'
-	$script:auditSourcePath = Join-Path $projectRoot 'Private\Audit'
-	$script:tablesPath = Join-Path $projectRoot 'schema\Audit\tables.sql'
-	$script:sprocsPath = Join-Path $projectRoot 'schema\Audit\sprocs.sql'
+	$script:auditSourcePath = Join-Path $projectRoot 'private/audit'
+	$script:tablesPath = Join-Path $projectRoot 'schema/audit/tables.sql'
+	$script:sprocsPath = Join-Path $projectRoot 'schema/audit/sprocs.sql'
 
 	Import-Module $modulePath -Force
 }
 
 Describe 'Fast1data.SqlServer module' {
+	It 'retains exactly three public exports and keeps discovery helpers private' {
+		$exports = @(Get-Command -Module Fast1data.SqlServer | Select-Object -ExpandProperty Name | Sort-Object)
+		$exports -join ',' | Should -Be 'Invoke-Fast1Archiving,Invoke-Fast1Audit,Invoke-Fast1Migration'
+		Get-Command Get-SqlAuditFile,Get-SqlAuditFileEntry -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
+		InModuleScope Fast1data.SqlServer {
+			Get-Command Get-SqlAuditFileEntry | Should -Not -BeNullOrEmpty
+		}
+	}
 	It 'imports and exports Invoke-Fast1Audit' {
 		$command = Get-Command Invoke-Fast1Audit -Module Fast1data.SqlServer
 
@@ -24,7 +32,7 @@ Describe 'Fast1data.SqlServer module' {
 	}
 }
 
-Describe 'SQL audit file discovery' {
+Describe 'SQL audit file discovery' -Skip:(-not $IsWindows) {
 	It 'parses a valid SQL audit filename' {
 		$folder = Join-Path $TestDrive 'valid-audit-files'
 		$null = New-Item -Path $folder -ItemType Directory
@@ -39,7 +47,6 @@ Describe 'SQL audit file discovery' {
 
 		$result | Should -HaveCount 1
 		$result.AuditGuid | Should -Be $auditGuid
-		$result.BaseFileName | Should -Be 'fast1_audit_00'
 		$result.FileName | Should -Be $filePath
 	}
 
