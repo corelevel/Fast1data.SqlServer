@@ -21,7 +21,7 @@ foreach ($rid in $rids) {
 	}
 
 	$source = Join-Path $PSScriptRoot "bin/Release/$targetFramework/$rid/publish"
-    $dest = Join-Path $PSScriptRoot "../Fast1data.SqlServer/lib/$rid"
+	$dest = Join-Path $PSScriptRoot "../Fast1data.SqlServer/lib/$rid"
 
 	Remove-Item $dest -Recurse -Force -ErrorAction Ignore
 

@@ -11,7 +11,7 @@
 RootModule = 'Fast1data.SqlServer.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.3'
+ModuleVersion = '0.0.4'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -32,7 +32,7 @@ Copyright = '(c) Ilya Baybikov. All rights reserved.'
 Description = 'SQL Server Audit, Migrations and Archiving built on modern PowerShell 7 and Microsoft.Data.SqlClient'
 
 # Minimum version of the PowerShell engine required by this module
-PowerShellVersion = '7.4'
+PowerShellVersion = '7.6'
 
 # Name of the PowerShell host required by this module
 # PowerShellHostName = ''

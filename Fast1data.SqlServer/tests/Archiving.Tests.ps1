@@ -3,7 +3,7 @@ BeforeAll {
 	$modulePath = Join-Path $script:moduleRoot 'Fast1data.SqlServer.psd1'
 	Import-Module $modulePath -Force
 
-	$script:serverName = '(local)'
+	$script:serverName = 'pester-srv'
 	$script:userId = 'pester'
 	$script:password = 'pester'
 	$script:applicationName = 'Fast1data.SqlServer.Archiving.Tests'

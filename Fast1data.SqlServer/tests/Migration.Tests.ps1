@@ -4,7 +4,7 @@ BeforeAll {
 	Import-Module $modulePath -Force
 
 	$script:testConnectionString = @(
-		'Data Source=(local)'
+		'Data Source=pester-srv'
 		'Initial Catalog=pester_migration'
 		'User ID=pester'
 		'Password=pester'

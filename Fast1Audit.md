@@ -126,3 +126,66 @@ Invoke-Fast1Audit `
 	-Verbose
 ```
 - Imported audit data will be in the `dbo.fast1_audit` table
+
+## Linux tests
+
+Run the self-contained tests from the repository root in PowerShell 7 with Pester 5 or later:
+
+```powershell
+Invoke-Pester -Path ./Fast1data.SqlServer/tests/Audit.Linux.Tests.ps1 -Output Detailed
+```
+
+These tests call `Invoke-Fast1Audit` with a temporary executable standing in for
+`smbclient`. They cover Linux credentials, UNC validation, filename filtering,
+multiple audit GUIDs, empty listings, failed listings, password redaction, and
+restoration of the process environment. No SMB share or SQL Server is needed.
+Successful discovery stops at an intentionally invalid SQL connection string;
+these tests do not verify imported database records. They skip on other operating
+systems. Do not run environment-changing tests concurrently in one PowerShell process.
+
+The live suite is
+[`Audit.Import.Integration.Tests.ps1`](Fast1data.SqlServer/tests/Audit.Import.Integration.Tests.ps1).
+It checks initial imports, checkpoint reuse without duplicate records, and
+checkpoint advancement when all records are ignored. It runs automatically when
+selected on Linux and skips on other operating systems.
+
+Its `BeforeAll` block stores the environment settings, including SQL and SMB
+usernames and passwords, directly in the script, following `Migration.Tests.ps1`.
+Edit the configuration block once if your environment changes:
+
+| Setting | Configured value |
+| --- | --- |
+| SQL server (`Data Source`) | `pester-srv` |
+| SQL login (`User ID` and `Password`) | Test account credentials in the connection string |
+| Audit folder (`$script:folder`) | `\\pester-srv\audit\void` |
+| SMB username (`$smbUserName`) | `.\pester` |
+| SMB password (`$smbPassword`) | Test account password in the configuration block |
+
+There are no credential prompts, container parameters, or enable switches.
+The suite reads expected record counts and audit GUIDs directly from
+`sys.fn_get_audit_file` before running the importer. It compares the imported
+records against that source baseline.
+
+Prepare these prerequisites:
+
+- Install `smbclient` in PATH and build the module's bundled SQL client as described in the [README](README.md).
+- Supply real, closed `.sqlaudit` files in the configured folder. Keep its contents unchanged during the run; do not use an active audit output directory. Prefer multiple files for one GUID and at least two distinct audit GUIDs. Empty files with audit-shaped names are insufficient.
+- The SQL login needs permission to create/drop a database and read audit data through `sys.fn_get_audit_file`. The SQL Server service must independently have read access to the same UNC path. The SMB account needs permission to list that folder.
+
+The suite creates a uniquely named `fast1_audit_test_*` database, installs the
+repository's audit schema, and drops that database in `AfterAll`, including after
+assertion failures. It does not use an existing `pester_audit` database. An
+interrupted PowerShell process may leave its test database behind. The share is
+read-only to the tests. Missing prerequisites or connection failures fail the run.
+
+Run from the repository root in PowerShell:
+
+```powershell
+Invoke-Pester -Path ./Fast1data.SqlServer/tests/Audit.Import.Integration.Tests.ps1 -Output Detailed
+```
+
+To run all audit suites without accessing live services, exclude the integration tag:
+
+```powershell
+Invoke-Pester -Path ./Fast1data.SqlServer/tests/Audit*.Tests.ps1 -ExcludeTag Integration -Output Detailed
+```
