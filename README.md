@@ -8,7 +8,7 @@ Fast1data.SqlServer is a PowerShell module for SQL Server administration and dep
 
 ## Requirements
 
-- PowerShell 7.4 or later
+- PowerShell 7.6 or later
 - SQL Server PowerShell module [SqlServer](https://learn.microsoft.com/en-us/powershell/sql-server/download-sql-server-ps-module) module
 - An x64 Windows, Linux, or macOS runtime
 - Network and database permissions required by the selected feature

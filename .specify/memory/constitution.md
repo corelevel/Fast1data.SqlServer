@@ -34,7 +34,7 @@ secrets MUST NOT appear in committed examples or operational logs.
 
 ### IV. Portable PowerShell Contracts
 
-The module MUST maintain its documented PowerShell 7.4-or-later Core baseline and x64 Windows,
+The module MUST maintain its documented PowerShell 7.6-or-later Core baseline and x64 Windows,
 Linux, and macOS support until an explicit compatibility change is approved. Public commands
 MUST be explicitly exported through the manifest. Changes to parameters, configuration formats,
 SQL schemas, dependencies, or runtime requirements MUST update affected manifest entries, help,
