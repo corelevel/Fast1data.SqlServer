@@ -6,7 +6,7 @@ Describe 'Live audit import from Linux' -Tag 'Linux', 'Integration' -Skip:(-not 
 		# Live test configuration: edit these values once for your test environment.
 		$connectionString = @(
 			'Data Source=pester-srv'
-			'Initial Catalog=pester_audit'
+			'Initial Catalog=master'
 			'User ID=pester'
 			'Password=pester'
 			'Encrypt=False'

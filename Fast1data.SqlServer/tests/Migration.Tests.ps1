@@ -3,16 +3,6 @@ BeforeAll {
 	$modulePath = Join-Path $script:moduleRoot 'Fast1data.SqlServer.psd1'
 	Import-Module $modulePath -Force
 
-	$script:testConnectionString = @(
-		'Data Source=pester-srv'
-		'Initial Catalog=pester_migration'
-		'User ID=pester'
-		'Password=pester'
-		'Encrypt=False'
-		'TrustServerCertificate=True'
-		'Application Name=Fast1data.SqlServer.Migration.Tests'
-	) -join ';'
-
 	function New-CommandFixture {
 		[CmdletBinding(SupportsShouldProcess)]
 		param ([string[]]$Scripts = @('first.sql', 'last.sql'))
@@ -36,11 +26,13 @@ BeforeAll {
 			[Parameter(Mandatory)]
 			[string]$Query,
 
+			[string]$ConnStr = $script:testConnectionString,
+
 			[hashtable]$Parameters = @{}
 		)
 
 		$connection = [Microsoft.Data.SqlClient.SqlConnection]::new(
-			$script:testConnectionString
+			$ConnStr
 		)
 		$command = $null
 
@@ -48,6 +40,7 @@ BeforeAll {
 			$connection.Open()
 			$command = $connection.CreateCommand()
 			$command.CommandText = $Query
+			$command.CommandTimeout = 120
 
 			foreach ($entry in $Parameters.GetEnumerator()) {
 				$parameter = $command.Parameters.AddWithValue(
@@ -505,13 +498,35 @@ Describe 'Migration history coordination' {
 
 Describe 'Migration SQL integration' -Tag 'Integration' {
 	BeforeAll {
-		$schemaPath = Join-Path $script:moduleRoot 'schema\migration\tables.sql'
-		Invoke-Sqlcmd `
-			-ConnectionString $script:testConnectionString `
-			-InputFile $schemaPath `
-			-AbortOnError `
-			-ErrorAction Stop |
-			Out-Null
+		$script:testDatabaseCreated = $false
+		# The SQL login must be allowed to create/drop a database.
+		# Live test configuration: edit these values once for your test environment.
+		$connectionString = @(
+			'Data Source=pester-srv'
+			'Initial Catalog=master'
+			'User ID=pester'
+			'Password=pester'
+			'Encrypt=False'
+			'TrustServerCertificate=True'
+			'Application Name=Fast1data.SqlServer.Migration.Tests'
+		) -join ';'
+		$builder = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($connectionString)
+		$builder['Initial Catalog'] = 'master'
+		$builder['Pooling'] = $false
+		$script:masterConnectionString = $builder.ConnectionString
+		$script:testDatabaseName = "fast1_migration_test_$([guid]::NewGuid().ToString('N'))"
+		Invoke-TestSql -ConnStr $script:masterConnectionString `
+			-Query "create database [$script:testDatabaseName];" | Out-Null
+		$script:testDatabaseCreated = $true
+		$builder['Initial Catalog'] = $script:testDatabaseName
+		$script:testConnectionString = $builder.ConnectionString
+
+		$sql = Get-Content -LiteralPath (Join-Path $script:moduleRoot 'schema/migration/tables.sql') -Raw
+		foreach ($batch in [regex]::Split($sql, '(?im)^\s*go\s*(?:--.*)?$')) {
+			if (-not [string]::IsNullOrWhiteSpace($batch)) {
+				Invoke-TestSql -Query $batch | Out-Null
+			}
+		}
 
 		function Set-SqlFixtureScript {
 			[CmdletBinding(SupportsShouldProcess)]
@@ -594,6 +609,15 @@ select 1;
 "@ `
 			-Parameters @{ phase = $script:phase } |
 			Out-Null
+	}
+
+	AfterAll {
+		if ($script:testDatabaseCreated) {
+			Invoke-TestSql -ConnStr $script:masterConnectionString -Query @"
+alter database [$script:testDatabaseName] set single_user with rollback immediate;
+drop database [$script:testDatabaseName];
+"@ | Out-Null
+		}
 	}
 
 	It 'executes, records, skips, and safely forces an idempotent migration' {
@@ -693,7 +717,7 @@ $(Get-SqlFixtureInsert -Id 2)
 		@{ RequireCaseSensitive = $true }
 	) {
 		if ($RequireCaseSensitive -and $script:databaseCollation -notmatch '(_CS_|_BIN)') {
-			Set-ItResult -Skipped -Because "Selected database collation $script:databaseCollation is not case-sensitive. Supply a case-sensitive disposable database."
+			Set-ItResult -Skipped -Because "Test database collation $script:databaseCollation is not case-sensitive. This case requires a case-sensitive test database."
 			return
 		}
 		$initial = Get-Content -LiteralPath (Join-Path $script:phasePath '001-idempotent.sql') -Raw
