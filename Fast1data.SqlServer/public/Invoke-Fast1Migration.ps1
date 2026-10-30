@@ -3,8 +3,24 @@
 	Deploys migration scripts to the target SQL Server
 
 .DESCRIPTION
-	Deploys migration scripts to the target SQL Server in order
-	Detects checksum drift and stops on mismatch
+	Reads history and validates the entire selected phase before confirmation or
+	mutation. Literal phase selection preserves configured script order. Script
+	identity matches case-insensitively with portable slash separators; actual file
+	lookup retains configured casing under the host filesystem rules.
+
+	Rejects duplicate names, global ignore/force conflicts, paths outside the phase,
+	missing non-ignored files, and unforced checksum drift. Unknown selections warn.
+	WhatIf performs the same history/file reads and reports ordered run/skip reasons
+	with Verbose, while executing no migration scripts and writing no history. Empty/all-skipped
+	phases report Nothing to run. Validation does not lock files or history.
+
+	Each execution completes before its history write and before the next script.
+	Either failure terminates; earlier completed work remains durable. SQL may
+	succeed before history recording fails, so scripts must be idempotent for retry.
+	Forced updates locate the original stored key and record a normalized relative
+	name, SHA-256, and database UTC timestamp. No phase transaction is provided.
+	Configuration and SQL files are executable administrator inputs. Set up the
+	history schema and grant the required execution and history permissions first.
 
 	Requires PowerShell 7.4+
 	Requires SQL Server PowerShell module
@@ -17,17 +33,20 @@
 	Folder containing config file and migration scripts
 
 .PARAMETER Phase
-	Migration phase to execute
+	Literal migration phase property and directory name; brackets are not wildcards.
 
 .PARAMETER IgnoreScripts
 	Optional list of scripts to skip during execution
-	Filenames must match entries defined in the configuration file
+	Case-insensitive phase-relative names; backslashes and forward slashes match.
+	Contained rooted names are converted to phase-relative names. Ignored paths
+	remain subject to containment but need not exist and are not hashed.
 	Example: "001-fix-that.sql", "000-fix-this.sql"
 
 .PARAMETER ForceScripts
 	Optional list of migration script filenames to force execution even if
 		they were previously recorded in the migration history table
-	Filenames must match entries defined in the configuration file
+	Case/separator matching follows IgnoreScripts. Force also permits new scripts;
+	containment and existence still apply. Unknown names warn without adding work.
 	Example: "job007/000-kill-all-user-processes.sql"
 
 .INPUTS
@@ -58,7 +77,7 @@ function Invoke-Fast1Migration {
 		[string]$ConnStr,
 
 		[Parameter(Mandatory)]
-		[ValidateScript({ Test-Path $_ -PathType Container })]
+		[ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
 		[string]$BasePath,
 
 		[Parameter(Mandatory)]
@@ -71,166 +90,29 @@ function Invoke-Fast1Migration {
 
 	Set-StrictMode -Version Latest
 
-	try {
-		$configFile = Join-Path $BasePath 'migration.json'
-		$scriptsFolder = Join-Path $BasePath $Phase
-
-		if (-not (Test-Path $configFile -PathType Leaf)) {
-			throw "Migration configuration not found: $configFile"
-		}
-
-		if (-not (Test-Path $scriptsFolder -PathType Container)) {
-			throw "Scripts folder not found: $scriptsFolder"
-		}
-
-		$scriptsRoot = [System.IO.Path]::GetFullPath($scriptsFolder)
-		$separatorChars = [char[]]@(
-			[System.IO.Path]::DirectorySeparatorChar
-			[System.IO.Path]::AltDirectorySeparatorChar
-		)
-		$scriptsRootPrefix = $scriptsRoot.TrimEnd($separatorChars) +
-			[System.IO.Path]::DirectorySeparatorChar
-		$pathComparison = if ($IsWindows) {
-			[System.StringComparison]::OrdinalIgnoreCase
-		}
-		else {
-			[System.StringComparison]::Ordinal
-		}
-
-		$executedScriptList = @(Get-Executed -ConnStr $ConnStr -Phase $Phase)
-		$scriptList = @(Get-Migration -ConfigFile $configFile -Phase $Phase)
-		
-		# Check for duplicates
-		$duplicates = $scriptList | Group-Object | Where-Object Count -gt 1
-		if ($duplicates) {
-			$names = ($duplicates | Select-Object -ExpandProperty Name) -join ', '
-			throw "Duplicate script names detected in configuration: $names"
-		}
-
-		if ($IgnoreScripts) {
-			$IgnoreScripts = @($IgnoreScripts | ForEach-Object { $_.Replace('\', '/') })
-		}
-
-		if ($ForceScripts) {
-			$ForceScripts = @($ForceScripts | ForEach-Object { $_.Replace('\', '/') })
-		}
-
-		# Check for intersection
-		if ($IgnoreScripts -and $ForceScripts) {
-			$names = $IgnoreScripts | Where-Object { $_ -in $ForceScripts }
-			if ($names) {
-				throw "Scripts cannot be both ignored and forced: $($names -join ', ')"
-			}
-		}
-
-		$dryRun = $true
-		$connStrParser = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($ConnStr)
-		$target = "DataSource: $($connStrParser.DataSource), InitialCatalog: " +
-			"$($connStrParser.InitialCatalog), Phase: $Phase"
-
-		if ($PSCmdlet.ShouldProcess($target)) {
-			$dryRun = $false
-		}
-		else {
-			Write-Verbose 'Dry run'
-		}
-
-		$executedScriptMap = [System.Collections.Generic.Dictionary[string, string]]::new(
-			[System.StringComparer]::OrdinalIgnoreCase
-		)
-		foreach ($script in $executedScriptList) {
-			$executedScriptMap[$script.script_name] = $script.checksum
-		}
-
-		if ($IgnoreScripts) {
-			$notPresent = $IgnoreScripts | Where-Object { $_ -notin $scriptList }
-			if ($notPresent) {
-				Write-Warning "IgnoreScripts contains names not present in configuration: " +
-					"$($notPresent -join ', ')"
-			}
-		}
-
-		if ($ForceScripts) {
-			$notPresent = $ForceScripts | Where-Object { $_ -notin $scriptList }
-			if ($notPresent) {
-				Write-Warning "ForceScripts contains names not present in configuration: " +
-					"$($notPresent -join ', ')"
-			}
-		}
-
-		$didGoodJob = $false
-		foreach ($scriptName in $scriptList) {
-			if ($IgnoreScripts) {
-				if ($scriptName -in $IgnoreScripts) {
-					Write-Verbose "Ignoring migration script: $scriptName"
-					continue
-				}
-			}
-
-			$forceScript = $false
-			if ($ForceScripts) {
-				if ($scriptName -in $ForceScripts) {
-					Write-Verbose "Forcing migration script: $scriptName"
-					$forceScript = $true
-				}
-			}
-
-			$scriptFullPath = [System.IO.Path]::GetFullPath(
-				(Join-Path $scriptsRoot $scriptName)
-			)
-
-			if (-not $scriptFullPath.StartsWith($scriptsRootPrefix, $pathComparison)) {
-				throw "Migration script is outside the phase directory: $scriptName"
-			}
-
-			if (-not (Test-Path -LiteralPath $scriptFullPath -PathType Leaf)) {
-				throw "Migration script not found: $scriptFullPath"
-			}
-
-			$scriptExecuted = $executedScriptMap.ContainsKey($scriptName)
-			# Check for checksum difference
-			$checksum = Get-FileChecksum -File $scriptFullPath
-			if (-not $forceScript -and $scriptExecuted) {
-				$executedChecksum = $executedScriptMap[$scriptName]
-				if ($checksum -ne $executedChecksum) {
-					throw "Checksum mismatch for migration script: $scriptName" +
-						" Expected: $executedChecksum" +
-						" Checksum: $checksum"
-				}
-				continue
-			}
-
-			$didGoodJob = $true
-			Write-Verbose "Running migration script: $scriptName"
-			if (-not $dryRun) {
-				Invoke-Migration -ConnStr $ConnStr -Script $scriptFullPath
-
-				$scriptName = Get-RelativePath `
-					-RelativeTo $scriptsFolder `
-					-Path $scriptFullPath
-
-				$scriptName = $scriptName.Replace('\', '/')
-
-				Set-Executed `
-					-ConnStr $ConnStr `
-					-ScriptName $scriptName `
-					-Phase $Phase `
-					-Checksum $checksum `
-					-ForceScript ($forceScript -and $scriptExecuted)
-				
-				Write-Verbose 'Migration completed'
-			}
-			else {
-				Write-Verbose 'Dry run migration completed'
-			}
-		}
-
-		if (-not $didGoodJob) {
-			Write-Verbose 'Nothing to run'
-		}
+	$history = @(Get-Executed -ConnStr $ConnStr -Phase $Phase -ErrorAction Stop)
+	$evaluation = Resolve-MigrationPhase -BasePath $BasePath -Phase $Phase -History $history `
+		-IgnoreScripts $IgnoreScripts -ForceScripts $ForceScripts -ErrorAction Stop
+	foreach ($warning in $evaluation.Warnings) {
+		Write-Warning $warning
 	}
-	catch {
-		Write-Error "Failed to run migration: $_"
-		throw
+	foreach ($script in $evaluation.Scripts) {
+		Write-Verbose "$($script.Action) migration script: $($script.ScriptName) ($($script.Reason))"
+	}
+	$eligible = @($evaluation.Scripts | Where-Object Action -EQ 'Run')
+	if ($eligible.Count -eq 0) {
+		Write-Verbose 'Nothing to run'
+		return
+	}
+	$connStrParser = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($ConnStr)
+	$target = "DataSource: $($connStrParser.DataSource), InitialCatalog: $($connStrParser.InitialCatalog), Phase: $Phase"
+	if ($PSCmdlet.ShouldProcess($target)) {
+		foreach ($script in $eligible) {
+			Invoke-Migration -ConnStr $ConnStr -Script $script.FullPath -ErrorAction Stop
+			Set-Executed -ConnStr $ConnStr -ScriptName $script.ScriptName -Phase $Phase `
+				-Checksum $script.Checksum -HistoryScriptName $script.HistoryScriptName `
+				-ForceScript ($script.IsForced -and $script.WasExecuted) -ErrorAction Stop
+			Write-Verbose "Migration completed: $($script.ScriptName)"
+		}
 	}
 }

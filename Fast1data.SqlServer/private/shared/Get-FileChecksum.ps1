@@ -16,5 +16,5 @@ function Get-FileChecksum {
 		[string]$File
 	)
 
-	(Get-FileHash -Path $File -Algorithm SHA256).Hash
+	(Get-FileHash -LiteralPath $File -Algorithm SHA256 -ErrorAction Stop).Hash
 }

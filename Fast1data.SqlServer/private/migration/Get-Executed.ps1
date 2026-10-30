@@ -4,8 +4,8 @@ Gets migration scripts already recorded as executed.
 
 .DESCRIPTION
 Reads script names and checksums from dbo.fast1_migration_history for the
-specified phase. Script paths are returned with portable forward-slash
-separators.
+specified phase. Stored script names are returned exactly as persisted so forced
+updates can locate the original key; phase evaluation owns identity normalization.
 
 .PARAMETER ConnStr
 Specifies the Microsoft.Data.SqlClient connection string for the target
@@ -46,7 +46,7 @@ where phase = @phase
 
 		while ($sqlReader.Read()) {
 			[PSCustomObject]@{
-				script_name = $sqlReader['script_name'].Replace('\', '/')
+				script_name = $sqlReader['script_name']
 				checksum = $sqlReader['checksum']
 			}
 		}

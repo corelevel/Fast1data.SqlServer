@@ -49,8 +49,10 @@ migrations/
     └── 000-fix-This.sql
 ```
 
-Scripts must remain inside their selected phase directory. Paths attempting to
-escape it, such as `../outside.sql`, are rejected.
+Scripts must remain strictly inside their selected phase directory. Parent traversal,
+absolute paths outside it, sibling directories sharing its prefix, and the phase
+directory itself are rejected, even for ignored or forced entries. This is lexical
+full-path containment; it does not add a symbolic-link resolution policy.
 
 ## Configuration
 
@@ -73,9 +75,16 @@ escape it, such as `../outside.sql`, are rejected.
 }
 ```
 
-Use `/` for nested paths in the configuration. The module also normalizes `\` to `/` in configuration and command parameters.
+Use `/` for nested paths in the configuration. The module normalizes `\` to `/`
+and matches configuration, history, ignore, and force names case-insensitively.
+Configured casing is retained for file lookup: on a case-sensitive filesystem it
+must locate the actual file. Contained rooted names become phase-relative names;
+relative spelling is retained without general path-alias deduplication.
 
-Phase names are looked up exactly rather than as wildcard patterns. Duplicate script names in a phase are rejected.
+Phase names are looked up literally, including bracketed names, rather than as
+wildcard patterns. Script order is the JSON array order. Duplicate script names
+after case/separator matching are rejected. An existing empty script array is valid;
+a missing phase, configuration file, or phase directory is an error.
 
 ### Parameters
 
@@ -96,14 +105,25 @@ For the selected phase, the module:
 
 1. Loads execution history from `dbo.fast1_migration_history`.
 2. Reads the ordered script list from `migration.json`.
-3. Validates duplicates, ignored/forced conflicts, paths, and checksums.
+3. Validates the entire phase: duplicates, ignored/forced conflicts, paths, files, and checksums.
 4. Skips previously executed scripts whose checksums have not changed.
 5. Stops if an executed script has been modified.
 6. Executes new or forced scripts through `Invoke-Sqlcmd`.
 7. Records new scripts or updates forced-script history.
 
-If a script is listed in both `IgnoreScripts` and `ForceScripts`, execution
-stops with an error.
+All phase validation finishes before confirmation, execution, or history writes.
+A valid first script followed by an invalid later entry executes no scripts.
+Validation is a snapshot: it does not lock files or history against subsequent changes.
+
+If a script is listed in both `IgnoreScripts` and `ForceScripts`, evaluation
+stops with an error, including when that name is absent from configuration.
+Other unknown ignore/force names produce distinct warnings and add no work.
+Ignored entries still require containment but need not exist and are never hashed.
+Force permits checksum drift and new scripts; containment and file existence still apply.
+Empty or all-skipped phases succeed with `Nothing to run` in verbose output.
+
+Configuration and SQL scripts are executable administrator inputs. Review them and
+grant only the database permissions needed for the selected migrations and history.
 
 ### Ignore scripts
 
@@ -129,6 +149,32 @@ A forced script executes again and its stored checksum and execution timestamp
 are updated. If it has never been recorded, it is inserted as a new history
 entry.
 
+History stores normalized phase-relative names. A forced historical update locates
+the exact original stored key, including legacy backslashes or casing, and writes
+the configured normalized name, checksum, and database UTC execution time. Skips
+leave history and timestamps unchanged.
+
+## Failure and recovery
+
+Each eligible script finishes execution before its history is recorded, then the
+next script starts. Execution failure terminates without recording that script.
+Recording failure also terminates before later scripts, but successful SQL effects
+may already exist without a corresponding history record. Earlier completed effects
+and history remain durable; arbitrary scripts and history are not wrapped in a
+phase transaction and no rollback is promised.
+
+Require idempotent scripts. Inspect the failed SQL and history state, resolve the
+failure, then retry. A script that executed successfully but was not recorded may
+execute again on retry. Force deliberately reruns recorded work and does not make
+non-idempotent scripts safe.
+
+Integration tests use the original local `pester_migration` connection declared near
+the top of `tests/Migration.Tests.ps1`. Review or edit that connection before running
+against another disposable database. Fixtures create unique phases/tables and clean
+up only their own state; no database is created automatically. Setup requires schema creation permissions if history is
+absent, plus fixture table creation/drop, SQL execution, and history select/insert/
+update/delete permissions. See the [validation commands](specs/002-consolidate-migration-phases/quickstart.md).
+
 ## Dry run
 
 Use PowerShell's `-WhatIf` support to preview the phase:
@@ -142,8 +188,11 @@ Invoke-Fast1Migration `
 	-Verbose
 ```
 
-The command reads migration history and validates files and checksums, but does
-not execute scripts or update migration history.
+The command reads migration history and validates the entire phase, including files
+and checksums. Verbose output reports every run/skip decision and skip reason in
+configured order; warnings and validation errors agree with execution for identical
+inputs. Preview calls neither script execution nor history writing, including force.
+Declining confirmation also leaves both mutation steps uncalled.
 
 ## CI/CD
 
