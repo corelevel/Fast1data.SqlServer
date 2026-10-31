@@ -1,4 +1,4 @@
-using module ../shared/EasySqlParam.psm1
+using module ../shared/GenericSqlParam.psm1
 
 <#
 .SYNOPSIS
@@ -81,26 +81,26 @@ values(@script_name, @phase, @checksum)
 		}
 
 		$sqlConn.Open()
-		Invoke-EasySqlQuery `
+		Invoke-GenericSqlQuery `
 			-SqlConn $sqlConn `
 			-Query $query `
 			-Parameters @{
-				script_name = [EasySqlParam]@{
+				script_name = [GenericSqlParam]@{
 					Value = $ScriptName
 					Type = [System.Data.SqlDbType]::NVarChar
 					Size = 255
 				}
-				phase = [EasySqlParam]@{
+				phase = [GenericSqlParam]@{
 					Value = $Phase
 					Type = [System.Data.SqlDbType]::NVarChar
 					Size = 32
 				}
-				checksum = [EasySqlParam]@{
+				checksum = [GenericSqlParam]@{
 					Value = $Checksum
 					Type = [System.Data.SqlDbType]::Char
 					Size = 64
 				}
-				history_script_name = [EasySqlParam]@{
+				history_script_name = [GenericSqlParam]@{
 					Value = $HistoryScriptName
 					Type = [System.Data.SqlDbType]::NVarChar
 					Size = 255

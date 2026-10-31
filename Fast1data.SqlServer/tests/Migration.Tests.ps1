@@ -544,7 +544,8 @@ Describe 'Migration SQL integration' -Tag 'Integration' {
 		}
 
 		function Get-SqlFixtureHistory {
-			$json = Invoke-TestSql -Query @'
+			param ([string]$ConnStr = $script:testConnectionString)
+			$json = Invoke-TestSql -ConnStr $ConnStr -Query @'
 select script_name, [checksum], executed_at from dbo.fast1_migration_history
 where phase = @phase order by script_name for json path;
 '@ -Parameters @{ phase = $script:phase }
@@ -716,30 +717,56 @@ $(Get-SqlFixtureInsert -Id 2)
 		@{ RequireCaseSensitive = $false }
 		@{ RequireCaseSensitive = $true }
 	) {
-		if ($RequireCaseSensitive -and $script:databaseCollation -notmatch '(_CS_|_BIN)') {
-			Set-ItResult -Skipped -Because "Test database collation $script:databaseCollation is not case-sensitive. This case requires a case-sensitive test database."
-			return
-		}
-		$initial = Get-Content -LiteralPath (Join-Path $script:phasePath '001-idempotent.sql') -Raw
-		Set-SqlFixtureScript -Scripts ([ordered]@{ 'Nested/001-idempotent.sql' = $initial })
-		Invoke-Fast1Migration -ConnStr $script:testConnectionString -BasePath $script:basePath -Phase $script:phase -Confirm:$false
-		Invoke-TestSql -Query @'
+		$connectionString = $script:testConnectionString
+		$caseSensitiveDatabaseCreated = $false
+		$caseSensitiveDatabaseName = "fast1_migration_cs_test_$([guid]::NewGuid().ToString('N'))"
+		try {
+			if ($RequireCaseSensitive) {
+				Invoke-TestSql -ConnStr $script:masterConnectionString `
+					-Query "create database [$caseSensitiveDatabaseName] collate Latin1_General_100_CS_AS;" | Out-Null
+				$caseSensitiveDatabaseCreated = $true
+				$builder = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($script:masterConnectionString)
+				$builder['Initial Catalog'] = $caseSensitiveDatabaseName
+				$connectionString = $builder.ConnectionString
+
+				$sql = Get-Content -LiteralPath (Join-Path $script:moduleRoot 'schema/migration/tables.sql') -Raw
+				foreach ($batch in [regex]::Split($sql, '(?im)^\s*go\s*(?:--.*)?$')) {
+					if (-not [string]::IsNullOrWhiteSpace($batch)) {
+						Invoke-TestSql -ConnStr $connectionString -Query $batch | Out-Null
+					}
+				}
+				Invoke-TestSql -ConnStr $connectionString -Query "select case when N'a' = N'A' then 0 else 1 end;" |
+					Should -Be 1
+			}
+			$initial = Get-Content -LiteralPath (Join-Path $script:phasePath '001-idempotent.sql') -Raw
+			Set-SqlFixtureScript -Scripts ([ordered]@{ 'Nested/001-idempotent.sql' = $initial })
+			Invoke-Fast1Migration -ConnStr $connectionString -BasePath $script:basePath -Phase $script:phase -Confirm:$false
+			Invoke-TestSql -ConnStr $connectionString -Query @'
 update dbo.fast1_migration_history set script_name = @legacy, executed_at = '20000101'
 where phase = @phase;
 select 1;
 '@ -Parameters @{ phase = $script:phase; legacy = 'NESTED\001-IDEMPOTENT.SQL' } | Out-Null
-		$legacy = @(Get-SqlFixtureHistory)[0]
-		$legacy.script_name | Should -BeExactly 'NESTED\001-IDEMPOTENT.SQL'
-		Add-Content -LiteralPath (Join-Path $script:phasePath 'Nested/001-idempotent.sql') -Value '-- new checksum'
-		Invoke-Fast1Migration -ConnStr $script:testConnectionString -BasePath $script:basePath -Phase $script:phase `
-			-ForceScripts 'nested/001-IDEMPOTENT.SQL' -Confirm:$false
-		$after = @(Get-SqlFixtureHistory)
-		$after.Count | Should -Be 1
-		$after[0].script_name | Should -BeExactly 'Nested/001-idempotent.sql'
-		$after[0].checksum | Should -Not -Be $legacy.checksum
-		$after[0].checksum | Should -Be (Get-FileHash -LiteralPath (Join-Path $script:phasePath 'Nested/001-idempotent.sql')).Hash
-		([datetime]$after[0].executed_at).Year | Should -BeGreaterThan 2000
-		(Invoke-TestSql -Query "select count(*) from dbo.$script:tableName") | Should -Be 1
+			$legacy = @(Get-SqlFixtureHistory -ConnStr $connectionString)[0]
+			$legacy.script_name | Should -BeExactly 'NESTED\001-IDEMPOTENT.SQL'
+			Add-Content -LiteralPath (Join-Path $script:phasePath 'Nested/001-idempotent.sql') -Value '-- new checksum'
+			Invoke-Fast1Migration -ConnStr $connectionString -BasePath $script:basePath -Phase $script:phase `
+				-ForceScripts 'nested/001-IDEMPOTENT.SQL' -Confirm:$false
+			$after = @(Get-SqlFixtureHistory -ConnStr $connectionString)
+			$after.Count | Should -Be 1
+			$after[0].script_name | Should -BeExactly 'Nested/001-idempotent.sql'
+			$after[0].checksum | Should -Not -Be $legacy.checksum
+			$after[0].checksum | Should -Be (Get-FileHash -LiteralPath (Join-Path $script:phasePath 'Nested/001-idempotent.sql')).Hash
+			([datetime]$after[0].executed_at).Year | Should -BeGreaterThan 2000
+			(Invoke-TestSql -ConnStr $connectionString -Query "select count(*) from dbo.$script:tableName") | Should -Be 1
+		}
+		finally {
+			if ($caseSensitiveDatabaseCreated) {
+				Invoke-TestSql -ConnStr $script:masterConnectionString -Query @"
+alter database [$caseSensitiveDatabaseName] set single_user with rollback immediate;
+drop database [$caseSensitiveDatabaseName];
+"@ | Out-Null
+			}
+		}
 	}
 
 	It 'surfaces a later actual SQL execution error and retains only earlier recorded progress' {

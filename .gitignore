@@ -8,3 +8,7 @@ out/Fast1data.SqlServer
 .DS_Store
 Thumbs.db
 .idea/
+.vscode/
+*.user
+*.suo
+packages/

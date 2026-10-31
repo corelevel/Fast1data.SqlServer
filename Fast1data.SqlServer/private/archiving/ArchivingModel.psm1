@@ -1,9 +1,60 @@
-using module ../shared/EasySqlParam.psm1
+using module ../shared/GenericSqlParam.psm1
 using module ./Metadata.psm1
 using namespace System.Collections.Generic
 
-. "$PSScriptRoot\..\shared\Invoke-EasySqlQuery.ps1"
+. "$PSScriptRoot\..\shared\GenericSqlQuery.ps1"
 . "$PSScriptRoot\Get-DelayIntervalInSecond.ps1"
+. "$PSScriptRoot\Compare-Column.ps1"
+. "$PSScriptRoot\..\shared\Write-LogMessage.ps1"
+
+function Get-ArchivingConnection {
+	param ([string]$ConnectionString, [string]$Role)
+	$null = $Role
+	[Microsoft.Data.SqlClient.SqlConnection]::new($ConnectionString)
+}
+
+function Get-ArchivingCommand {
+	param ([string]$Query, $Connection)
+	[Microsoft.Data.SqlClient.SqlCommand]::new($Query, $Connection)
+}
+
+function Get-ArchivingTable {
+	param ([hashtable]$Values)
+	[Table]$Values
+}
+
+function Get-ArchivingBulkCopy {
+	param ($Connection, [Microsoft.Data.SqlClient.SqlBulkCopyOptions]$Options = 0)
+	[Microsoft.Data.SqlClient.SqlBulkCopy]::new($Connection, $Options, $null)
+}
+
+function Get-ArchivingServerIdentity {
+	param ($Connection)
+	Invoke-GenericSqlQuery -SqlConn $Connection -Query "select cast(serverproperty('ServerName') as nvarchar(128))" -Scalar
+}
+
+function ConvertTo-ArchivingIdentifier {
+	param ([string]$Name)
+	if ([string]::IsNullOrWhiteSpace($Name) -or $Name.Length -gt 128 -or $Name.Contains([char]0)) {
+		throw 'A SQL identifier must contain between 1 and 128 characters and no null characters.'
+	}
+	'[' + $Name.Replace(']', ']]') + ']'
+}
+
+function Invoke-ArchivingConstraintAction {
+	param ($Connection, $Constraint, [bool]$Disable)
+	$database = ConvertTo-ArchivingIdentifier $Constraint.DatabaseName
+	$schema = ConvertTo-ArchivingIdentifier $Constraint.SchemaName
+	$table = ConvertTo-ArchivingIdentifier $Constraint.TableName
+	$name = ConvertTo-ArchivingIdentifier $Constraint.ConstraintName
+	$action = if ($Disable) {
+		'nocheck'
+	}
+	else {
+		'with nocheck check'
+	}
+	Invoke-GenericSqlQuery -SqlConn $Connection -Query "alter table $database.$schema.$table $action constraint $name"
+}
 
 class TableGroup : System.IDisposable {
 	[int]$Id
@@ -17,71 +68,136 @@ class TableGroup : System.IDisposable {
 
 	[bool]$DisableFK
 
-	[Microsoft.Data.SqlClient.SqlConnection]$ArcSqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
-	[Microsoft.Data.SqlClient.SqlConnection]$SrcSqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
-	[Microsoft.Data.SqlClient.SqlConnection]$DstSqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
+	hidden [object]$ArcSqlConn
+	hidden [object]$SrcSqlConn
+	hidden [object]$DstSqlConn
+	hidden [string]$ConnectionString
+	hidden [bool]$Started
 
 	[List[Table]]$SourceTables = [List[Table]]::new()
 
 	TableGroup([string]$ConnStr, [string]$groupName) {
+		$this.ConnectionString = $ConnStr
+		$this.Name = $groupName
+	}
+
+	Execute([string]$LogFile) {
+		if ($this.Started) {
+			throw 'A table group execution is single-use. Retry with a fresh execution.'
+		}
+		$this.Started = $true
+		$operationError = $null
+		try {
+			$this.Initialize()
+			if ($this.Id -eq 0) {
+				throw "Specified table group ($($this.Name)) not found"
+			}
+			Write-LogMessage -Message "Archive group ($($this.Name)) found" -LogFile $LogFile
+			$this.ReadSourceTables()
+			if ($this.SourceTables.Count -eq 0) {
+				Write-LogMessage -Message "No tables found for the specified table group ($($this.Name))" -LogFile $LogFile
+			}
+			foreach ($table in $this.SourceTables) {
+				if (-not $table.Archive -and -not $table.Purge) {
+					continue
+				}
+				$table.Prepare($LogFile)
+				if ($table.Archive) {
+					$table.ExecuteArchive($LogFile)
+				}
+			}
+			foreach ($table in $this.SourceTables | Where-Object Purge | Sort-Object PurgeOrder) {
+				$table.ExecutePurge($LogFile)
+			}
+		}
+		catch {
+			$operationError = $_
+			# Normalize nested SQL cleanup entries at the execution boundary.
+			$entries = [List[object]]::new()
+			foreach ($entry in @(Get-GenericSqlCleanupFailure -ErrorRecord $operationError)) {
+				if (-not $entry.PSObject.Properties['GroupName']) {
+					$entry | Add-Member -NotePropertyName GroupName -NotePropertyValue $this.Name
+				}
+				$entries.Add($entry)
+			}
+			$operationError.Exception.Data['Fast1Archiving.CleanupFailures'] = $entries
+			try {
+				Write-LogMessage -Message "Archiving execution failed for group ($($this.Name)); inspect the primary error and cleanup contexts." -Level Warning -LogFile $LogFile -ErrorAction Stop
+			}
+			catch {
+				Add-GenericSqlCleanupFailure -PrimaryError $operationError -CleanupError $_ `
+					-Context @{ Action = 'LogFailure'; GroupName = $this.Name; ResourceRole = 'Log' } `
+					-FailureKey 'Fast1Archiving.CleanupFailures'
+			}
+			throw
+		}
+		finally {
+			Close-GenericSqlResource -Resources ([ordered]@{
+				DestinationConnection = $this.DstSqlConn
+				SourceConnection = $this.SrcSqlConn
+				ConfigurationConnection = $this.ArcSqlConn
+			}) -PrimaryError $operationError -Context @{ GroupName = $this.Name } -FailureKey 'Fast1Archiving.CleanupFailures'
+		}
+	}
+
+	hidden Initialize() {
 		$sqlCmd = $null
 		$sqlReader = $null
+		$operationError = $null
+		$sourceOptions = ''
+		$destinationOptions = ''
 		try {
-			$sb = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($ConnStr)
-
-			$this.ArcSqlConn.ConnectionString = $sb.ConnectionString
+			$this.ArcSqlConn = Get-ArchivingConnection -ConnectionString $this.ConnectionString -Role Configuration
 			$this.ArcSqlConn.Open()
-
-			$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new('dbo.stp_GetTableGroup', $this.ArcSqlConn) 
+			$sqlCmd = Get-ArchivingCommand -Query 'dbo.stp_GetTableGroup' -Connection $this.ArcSqlConn
 			$sqlCmd.CommandType = [System.Data.CommandType]::StoredProcedure
-			$pName = $sqlCmd.Parameters.Add('@Name', [System.Data.SqlDbType]::NVarChar)
-			$pName.Value = $groupName
-
+			$sqlCmd.Parameters.Add('@Name', [System.Data.SqlDbType]::NVarChar, 128).Value = $this.Name
 			$sqlReader = $sqlCmd.ExecuteReader()
-			
 			if ($sqlReader.Read()) {
 				$this.Id = $sqlReader['TableGroupId']
-				$this.Name = $groupName
-
-				# source database server
 				$this.SrcServerName = $sqlReader['SrcServerName']
 				$this.SrcDatabaseName = $sqlReader['SrcDatabaseName']
-
-				$sb = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($sqlReader['SrcConnOptions'])
-				$sb['Data Source'] = $this.SrcServerName
-				$sb['Initial Catalog'] = $this.SrcDatabaseName
-				$this.SrcSqlConn.ConnectionString = $sb.ConnectionString
-				$this.SrcSqlConn.Open()
-
-				# destination database server
 				$this.DstServerName = $sqlReader['DstServerName']
 				$this.DstDatabaseName = $sqlReader['DstDatabaseName']
-
-				$sb = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($sqlReader['DstConnOptions'])
-				$sb['Data Source'] = $this.DstServerName
-				$sb['Initial Catalog'] = $this.DstDatabaseName
-				$sb['Persist Security Info'] = 'True'
-				$this.DstSqlConn.ConnectionString = $sb.ConnectionString
-				$this.DstSqlConn.Open()
-
+				$sourceOptions = [string]$sqlReader['SrcConnOptions']
+				$destinationOptions = [string]$sqlReader['DstConnOptions']
 				$this.DisableFK = $sqlReader['DisableFK']
 			}
 		}
-		finally {
-			if ($null -ne $sqlReader) {
-				$sqlReader.Dispose()
-			}
-			if ($null -ne $sqlCmd) {
-				$sqlCmd.Dispose()
-			}
+		catch {
+			$operationError = $_
+			throw
 		}
+		finally {
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+		}
+		if ($this.Id -eq 0) {
+			return
+		}
+		$builder = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($sourceOptions)
+		$builder['Data Source'] = $this.SrcServerName
+		$builder['Initial Catalog'] = $this.SrcDatabaseName
+		$this.SrcSqlConn = Get-ArchivingConnection -ConnectionString $builder.ConnectionString -Role Source
+		$this.SrcSqlConn.Open()
+		# Compare server identities so two aliases of one instance remain valid.
+		$configurationServer = Get-ArchivingServerIdentity -Connection $this.ArcSqlConn
+		$sourceServer = Get-ArchivingServerIdentity -Connection $this.SrcSqlConn
+		if ([string]::IsNullOrWhiteSpace($configurationServer) -or $configurationServer -ne $sourceServer) {
+			throw 'Configuration and source databases must reside on the same SQL Server instance.'
+		}
+		$builder = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($destinationOptions)
+		$builder['Data Source'] = $this.DstServerName
+		$builder['Initial Catalog'] = $this.DstDatabaseName
+		$this.DstSqlConn = Get-ArchivingConnection -ConnectionString $builder.ConnectionString -Role Destination
+		$this.DstSqlConn.Open()
 	}
 
 	ReadSourceTables() {
 		$sqlCmd = $null
 		$sqlReader = $null
+		$operationError = $null
 		try {
-			$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new('dbo.stp_GetSourceTable', $this.ArcSqlConn) 
+			$sqlCmd = Get-ArchivingCommand -Query 'dbo.stp_GetSourceTable' -Connection $this.ArcSqlConn
 			$sqlCmd.CommandType = [System.Data.CommandType]::StoredProcedure
 			$pTableGroupId = $sqlCmd.Parameters.Add('@TableGroupId', [System.Data.SqlDbType]::Int)
 			$pTableGroupId.Value = $this.Id
@@ -89,7 +205,7 @@ class TableGroup : System.IDisposable {
 			$sqlReader = $sqlCmd.ExecuteReader()
 			while ($sqlReader.Read()) {
 				$this.SourceTables.Add(
-					[Table]@{
+					(Get-ArchivingTable -Values @{
 						Id = $sqlReader['SourceTableId']
 						SchemaName = $sqlReader['SchemaName']
 						TableName = $sqlReader['TableName']
@@ -107,25 +223,26 @@ class TableGroup : System.IDisposable {
 						WorkingTableKeyName = $sqlReader['WorkingTableKeyName']
 						WorkingTableFlagName = $sqlReader['WorkingTableFlagName']
 						Group = $this
-					}
+					})
 				)
 			}
 		}
+		catch {
+			$operationError = $_
+			throw
+		}
 		finally {
-			if ($null -ne $sqlReader) {
-				$sqlReader.Dispose()
-			}
-			if ($null -ne $sqlCmd) {
-				$sqlCmd.Dispose()
-			}
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
 	Dispose() {
-        $this.ArcSqlConn?.Dispose()
-        $this.SrcSqlConn?.Dispose()
-        $this.DstSqlConn?.Dispose()
-    }
+		Close-GenericSqlResource -Resources ([ordered]@{
+			DestinationConnection = $this.DstSqlConn
+			SourceConnection = $this.SrcSqlConn
+			ConfigurationConnection = $this.ArcSqlConn
+		}) -Context @{ GroupName = $this.Name } -FailureKey 'Fast1Archiving.CleanupFailures'
+	}
 }
 
 class ProcessState {
@@ -154,12 +271,12 @@ class ProcessState {
 	[Microsoft.Data.SqlClient.SqlConnection]$ArcSqlConn
 
 	UpdateKeyMaxValue() {
-		$this.KeyMaxValue = [int](Invoke-EasySqlQuery `
+		$this.KeyMaxValue = [int](Invoke-GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateKeyMaxValue' `
 			-CommandType StoredProcedure `
 			-Parameters @{
-				ProcessStateId = [EasySqlParam]@{
+				ProcessStateId = [GenericSqlParam]@{
 					Value = $this.Id
 					Type  = [System.Data.SqlDbType]::Int
 				}
@@ -169,79 +286,85 @@ class ProcessState {
 	}
 
 	UpdateKeyCopyDate() {
-		Invoke-EasySqlQuery `
+		$confirmedDate = [datetime]::Now
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
 			-Parameters @{
-				ProcessStateId = [EasySqlParam]@{
+				ProcessStateId = [GenericSqlParam]@{
 					Value = $this.Id
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				KeyCopyDate = [EasySqlParam]@{
-					Value = [DateTime]::Now
+				KeyCopyDate = [GenericSqlParam]@{
+					Value = $confirmedDate
 					Type  = [System.Data.SqlDbType]::DateTime
 				}
 			}
+		$this.KeyCopyDate = $confirmedDate
 	}
 
 	UpdateCompleteDate() {
-		Invoke-EasySqlQuery `
+		$confirmedDate = [datetime]::Now
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
 			-Parameters @{
-				ProcessStateId = [EasySqlParam]@{
+				ProcessStateId = [GenericSqlParam]@{
 					Value = $this.Id
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				CompleteDate = [EasySqlParam]@{
-					Value = [DateTime]::Now
+				CompleteDate = [GenericSqlParam]@{
+					Value = $confirmedDate
 					Type  = [System.Data.SqlDbType]::DateTime
 				}
 			}
+		$this.CompleteDate = $confirmedDate
 	}
 
 	UpdateArchiveComplete() {
-		Invoke-EasySqlQuery `
+		$confirmedDate = [datetime]::Now
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
 			-Parameters @{
-				ProcessStateId = [EasySqlParam]@{
+				ProcessStateId = [GenericSqlParam]@{
 					Value = $this.Id
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				LastArchivedKey = [EasySqlParam]@{
+				LastArchivedKey = [GenericSqlParam]@{
 					Value = $this.LastArchivedKey
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				RowsArchived = [EasySqlParam]@{
+				RowsArchived = [GenericSqlParam]@{
 					Value = $this.RowsArchived
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				ArchiveCompleteDate = [EasySqlParam]@{
-					Value = [DateTime]::Now
+				ArchiveCompleteDate = [GenericSqlParam]@{
+					Value = $confirmedDate
 					Type  = [System.Data.SqlDbType]::DateTime
 				}
 			}
+		$this.ArchiveCompleteDate = $confirmedDate
 	}
 
 	UpdateArchiveState() {
-		Invoke-EasySqlQuery `
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
 			-Parameters @{
-				ProcessStateId = [EasySqlParam]@{
+				ProcessStateId = [GenericSqlParam]@{
 					Value = $this.Id
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				LastArchivedKey = [EasySqlParam]@{
+				LastArchivedKey = [GenericSqlParam]@{
 					Value = $this.LastArchivedKey
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				RowsArchived = [EasySqlParam]@{
+				RowsArchived = [GenericSqlParam]@{
 					Value = $this.RowsArchived
 					Type  = [System.Data.SqlDbType]::Int
 				}
@@ -249,45 +372,47 @@ class ProcessState {
 	}
 
 	UpdatePurgeComplete() {
-		Invoke-EasySqlQuery `
+		$confirmedDate = [datetime]::Now
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
 			-Parameters @{
-				ProcessStateId = [EasySqlParam]@{
+				ProcessStateId = [GenericSqlParam]@{
 					Value = $this.Id
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				LastPurgedKey = [EasySqlParam]@{
+				LastPurgedKey = [GenericSqlParam]@{
 					Value = $this.LastPurgedKey
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				RowsPurged = [EasySqlParam]@{
+				RowsPurged = [GenericSqlParam]@{
 					Value = $this.RowsPurged
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				PurgeCompleteDate = [EasySqlParam]@{
-					Value = [DateTime]::Now
+				PurgeCompleteDate = [GenericSqlParam]@{
+					Value = $confirmedDate
 					Type  = [System.Data.SqlDbType]::DateTime
 				}
 			}
+		$this.PurgeCompleteDate = $confirmedDate
 	}
 
 	UpdatePurgeState() {
-		Invoke-EasySqlQuery `
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
 			-Parameters @{
-				ProcessStateId = [EasySqlParam]@{
+				ProcessStateId = [GenericSqlParam]@{
 					Value = $this.Id
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				LastPurgedKey = [EasySqlParam]@{
+				LastPurgedKey = [GenericSqlParam]@{
 					Value = $this.LastPurgedKey
 					Type  = [System.Data.SqlDbType]::Int
 				}
-				RowsPurged = [EasySqlParam]@{
+				RowsPurged = [GenericSqlParam]@{
 					Value = $this.RowsPurged
 					Type  = [System.Data.SqlDbType]::Int
 				}
@@ -298,12 +423,12 @@ class ProcessState {
 		if ($this.Id -ne 0) {
 			throw 'State.Id already has a value'
 		}
-		$this.Id = [int](Invoke-EasySqlQuery `
+		$this.Id = [int](Invoke-GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_InsertProcessState' `
 			-CommandType StoredProcedure `
 			-Parameters @{
-				SourceTableId = [EasySqlParam]@{
+				SourceTableId = [GenericSqlParam]@{
 					Value = $this.SourceTableId
 					Type  = [System.Data.SqlDbType]::Int
 				}
@@ -325,12 +450,12 @@ class ProcessState {
 	}
 
 	[bool]FixAndGetLastArchivedKey() {
-		$newLastArchivedKey = [int](Invoke-EasySqlQuery `
+		$newLastArchivedKey = [int](Invoke-GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_FixLastArchivedKey' `
 			-CommandType StoredProcedure `
 			-Parameters @{
-				ProcessStateId = [EasySqlParam]@{
+				ProcessStateId = [GenericSqlParam]@{
 					Value = $this.Id
 					Type  = [System.Data.SqlDbType]::Int
 				}
@@ -344,9 +469,7 @@ class ProcessState {
 		return $false
 	}
 
-	SetBulkRowsCopied($count) {
-		$this.RowsArchivedForBatch = [int]$count
-	}
+
 }
 
 class Table {
@@ -368,7 +491,7 @@ class Table {
 	[string]$WorkingTableFlagName
 
 	[TableGroup]$Group
-	[ProcessState]$State
+	hidden [ProcessState]$State
 	[Dictionary[string, TableColumn]]$SrcColumns
 	[Index]$SrcPk
 	[Index]$SrcCl
@@ -380,11 +503,215 @@ class Table {
 	[List[IndexColumn]]$DstPkColumns
 	[List[IndexColumn]]$DstClColumns
 	[List[TableColumn]]$MissedColumns = [List[TableColumn]]::new()
-	[bool]$FKDisabled = $false
+	hidden [object[]]$ConstraintObligations = @()
+
+	Prepare([string]$LogFile) {
+		if (-not $this.IsTableExistsInSource()) {
+			throw "The source table [$($this.SchemaName)].[$($this.TableName)] doesn't exist"
+		}
+		$this.ReadSrcTableColumns()
+		if ($this.SrcPkColumns.Count -eq 0) {
+			throw 'An archiving source table must have a primary key.'
+		}
+		if ($this.KeyCopyBatchSize -le 0 -or $this.DataCopyBatchSize -le 0 -or $this.PurgeBatchSize -le 0) {
+			throw 'Archiving batch sizes must be positive.'
+		}
+		if ($this.Archive) {
+			if (-not $this.IsTableExistsInDestination()) {
+				if (-not $this.IsTableSchemaExistsInDestination()) {
+					$this.CreateDestinationTableSchema()
+				}
+				$this.CreateDestinationTable()
+			}
+			else {
+				$this.ReadDstTableColumns()
+				Compare-Column -SrcColumns $this.SrcColumns -DstColumns $this.DstColumns -LogFile $LogFile
+				[void]$this.AddMissedColumns()
+			}
+		}
+		$this.GetState()
+		if (-not $this.State.IncompleteProcess) {
+			$this.State.Create()
+		}
+		if (-not $this.State.IsPkCopied()) {
+			$this.CreateSourceWorkingTable()
+			$this.BulkCopySourcePK()
+			$this.State.UpdateKeyMaxValue()
+			$this.State.UpdateKeyCopyDate()
+		}
+		if ($this.State.IncompleteProcess -or $this.AlwaysRunCheck) {
+			$this.CreateDestinationWorkingTable()
+			if ($this.State.KeyMaxValue -ne 0) {
+				$this.BulkCopyDestinationPK()
+			}
+			[void]$this.State.FixAndGetLastArchivedKey()
+		}
+		else {
+			$this.ConfirmArchive(0, 0)
+		}
+	}
+
+	hidden ConfirmArchive([int]$Position, [int]$Count) {
+		$candidate = [ProcessState]@{
+			Id = $this.State.Id
+			ArcSqlConn = $this.Group.ArcSqlConn
+			LastArchivedKey = $Position
+			RowsArchived = $Count
+		}
+		$candidate.UpdateArchiveState()
+		$this.State.LastArchivedKey = $Position
+		$this.State.RowsArchived = $Count
+	}
+
+	hidden ConfirmPurge([int]$Position, [int]$Count) {
+		$candidate = [ProcessState]@{
+			Id = $this.State.Id
+			ArcSqlConn = $this.Group.ArcSqlConn
+			LastPurgedKey = $Position
+			RowsPurged = $Count
+		}
+		$candidate.UpdatePurgeState()
+		$this.State.LastPurgedKey = $Position
+		$this.State.RowsPurged = $Count
+	}
+
+	ExecuteArchive([string]$LogFile) {
+		$rowsThisRun = 0
+		if ($this.State.ArchiveCompleteDate -eq [datetime]::MinValue) {
+			while ($this.State.ArchiveProcessHasRowsForNextBatch()) {
+				$this.State.RowsArchivedForBatch = 0
+				$this.BulkCopyTable()
+				$this.ConfirmArchive($this.State.LastArchivedKey + $this.DataCopyBatchSize, $this.State.RowsArchived + $this.State.RowsArchivedForBatch)
+				$rowsThisRun += $this.State.RowsArchivedForBatch
+				if ($this.State.RowsArchivedForBatch -gt 0) {
+					Start-Sleep -Seconds $this.DelayIntervalInSeconds
+				}
+			}
+			$this.State.UpdateArchiveComplete()
+		}
+		Write-LogMessage -Message "Archiving completed for [$($this.SchemaName)].[$($this.TableName)]. Rows archived (now): $rowsThisRun. Rows archived (state): $($this.State.RowsArchived)" -LogFile $LogFile
+		if (-not $this.Purge) {
+			$this.Complete()
+		}
+	}
+
+	ExecutePurge([string]$LogFile) {
+		$rowsThisRun = 0
+		if ($this.State.PurgeCompleteDate -eq [datetime]::MinValue) {
+			if (-not $this.State.IncompleteProcess) {
+				$this.ConfirmPurge(0, 0)
+			}
+			$operationError = $null
+			try {
+				$this.DisableSourceConstraints()
+				while ($this.State.PurgeProcessHasRowsForNextBatch()) {
+					$this.State.RowsPurgedForBatch = 0
+					$this.PurgeData()
+					$this.ConfirmPurge($this.State.LastPurgedKey + $this.PurgeBatchSize, $this.State.RowsPurged + $this.State.RowsPurgedForBatch)
+					$rowsThisRun += $this.State.RowsPurgedForBatch
+					Start-Sleep -Seconds $this.DelayIntervalInSeconds
+				}
+			}
+			catch {
+				$operationError = $_
+				throw
+			}
+			finally {
+				$this.RestoreSourceConstraints($operationError)
+			}
+			$this.State.UpdatePurgeComplete()
+		}
+		Write-LogMessage -Message "Purging completed for [$($this.SchemaName)].[$($this.TableName)]. Rows purged (now): $rowsThisRun. Rows purged (state): $($this.State.RowsPurged)" -LogFile $LogFile
+		$this.Complete()
+	}
+
+	hidden Complete() {
+		$this.State.UpdateCompleteDate()
+		$this.DropWorkingTables()
+	}
+
+	hidden DisableSourceConstraints() {
+		if (-not $this.Group.DisableFK) {
+			return
+		}
+		# Register the entire scope before any DDL, including uncertain disables.
+		$this.ConstraintObligations = @($this.ReadSourceConstraints())
+		foreach ($constraint in $this.ConstraintObligations) {
+			Invoke-ArchivingConstraintAction -Connection $this.Group.SrcSqlConn -Constraint $constraint -Disable $true
+		}
+	}
+
+	hidden RestoreSourceConstraints([System.Management.Automation.ErrorRecord]$PrimaryError) {
+		$failure = $PrimaryError
+		foreach ($constraint in $this.ConstraintObligations) {
+			try {
+				Invoke-ArchivingConstraintAction -Connection $this.Group.SrcSqlConn -Constraint $constraint -Disable $false
+			}
+			catch {
+				if ($null -eq $failure) {
+					$failure = $_
+				}
+				Add-GenericSqlCleanupFailure -PrimaryError $failure -CleanupError $_ -FailureKey 'Fast1Archiving.CleanupFailures' -Context @{
+					Action = 'RestoreConstraint'
+					GroupName = $this.Group.Name
+					SourceTable = "$($this.SchemaName).$($this.TableName)"
+					ProcessStateId = $this.State.Id
+					DatabaseName = $constraint.DatabaseName
+					SchemaName = $constraint.SchemaName
+					TableName = $constraint.TableName
+					ConstraintName = $constraint.ConstraintName
+				}
+			}
+		}
+		$this.ConstraintObligations = @()
+		if ($null -eq $PrimaryError -and $null -ne $failure) {
+			throw $failure
+		}
+	}
+
+	hidden [object[]]ReadSourceConstraints() {
+		$query = @'
+select distinct db_name() DatabaseName, s.name SchemaName, t.name TableName, fk.name ConstraintName
+from sys.foreign_keys fk
+join sys.tables t on t.object_id = fk.parent_object_id
+join sys.schemas s on s.schema_id = t.schema_id
+join sys.tables r on r.object_id = fk.referenced_object_id
+join sys.schemas rs on rs.schema_id = r.schema_id
+where rs.name = @SchemaName and r.name = @TableName
+order by s.name, t.name, fk.name
+'@
+		$sqlCmd = $null
+		$sqlReader = $null
+		$operationError = $null
+		$constraints = [List[object]]::new()
+		try {
+			$sqlCmd = Get-ArchivingCommand -Query $query -Connection $this.Group.SrcSqlConn
+			$sqlCmd.Parameters.Add('@SchemaName', [System.Data.SqlDbType]::NVarChar, 128).Value = $this.SchemaName
+			$sqlCmd.Parameters.Add('@TableName', [System.Data.SqlDbType]::NVarChar, 128).Value = $this.TableName
+			$sqlReader = $sqlCmd.ExecuteReader()
+			while ($sqlReader.Read()) {
+				$constraints.Add([pscustomobject]@{
+					DatabaseName = $sqlReader['DatabaseName']
+					SchemaName = $sqlReader['SchemaName']
+					TableName = $sqlReader['TableName']
+					ConstraintName = $sqlReader['ConstraintName']
+				})
+			}
+		}
+		catch {
+			$operationError = $_
+			throw
+		}
+		finally {
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -Context @{ GroupName = $this.Group.Name; SourceTable = "$($this.SchemaName).$($this.TableName)" } -FailureKey 'Fast1Archiving.CleanupFailures'
+		}
+		return $constraints.ToArray()
+	}
 
 	GetState() {
 		$sqlCmd = $null
 		$sqlReader = $null
+		$operationError = $null
 		try {
 			$this.State = [ProcessState]@{
 				SourceTableId = $this.Id
@@ -392,7 +719,7 @@ class Table {
 				IncompleteProcess = $false
 			}
 
-			$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new('dbo.stp_GetIncompleteProcessState', $this.Group.ArcSqlConn) 
+			$sqlCmd = Get-ArchivingCommand -Query 'dbo.stp_GetIncompleteProcessState' -Connection $this.Group.ArcSqlConn
 			$sqlCmd.CommandType = [System.Data.CommandType]::StoredProcedure
 			$pSourceTableId = $sqlCmd.Parameters.Add('@SourceTableId', [System.Data.SqlDbType]::Int, 128)
 			$pSourceTableId.Value = $this.Id
@@ -430,13 +757,12 @@ class Table {
 				$this.State.IncompleteProcess = $true
 			}
 		}
+		catch {
+			$operationError = $_
+			throw
+		}
 		finally {
-			if ($null -ne $sqlReader) {
-				$sqlReader.Dispose()
-			}
-			if ($null -ne $sqlCmd) {
-				$sqlCmd.Dispose()
-			}
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
@@ -467,16 +793,16 @@ select	case when exists
 			else 0
 		end v
 '@
-		return [bool](Invoke-EasySqlQuery `
+		return [bool](Invoke-GenericSqlQuery `
 			-SqlConn $sqlConnection `
 			-Query $query `
 			-Parameters @{
-				SchemaName = [EasySqlParam]@{
+				SchemaName = [GenericSqlParam]@{
 					Value = $schemaName
 					Type  = [System.Data.SqlDbType]::NVarChar
 					Size  = 128
 				}
-				TableName = [EasySqlParam]@{
+				TableName = [GenericSqlParam]@{
 					Value = $tableName
 					Type  = [System.Data.SqlDbType]::NVarChar
 					Size  = 128
@@ -491,11 +817,11 @@ select	case when exists
 set nocount on
 select case when exists (select	1 from sys.schemas where [name] = @SchemaName) then 1 else 0 end v
 '@
-		return [bool](Invoke-EasySqlQuery `
+		return [bool](Invoke-GenericSqlQuery `
 			-SqlConn $sqlConnection `
 			-Query $query `
 			-Parameters @{
-				SchemaName = [EasySqlParam]@{
+				SchemaName = [GenericSqlParam]@{
 					Value = $schemaName
 					Type  = [System.Data.SqlDbType]::NVarChar
 					Size  = 128
@@ -510,7 +836,12 @@ select case when exists (select	1 from sys.schemas where [name] = @SchemaName) t
 		if ($c.Collation) {
 			$col += " collate $($c.Collation)"
 		}
-		$col += if ($c.Nullable) { ' null' } else { ' not null' }
+		$col += if ($c.Nullable) {
+			' null'
+		}
+		else {
+			' not null'
+		}
 		return $col
 	}
 
@@ -533,13 +864,14 @@ select case when exists (select	1 from sys.schemas where [name] = @SchemaName) t
 	static [Dictionary[string, TableColumn]] GetTableColumns([string]$schemaName, [string]$tableName, [Microsoft.Data.SqlClient.SqlConnection]$sqlConnection) {
 		$query = @'
 set nocount on
-select	COLUMN_NAME [Name],
+select	COLUMN_NAME [Name], DATA_TYPE SqlType, coalesce(CHARACTER_MAXIMUM_LENGTH, 0) SqlSize,
+		coalesce(NUMERIC_PRECISION, 0) SqlPrecision, coalesce(NUMERIC_SCALE, DATETIME_PRECISION, 0) SqlScale,
 		DATA_TYPE +
 			case
 				when DATA_TYPE in ('decimal','numeric')
 					then '(' + cast(NUMERIC_PRECISION as varchar) + ', ' + cast(NUMERIC_SCALE as varchar) + ')'
 				when DATA_TYPE in ('varchar','char','varbinary','binary','nvarchar','nchar')
-					then coalesce('(' + case when CHARACTER_MAXIMUM_LENGTH = -1 then 'max' else cast(CHARACTER_MAXIMUM_LENGTH as varchar) end + ')', '') 
+					then coalesce('(' + case when CHARACTER_MAXIMUM_LENGTH = -1 then 'max' else cast(CHARACTER_MAXIMUM_LENGTH as varchar) end + ')', '')
 				else ''
 			end DataType,
         COLLATION_NAME [Collation],
@@ -552,8 +884,9 @@ where TABLE_SCHEMA = @SchemaName and TABLE_NAME = @TableName
 
 		$sqlCmd = $null
 		$sqlReader = $null
+		$operationError = $null
 		try {
-			$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new($query, $sqlConnection)
+			$sqlCmd = Get-ArchivingCommand -Query $query -Connection $sqlConnection
 			$sqlCmd.Parameters.Add("@SchemaName", [System.Data.SqlDbType]::NVarChar, 128).Value = $schemaName
 			$sqlCmd.Parameters.Add("@TableName", [System.Data.SqlDbType]::NVarChar, 128).Value = $tableName
 			$sqlReader = $sqlCmd.ExecuteReader()
@@ -563,20 +896,28 @@ where TABLE_SCHEMA = @SchemaName and TABLE_NAME = @TableName
 				$columns[$sqlReader['Name']] = ([TableColumn]@{
 					Name = $sqlReader['Name']
 					DataType = $sqlReader['DataType']
-					Collation = if ($sqlReader['Collation'] -isnot [System.DBNull]) { $sqlReader['Collation'] } else { $null }
+					SqlType = $sqlReader['SqlType']
+					SqlSize = $sqlReader['SqlSize']
+					SqlPrecision = $sqlReader['SqlPrecision']
+					SqlScale = $sqlReader['SqlScale']
+					Collation = if ($sqlReader['Collation'] -isnot [System.DBNull]) {
+						$sqlReader['Collation']
+					}
+					else {
+						$null
+					}
 					Computed = $sqlReader['Computed']
 					Nullable = $sqlReader['Nullable']
 				})
 			}
 			return $columns
 		}
+		catch {
+			$operationError = $_
+			throw
+		}
 		finally {
-			if ($null -ne $sqlReader) {
-				$sqlReader.Dispose()
-			}
-			if ($null -ne $sqlCmd) {
-				$sqlCmd.Dispose()
-			}
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
@@ -608,9 +949,9 @@ select	ic.key_ordinal ColumnId,
 from	sys.key_constraints kc
 		join sys.indexes i
 		on i.[object_id] = kc.parent_object_id and i.index_id = kc.unique_index_id
-		join sys.index_columns ic 
+		join sys.index_columns ic
 		on ic.[object_id] = i.[object_id] and ic.index_id = i.index_id
-		JOIN sys.columns c 
+		JOIN sys.columns c
 		on c.[object_id] = ic.[object_id] and c.column_id = ic.column_id
 where kc.[type] = 'PK'
   and kc.parent_object_id = object_id(@ObjectName)
@@ -622,8 +963,9 @@ where kc.[type] = 'PK'
 	static [List[IndexColumn]] GetTableIndexColumns([string]$query, [string]$objectName, [Microsoft.Data.SqlClient.SqlConnection]$sqlConnection) {
 		$sqlCmd = $null
 		$sqlReader = $null
+		$operationError = $null
 		try {
-			$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new($query, $sqlConnection) 
+			$sqlCmd = Get-ArchivingCommand -Query $query -Connection $sqlConnection
 			$sqlCmd.Parameters.Add("@ObjectName", [System.Data.SqlDbType]::NVarChar, 257).Value = $objectName
 			$sqlReader = $sqlCmd.ExecuteReader()
 			$columns = [List[IndexColumn]]::new()
@@ -637,13 +979,12 @@ where kc.[type] = 'PK'
 			}
 			return $columns
 		}
+		catch {
+			$operationError = $_
+			throw
+		}
 		finally {
-			if ($null -ne $sqlReader) {
-				$sqlReader.Dispose()
-			}
-			if ($null -ne $sqlCmd) {
-				$sqlCmd.Dispose()
-			}
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
@@ -677,11 +1018,12 @@ where kc.[type] = 'PK'
 	static [Index] GetTableIndex([string]$query, [string]$objectName, [Microsoft.Data.SqlClient.SqlConnection]$sqlConnection) {
 		$sqlCmd = $null
 		$sqlReader = $null
+		$operationError = $null
 		try {
-			$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new($query, $sqlConnection)
+			$sqlCmd = Get-ArchivingCommand -Query $query -Connection $sqlConnection
 			$sqlCmd.Parameters.Add("@ObjectName", [System.Data.SqlDbType]::NVarChar, 257).Value = $objectName
 			$sqlReader = $sqlCmd.ExecuteReader()
-			
+
 			if ($sqlReader.Read()) {
 				return [Index]@{
 					Name = $sqlReader['Name']
@@ -691,13 +1033,12 @@ where kc.[type] = 'PK'
 
 			return $null
 		}
+		catch {
+			$operationError = $_
+			throw
+		}
 		finally {
-			if ($null -ne $sqlReader) {
-				$sqlReader.Dispose()
-			}
-			if ($null -ne $sqlCmd) {
-				$sqlCmd.Dispose()
-			}
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
@@ -724,7 +1065,7 @@ where kc.[type] = 'PK'
 		}
 		$query.Length -= 1
 
-		Invoke-EasySqlQuery `
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.Group.DstSqlConn `
 			-Query $query.ToString()
 		return $true
@@ -770,39 +1111,18 @@ where kc.[type] = 'PK'
 		}
 		$query.Append('commit tran')
 
-		Invoke-EasySqlQuery `
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.Group.DstSqlConn `
 			-Query $query.ToString()
 	}
 
 	CreateDestinationTableSchema() {
 		$query = "create schema [$($this.SchemaName)]"
-		Invoke-EasySqlQuery `
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.Group.DstSqlConn `
 			-Query $query.ToString()
 	}
 
-	DisableEnableFK($disable) {
-		if (-not $this.Group.DisableFK) {
-			return
-		}
-		Invoke-EasySqlQuery `
-			-SqlConn $this.ArcSqlConn `
-			-Query 'dbo.stp_DisableEnableFK' `
-			-CommandType StoredProcedure `
-			-Parameters @{
-				ProcessStateId = [EasySqlParam]@{
-					Value = $this.Id
-					Type  = [System.Data.SqlDbType]::Int
-				}
-				Disable = [EasySqlParam]@{
-					Value = $disable
-					Type  = [System.Data.SqlDbType]::Bit
-				}
-			}
-
-		$this.FKDisabled = $disable
-	}
 
 	DropWorkingTables() {
 		$query = @"
@@ -821,7 +1141,7 @@ begin
 end
 "@
 
-		Invoke-EasySqlQuery `
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.Group.ArcSqlConn `
 			-Query $query `
 	}
@@ -849,7 +1169,7 @@ create table dbo.[$($this.SrcWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 		$query.Length -= 1
 		$query.Append(')')
 
-		Invoke-EasySqlQuery `
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.Group.ArcSqlConn `
 			-Query $query `
 	}
@@ -877,7 +1197,7 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 		$query.Length -= 1
 		$query.Append(')')
 
-		Invoke-EasySqlQuery `
+		Invoke-GenericSqlQuery `
 			-SqlConn $this.Group.ArcSqlConn `
 			-Query $query `
 	}
@@ -893,9 +1213,10 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 		$sqlCmd = $null
 		$sqlReader = $null
 		$bulkCopy = $null
+		$operationError = $null
 		try {
 			# source
-			$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new($this.KeyQuery, $this.Group.SrcSqlConn) 
+			$sqlCmd = Get-ArchivingCommand -Query $this.KeyQuery -Connection $this.Group.SrcSqlConn
 			$sqlReader = $sqlCmd.ExecuteReader()
 
 			if (-not $sqlReader.HasRows) {
@@ -903,7 +1224,7 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 			}
 
 			# destination
-			$bulkCopy = [Microsoft.Data.SqlClient.SqlBulkCopy]::new($this.Group.ArcSqlConn)
+			$bulkCopy = Get-ArchivingBulkCopy -Connection $this.Group.ArcSqlConn
 
 			$bulkCopy.DestinationTableName = $this.SrcWorkingTableName
 			$bulkCopy.EnableStreaming = $true
@@ -914,72 +1235,116 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 
 			$bulkCopy.WriteToServer($sqlReader)
 		}
+		catch {
+			$operationError = $_
+			throw
+		}
 		finally {
-			if ($null -ne $bulkCopy) {
-				$bulkCopy.Dispose()
-			}
-			if ($null -ne $sqlReader) {
-				$sqlReader.Dispose()
-			}
-			if ($null -ne $sqlCmd) {
-				$sqlCmd.Dispose()
-			}
+			Close-GenericSqlResource -Resources ([ordered]@{ BulkCopy = $bulkCopy; Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
 	BulkCopyDestinationPK() {
-		<#
-		.SYNOPSIS
-		Copies primary keys from the destination database to the working table
-
-		.DESCRIPTION
-		Copies primary keys from the destination database to the working table using BulkCopy
-		#>
-
-		$sqlCmd = $null
-		$sqlReader = $null
-		$bulkCopy = $null
-		try {
-			# source
-			$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new($this.KeyQuery, $this.Group.DstSqlConn) 
-			$sqlReader = $sqlCmd.ExecuteReader()
-
-			if (-not $sqlReader.HasRows) {
-				return
-			}
-
-			# destination
-			$bulkCopy = [Microsoft.Data.SqlClient.SqlBulkCopy]::new($this.Group.ArcSqlConn)
-
-			$bulkCopy.DestinationTableName = $this.DstWorkingTableName
-			$bulkCopy.EnableStreaming = $true
-			$bulkCopy.BatchSize = $this.KeyCopyBatchSize
-			foreach ($c in $this.SrcPkColumns) {
-				[void]$bulkCopy.ColumnMappings.Add([Microsoft.Data.SqlClient.SqlBulkCopyColumnMapping]::new($c.Name, $c.Name))
-			}
-
-			$bulkCopy.WriteToServer($sqlReader)
+		$keys = @($this.SrcPkColumns | Sort-Object Id)
+		$pageSize = [Math]::Min($this.KeyCopyBatchSize, [int][Math]::Floor(2000 / $keys.Count))
+		if ($pageSize -lt 1) {
+			throw 'The captured primary key cannot fit in a reconciliation page.'
 		}
-		finally {
-			if ($null -ne $bulkCopy) {
-				$bulkCopy.Dispose()
+		$working = ConvertTo-ArchivingIdentifier $this.SrcWorkingTableName
+		$position = ConvertTo-ArchivingIdentifier $this.WorkingTableKeyName
+		$columnNames = @($keys | ForEach-Object { ConvertTo-ArchivingIdentifier $_.Name })
+		$columnsSql = $columnNames -join ', '
+		$schema = ConvertTo-ArchivingIdentifier $this.SchemaName
+		$tableNameSql = ConvertTo-ArchivingIdentifier $this.TableName
+		$after = 0
+		while ($true) {
+			$page = [List[object]]::new()
+			$sqlCmd = $null
+			$sqlReader = $null
+			$operationError = $null
+			try {
+				$sqlCmd = Get-ArchivingCommand -Query "select top (@PageSize) $position, $columnsSql from dbo.$working where $position > @After order by $position" -Connection $this.Group.ArcSqlConn
+				$sqlCmd.Parameters.Add('@PageSize', [System.Data.SqlDbType]::Int).Value = $pageSize
+				$sqlCmd.Parameters.Add('@After', [System.Data.SqlDbType]::Int).Value = $after
+				$sqlReader = $sqlCmd.ExecuteReader()
+				while ($sqlReader.Read()) {
+					$values = [object[]]::new($keys.Count)
+					for ($column = 0; $column -lt $keys.Count; $column++) {
+						$values[$column] = $sqlReader.GetValue($column + 1)
+					}
+					$page.Add($values)
+					$after = $sqlReader.GetInt32(0)
+				}
 			}
-			if ($null -ne $sqlReader) {
-				$sqlReader.Dispose()
+			catch {
+				$operationError = $_
+				throw
 			}
-			if ($null -ne $sqlCmd) {
-				$sqlCmd.Dispose()
+			finally {
+				# Never reuse the configuration connection with its reader still open.
+				Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+			}
+			if ($page.Count -eq 0) {
+				break
+			}
+			$sqlCmd = $null
+			$sqlReader = $null
+			$bulkCopy = $null
+			$operationError = $null
+			try {
+				$sqlCmd = Get-ArchivingCommand -Query '' -Connection $this.Group.DstSqlConn
+				$predicates = [List[string]]::new()
+				for ($row = 0; $row -lt $page.Count; $row++) {
+					$parts = [List[string]]::new()
+					for ($column = 0; $column -lt $keys.Count; $column++) {
+						$name = "@k$($row)_$column"
+						$metadata = $this.SrcColumns[$keys[$column].Name]
+						$sqlType = $metadata.SqlType
+						if ($sqlType -eq 'numeric') {
+							$sqlType = 'decimal'
+						}
+						elseif ($sqlType -eq 'sql_variant') {
+							$sqlType = 'variant'
+						}
+						$parameter = $sqlCmd.Parameters.Add($name, [System.Data.SqlDbType][System.Enum]::Parse([System.Data.SqlDbType], $sqlType, $true))
+						$parameter.Size = $metadata.SqlSize
+						$parameter.Precision = $metadata.SqlPrecision
+						$parameter.Scale = $metadata.SqlScale
+						$parameter.Value = $page[$row][$column]
+						$parts.Add($columnNames[$column] + ' = ' + $name)
+					}
+					$predicates.Add('(' + ($parts -join ' and ') + ')')
+				}
+				$sqlCmd.CommandText = "select $columnsSql from $schema.$tableNameSql where " + ($predicates -join ' or ')
+				$sqlReader = $sqlCmd.ExecuteReader()
+				$bulkCopy = Get-ArchivingBulkCopy -Connection $this.Group.ArcSqlConn
+				$bulkCopy.DestinationTableName = 'dbo.' + (ConvertTo-ArchivingIdentifier $this.DstWorkingTableName)
+				$bulkCopy.EnableStreaming = $true
+				$bulkCopy.BatchSize = $this.KeyCopyBatchSize
+				foreach ($key in $keys) {
+					[void]$bulkCopy.ColumnMappings.Add($key.Name, $key.Name)
+				}
+				$bulkCopy.WriteToServer($sqlReader)
+			}
+			catch {
+				$operationError = $_
+				throw
+			}
+			finally {
+				Close-GenericSqlResource -Resources ([ordered]@{ BulkCopy = $bulkCopy; Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
 			}
 		}
 	}
 
 	BulkCopyTable() {
+		$this.State.RowsArchivedForBatch = 0
 		$sqlCmd = $null
 		$sqlReader = $null
 		$bulkCopy = $null
+		$operationError = $null
 		try {
 			# source
-			$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new('dbo.stp_GetBulkCopyData', $this.Group.ArcSqlConn) 
+			$sqlCmd = Get-ArchivingCommand -Query 'dbo.stp_GetBulkCopyData' -Connection $this.Group.ArcSqlConn
 			$sqlCmd.CommandType = [System.Data.CommandType]::StoredProcedure
 			$pProcessStateId = $sqlCmd.Parameters.Add('@ProcessStateId', [System.Data.SqlDbType]::Int)
 			$pProcessStateId.Value = $this.State.Id
@@ -991,45 +1356,36 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 
 			# destination
 			$options = [Microsoft.Data.SqlClient.SqlBulkCopyOptions]::KeepIdentity -bor [Microsoft.Data.SqlClient.SqlBulkCopyOptions]::KeepNulls
-			$bulkCopy = [Microsoft.Data.SqlClient.SqlBulkCopy]::new($this.Group.DstSqlConn.ConnectionString, $options)
+			$bulkCopy = Get-ArchivingBulkCopy -Connection $this.Group.DstSqlConn -Options $options
 
 			$bulkCopy.DestinationTableName = "[$($this.SchemaName)].[$($this.TableName)]"
 			$bulkCopy.EnableStreaming = $true
 			$bulkCopy.BatchSize = $this.DataCopyBatchSize
-			$bulkCopy.NotifyAfter = [Math]::Max(1, [int]($this.DataCopyBatchSize / 10))
-			$localTable = $this
-			$bulkCopy.add_SqlRowsCopied({
-				param($s, $e)
-				$null = $s
-				$localTable.State.SetBulkRowsCopied($e.RowsCopied)
-			})
 
 			foreach ($c in $this.SrcColumns.Values.Where({ -not $_.Computed })) {
 				[void]$bulkCopy.ColumnMappings.Add([Microsoft.Data.SqlClient.SqlBulkCopyColumnMapping]::new($c.Name, $c.Name))
 			}
 
 			$bulkCopy.WriteToServer($sqlReader)
+			$this.State.RowsArchivedForBatch = $bulkCopy.RowsCopied
+		}
+		catch {
+			$operationError = $_
+			throw
 		}
 		finally {
-			if ($null -ne $bulkCopy) {
-				$bulkCopy.Dispose()
-			}
-			if ($null -ne $sqlReader) {
-				$sqlReader.Dispose()
-			}
-			if ($null -ne $sqlCmd) {
-				$sqlCmd.Dispose()
-			}
+			Close-GenericSqlResource -Resources ([ordered]@{ BulkCopy = $bulkCopy; Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
 	PurgeData() {
-		$this.State.RowsPurgedForBatch = [int](Invoke-EasySqlQuery `
+		$this.State.RowsPurgedForBatch = 0
+		$this.State.RowsPurgedForBatch = [int](Invoke-GenericSqlQuery `
 			-SqlConn $this.Group.ArcSqlConn `
 			-Query 'dbo.stp_PurgeData' `
 			-CommandType StoredProcedure `
 			-Parameters @{
-				ProcessStateId = [EasySqlParam]@{
+				ProcessStateId = [GenericSqlParam]@{
 					Value = $this.State.Id
 					Type  = [System.Data.SqlDbType]::Int
 				}

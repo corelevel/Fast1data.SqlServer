@@ -144,10 +144,13 @@ Import-Module $pesterModule.Path -Force
 
 Write-Host ''
 Write-Host 'Running Pester...'
-$pesterResult = Invoke-Pester `
-	-Path (Join-Path $moduleRoot 'tests') `
-	-Output Detailed `
-	-PassThru
+$pesterConfiguration = New-PesterConfiguration
+$pesterConfiguration.Run.Path = Join-Path $moduleRoot 'tests'
+# Include both *.Tests.ps1 and qualified names such as *.Tests.Windows.ps1.
+$pesterConfiguration.Run.TestExtension = '.Tests*.ps1'
+$pesterConfiguration.Run.PassThru = $true
+$pesterConfiguration.Output.Verbosity = 'Detailed'
+$pesterResult = Invoke-Pester -Configuration $pesterConfiguration
 
 if ($pesterResult.FailedCount -gt 0) {
 	throw "Pester reported $($pesterResult.FailedCount) failed test(s)."

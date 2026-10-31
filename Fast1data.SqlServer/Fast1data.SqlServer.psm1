@@ -5,7 +5,7 @@ Set-StrictMode -Version Latest
 
 Import-SqlClientLib
 
-. "$PSScriptRoot\private\shared\Invoke-EasySqlQuery.ps1"
+. "$PSScriptRoot\private\shared\GenericSqlQuery.ps1"
 
 $privateScripts = Get-ChildItem -LiteralPath "$PSScriptRoot\private" `
 	-Filter '*.ps1' -File -Recurse |
@@ -13,7 +13,8 @@ $privateScripts = Get-ChildItem -LiteralPath "$PSScriptRoot\private" `
 		$_.Name -notin @(
 			'Get-RuntimeIdentifier.ps1'
 			'Import-SqlClientLib.ps1'
-			'Invoke-EasySqlQuery.ps1'
+			'GenericSqlCleanup.ps1'
+			'GenericSqlQuery.ps1'
 		)
 	}
 

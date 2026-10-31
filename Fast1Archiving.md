@@ -6,7 +6,7 @@ Fast1 Archiving incrementally archives and purges SQL Server table data. It proc
 
 ## Features
 
-- Incremental archiving and purging based on primary-key ranges
+- Incremental archiving and purging over captured primary keys, batched by working-table positions
 - Configurable key-copy, data-copy, and purge batch sizes
 - Resume support for interrupted runs
 - Destination schema and table creation
@@ -29,7 +29,9 @@ Fast1 Archiving incrementally archives and purges SQL Server table data. It proc
 - Missing destination columns are added automatically as `NULLABLE` columns.
 - Differences in collation, nullability, and computed-column attributes produce warnings.
 
-Disabling foreign keys during a purge can result in invalid data. Enable `DisableFK` only when the purge order and referential integrity implications are fully understood, and you accept the possibility of leaving foreign keys or check constraints in a **Not Trusted** state in the archiving database.
+`DisableFK` affects inbound foreign keys on **source child tables** that reference the configured source table. Execution registers the entire scope before disabling and independently attempts to enable each constraint before releasing connections, including after partial disabling or a purge/checkpoint failure. Initially disabled constraints within that scope are also enabled under the existing policy. When `DisableFK` is off, no constraint scope is acquired or toggled.
+
+Restoration uses `WITH NOCHECK CHECK CONSTRAINT`. A successfully restored foreign key is enabled but can remain **Not Trusted**: historical rows are not validated, invalid references can remain, and the module performs no integrity repair. Enable `DisableFK` only when you understand the purge order and accept those implications. Metadata visibility and source child-table `ALTER` permission are required in addition to normal read/delete permissions.
 
 ## Database setup
 
@@ -149,3 +151,27 @@ Invoke-Fast1Archiving `
 
 An additional executable example is available in [`example/archiving/archive-StackOverflow2013.ps1`](example/archiving/archive-StackOverflow2013.ps1).
 Review its connection strings and configuration before running it.
+
+## Failure and recovery
+
+One invocation owns initialization, preparation, copying, purging, progress writes and cleanup. Active tables retain their supplied traversal; preparation and archiving finish before purge runs in `PurgeOrder`. Unknown groups fail; empty groups and disabled tables release their resources normally. The command has no new parameters or success object, and existing installations need no persistence or stored-procedure upgrade.
+
+Copy, delete and checkpoint effects commit independently. No distributed transaction is introduced. A copy can commit before its checkpoint fails, and a delete can remain committed even though its saved position lags. Processing stops on a failed effect or required transition. Progress callbacks do not prove durability. Recorded row totals describe confirmed processing and can be lower than actual copied/deleted rows; retry does not reconstruct missing historical counts or promise exactly-once accounting.
+
+After correcting the cause, retry the same group with stable configuration and one process per group. Keep the incomplete `dbo.ProcessState` row and required working tables. Once `KeyCopyDate` confirms capture, the original selected keys remain authoritative even if eligibility changes or new eligible rows arrive. Positions such as `LastArchivedKey` refer to working-table surrogate positions, including for composite or nonsequential source keys. They are not numeric source-PK boundaries.
+
+Retry rebuilds the destination snapshot from actual presence of captured keys, independently of the current eligibility query, then resumes unfinished copying. Purge revisits retained ranges, tolerates rows already absent and never selects newly eligible outside keys. If capture was never confirmed, retry recreates and recaptures the source working set. An uncertain write response stops execution; the next invocation reloads persisted truth rather than assuming rollback. Archive completion can remain recorded while combined purge is incomplete. Required restoration precedes new purge/overall completion, and working tables are removed only after overall completion is confirmed.
+
+Every acquired reader, command, bulk-copy object and connection receives an independent release attempt. A cleanup-only failure terminates invocation. If processing already failed, that error remains primary and cleanup failures are attached in encounter order at `Exception.Data['Fast1Archiving.CleanupFailures']`. Each entry identifies its action, group and resource or exact source constraint, with table/process identity where available and a sanitized message. For example:
+
+```powershell
+try {
+	Invoke-Fast1Archiving -ConnStr $connectionString -GroupName 'Orders'
+}
+catch {
+	$_.Exception.Data['Fast1Archiving.CleanupFailures'] | Format-List
+	throw
+}
+```
+
+A later drop or disposal failure can fail the invocation after completion was committed; it does not erase that completion. Failed restoration blocks new completion and identifies constraints requiring inspection. Cleanup guarantees attempts, not successful restoration during a server outage. After hard termination, inspect the exact source constraints and retained state before retry: process termination can prevent any cleanup from running. Validate or repair historical integrity separately when required.
