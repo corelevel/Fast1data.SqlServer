@@ -715,7 +715,7 @@ order by s.name, t.name, fk.name
 		}
 		finally {
 			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) `
-				-PrimaryError $operationError
+				-PrimaryError $operationError `
 				-Context @{ GroupName = $this.Group.Name; SourceTable = "$($this.SchemaName).$($this.TableName)" } `
 				-FailureKey 'Fast1Archiving.CleanupFailures'
 		}

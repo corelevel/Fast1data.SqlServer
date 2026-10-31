@@ -158,8 +158,8 @@ from dbo.import_state order by file_name for json path;
 		Invoke-AuditTestSql -Query 'select count_big(*) from dbo.fast1_audit;' -Scalar |
 			Should -Be $script:expectedRowCount
 		Invoke-AuditTestSql -Query $checkpointQuery -Scalar | Should -BeExactly $before
-		($messages.Message -join "`n") | Should -Match '\[Info\] 0 audit records imported'
-		($messages.Message -join "`n") | Should -Match '\[Info\] 0 audit records processed'
+		($messages.Message -join "`n") | Should -Match '\[Verbose\] 0 audit records imported'
+		($messages.Message -join "`n") | Should -Match '\[Verbose\] 0 audit records processed'
 	}
 
 	It 'advances checkpoints for ignored records and does not reread them on the next import' {
@@ -178,11 +178,11 @@ delete from dbo.import_state;
 		Invoke-AuditTestSql -Query 'select count_big(*) from dbo.fast1_audit;' -Scalar | Should -Be 0
 		Invoke-AuditTestSql -Query 'select count_big(*) from dbo.import_state;' -Scalar | Should -BeGreaterThan 0
 		($messages.Message -join "`n") | Should -BeLike "*$script:expectedRowCount audit records processed*"
-		($messages.Message -join "`n") | Should -Match '\[Info\] 0 audit records imported'
+		($messages.Message -join "`n") | Should -Match '\[Verbose\] 0 audit records imported'
 
 		$repeatMessages = @(Invoke-Fast1Audit @script:importArguments -Verbose 4>&1)
 		Invoke-AuditTestSql -Query 'select count_big(*) from dbo.fast1_audit;' -Scalar | Should -Be 0
-		($repeatMessages.Message -join "`n") | Should -Match '\[Info\] 0 audit records processed'
-		($repeatMessages.Message -join "`n") | Should -Match '\[Info\] 0 audit records imported'
+		($repeatMessages.Message -join "`n") | Should -Match '\[Verbose\] 0 audit records processed'
+		($repeatMessages.Message -join "`n") | Should -Match '\[Verbose\] 0 audit records imported'
 	}
 }
