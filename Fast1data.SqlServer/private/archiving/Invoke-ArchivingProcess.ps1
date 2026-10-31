@@ -25,9 +25,6 @@ configuration database.
 .PARAMETER GroupName
 Specifies the configured table-group name to archive or purge.
 
-.PARAMETER LogFile
-Specifies an optional file to which archiving progress messages are appended.
-
 .INPUTS
 None. This function does not accept pipeline input.
 
@@ -35,10 +32,10 @@ None. This function does not accept pipeline input.
 None. This function delegates execution without returning a result object.
 
 .EXAMPLE
-Invoke-ArchivingProcess -ConnStr $connectionString -GroupName 'History' -LogFile './archiving.log'
+Invoke-ArchivingProcess -ConnStr $connectionString -GroupName 'History'
 
-Executes the configured History table group and appends progress messages to the
-specified log file.
+Executes the configured History table group. Progress messages use the verbose
+stream and warnings use the warning stream.
 
 .LINK
 Invoke-Fast1Archiving
@@ -49,11 +46,9 @@ function Invoke-ArchivingProcess {
 		[string]$ConnStr,
 
 		[Parameter(Mandatory)]
-		[string]$GroupName,
-
-		[string]$LogFile
+		[string]$GroupName
 	)
 
 	$group = [TableGroup]::new($ConnStr, $GroupName)
-	$group.Execute($LogFile)
+	$group.Execute()
 }

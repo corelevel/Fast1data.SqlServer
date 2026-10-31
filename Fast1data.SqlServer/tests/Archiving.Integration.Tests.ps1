@@ -152,7 +152,7 @@ order by ps.ProcessStateId desc for json path, include_null_values
 			$workingKeys = '[]'
 		}
 		$evidence = [ordered]@{ Fixture = $script:groupName; Stage = $Stage; SourceKeys = @($sourceKeys | ConvertFrom-Json); DestinationKeys = @($destinationKeys | ConvertFrom-Json); WorkingKeys = @($workingKeys | ConvertFrom-Json); State = Get-ArchivingTestState }
-		Write-Information ($evidence | ConvertTo-Json -Depth 5 -Compress) -InformationAction Continue
+		Write-Verbose ($evidence | ConvertTo-Json -Depth 5 -Compress)
 	}
 
 	function Initialize-ArchivingTestForeignKey {

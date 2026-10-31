@@ -8,7 +8,7 @@ PowerShell 7.6+ Core on supported x64 hosts, verified compatible Pester, PSScrip
 
 Select the test server and credentials in the test file. The login must be allowed to create and drop databases, deploy the archiving schema, and perform the source, destination, constraint and failure-injection operations exercised by the tests. All three test databases use the same instance. Production execution compares actual configuration/source server identities and accepts aliases of the same instance. Use stable configuration, PKs and one process per group.
 
-`Archiving.Tests.ps1` defines one connection string containing Data Source, User ID and Password in its `BeforeAll` block. The checked-in settings use `pester-srv`, login `pester` and password `pester`. Setup generates unique configuration/source/destination database names for each run, creates the databases, and deploys `schema/archiving/tables.sql` then `sprocs.sql` into the configuration database. Each test registers unique fixture identities; per-test teardown removes injections and fixture objects. Suite teardown attempts to drop every successfully created database, including after partial setup failure, and reports cleanup failure after attempting the remaining databases. Database connections have pooling disabled so teardown can release the test databases.
+`Archiving.Integration.Tests.ps1` defines one connection string containing Data Source, User ID and Password in its `BeforeAll` block. The checked-in settings use `pester-srv`, login `pester` and password `pester`. Setup generates unique configuration/source/destination database names for each run, creates the databases, and deploys `schema/archiving/tables.sql` then `sprocs.sql` into the configuration database. Each test registers unique fixture identities; per-test teardown removes injections and fixture objects. Suite teardown attempts to drop every successfully created database, including after partial setup failure, and reports cleanup failure after attempting the remaining databases. Database connections have pooling disabled so teardown can release the test databases.
 
 ## Commands
 
@@ -19,14 +19,14 @@ Import-Module ./Fast1data.SqlServer/Fast1data.SqlServer.psd1 -Force
 Get-Command Invoke-Fast1Archiving -Syntax
 Get-Help Invoke-Fast1Archiving -Full
 $controlled = New-PesterConfiguration
-$controlled.Run.Path = './Fast1data.SqlServer/tests/ArchivingExecution.Tests.ps1'
+$controlled.Run.Path = './Fast1data.SqlServer/tests/Archiving.Execution.Tests.ps1'
 $controlled.Run.PassThru = $true
 $controlled.TestRegistry.Enabled = $false
 $controlled.Output.Verbosity = 'Detailed'
 Invoke-Pester -Configuration $controlled
 
 $sql = New-PesterConfiguration
-$sql.Run.Path = './Fast1data.SqlServer/tests/Archiving.Tests.ps1'
+$sql.Run.Path = './Fast1data.SqlServer/tests/Archiving.Integration.Tests.ps1'
 $sql.Run.PassThru = $true
 $sql.TestRegistry.Enabled = $false
 $sql.Output.Verbosity = 'Detailed'

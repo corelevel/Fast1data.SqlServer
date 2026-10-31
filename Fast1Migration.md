@@ -168,12 +168,15 @@ failure, then retry. A script that executed successfully but was not recorded ma
 execute again on retry. Force deliberately reruns recorded work and does not make
 non-idempotent scripts safe.
 
-Integration tests use the original local `pester_migration` connection declared near
-the top of `tests/Migration.Tests.ps1`. Review or edit that connection before running
-against another disposable database. Fixtures create unique phases/tables and clean
-up only their own state; no database is created automatically. Setup requires schema creation permissions if history is
-absent, plus fixture table creation/drop, SQL execution, and history select/insert/
-update/delete permissions. See the [validation commands](specs/002-consolidate-migration-phases/quickstart.md).
+Isolated command tests are in `tests/Migration.Tests.ps1`; phase validation tests
+are in `tests/Migration.Phase.Tests.ps1`. Neither suite connects to SQL Server.
+
+Live SQL tests are in `tests/Migration.Integration.Tests.ps1`. Review the connection
+settings in its integration `BeforeAll` block before running. The suite creates
+uniquely named disposable databases, installs the migration schema, and drops the
+databases during cleanup. The SQL login needs database creation/drop, schema and
+fixture creation, and migration execution/history permissions. See the
+[validation commands](specs/002-consolidate-migration-phases/quickstart.md).
 
 ## Dry run
 

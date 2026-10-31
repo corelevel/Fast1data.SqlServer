@@ -46,7 +46,6 @@ SQL Server must also be able to read the audit files through `sys.fn_get_audit_f
 | ------------ | -------- | ----------------------------------------------- |
 | `ConnStr`    | Yes      | Cconnection string for the target database      |
 | `Folder`     | Yes      | Existing directory containing `.sqlaudit` files |
-| `LogFile`    | No       | File to which progress messages are appended    |
 | `Credential` | On Linux | SMB listing credentials; unused on Windows      |
 
 Detailed command help is also available:
@@ -76,7 +75,7 @@ With `-Verbose`, progress resembles:
 142 audit records imported
 ```
 
-When `-LogFile` is supplied, the same messages are appended to that file.
+Progress messages use the verbose stream; warnings use the warning stream. Use PowerShell stream redirection if you need to save output to a file.
 
 ## Ignore rules
 
@@ -122,7 +121,6 @@ Application Name=Fast1data.SqlServer;
 Invoke-Fast1Audit `
 	-ConnStr $connectionString `
 	-Folder '\\audit-server\sql-audit' `
-	-LogFile '.\fast1-audit.log' `
 	-Verbose
 ```
 - Imported audit data will be in the `dbo.fast1_audit` table
@@ -144,13 +142,13 @@ these tests do not verify imported database records. They skip on other operatin
 systems. Do not run environment-changing tests concurrently in one PowerShell process.
 
 The live suite is
-[`Audit.Import.Integration.Tests.ps1`](Fast1data.SqlServer/tests/Audit.Import.Integration.Tests.ps1).
+[`Audit.Integration.Linux.Tests.ps1`](Fast1data.SqlServer/tests/Audit.Integration.Linux.Tests.ps1).
 It checks initial imports, checkpoint reuse without duplicate records, and
 checkpoint advancement when all records are ignored. It runs automatically when
 selected on Linux and skips on other operating systems.
 
 Its `BeforeAll` block stores the environment settings, including SQL and SMB
-usernames and passwords, directly in the script, following `Migration.Tests.ps1`.
+usernames and passwords, directly in the script, following `Migration.Integration.Tests.ps1`.
 Edit the configuration block once if your environment changes:
 
 | Setting | Configured value |
@@ -181,7 +179,7 @@ read-only to the tests. Missing prerequisites or connection failures fail the ru
 Run from the repository root in PowerShell:
 
 ```powershell
-Invoke-Pester -Path ./Fast1data.SqlServer/tests/Audit.Import.Integration.Tests.ps1 -Output Detailed
+Invoke-Pester -Path ./Fast1data.SqlServer/tests/Audit.Integration.Linux.Tests.ps1 -Output Detailed
 ```
 
 To run all audit suites without accessing live services, exclude the integration tag:

@@ -82,8 +82,9 @@ Fast1data.SqlServer/
 │       └── Get-RelativePath.ps1           # Retain phase-relative conversion
 ├── schema/migration/tables.sql           # Existing schema, unchanged
 └── tests/
-    ├── MigrationPhase.Tests.ps1          # New phase tests, no SQL access
-    └── Migration.Tests.ps1               # Command and retained SQL integration
+    ├── Migration.Phase.Tests.ps1          # New phase tests, no SQL access
+    ├── Migration.Tests.ps1               # Isolated command tests
+    └── Migration.Integration.Tests.ps1   # Live SQL integration
 Fast1Migration.md                         # Preflight, preview, recovery guidance
 ```
 

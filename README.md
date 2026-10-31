@@ -72,6 +72,26 @@ Get-Help Invoke-Fast1Migration -Full
 Get-Help Invoke-Fast1Archiving -Full
 ```
 
+## Tests
+
+All suites in `Fast1data.SqlServer/tests` end in `.Tests.ps1`. Files containing
+`.Integration.` require live SQL Server or audit resources; platform-specific
+suites include `.Linux.` or `.Windows.` before the suffix.
+
+Run the suites that do not require live services from the repository root:
+
+```powershell
+$testPaths = Get-ChildItem ./Fast1data.SqlServer/tests/*.Tests.ps1 |
+	Where-Object Name -NotLike '*.Integration.*' |
+	Select-Object -ExpandProperty FullName
+Invoke-Pester -Path $testPaths -Output Detailed
+```
+
+Migration command tests are in `Migration.Tests.ps1`, phase validation is in
+`Migration.Phase.Tests.ps1`, and live SQL cases are in
+`Migration.Integration.Tests.ps1`. Review each integration suite's connection and
+fixture settings before selecting it. See the feature guides for prerequisites.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

@@ -25,9 +25,6 @@ Supports local and UNC paths on Windows and UNC paths on Linux.
 .PARAMETER Credential
 Specifies the credentials used to access the SMB share.
 Required on Linux and not used on Windows.
-
-.PARAMETER LogFile
-Specifies an optional file to which Fast1 Audit log messages are appended.
 #>
 function Invoke-Fast1Audit {
 	[CmdletBinding()]
@@ -38,26 +35,22 @@ function Invoke-Fast1Audit {
 		[Parameter(Mandatory)]
 		[string]$Folder,
 
-		[PSCredential]$Credential,
-
-		[string]$LogFile
+		[PSCredential]$Credential
 	)
 
 	[int]$rowProcessed = 0
 	[int]$rowsImported = 0
 	$sqlConn = $null
+	$operationError = $null
 	try {
 		$auditFiles = @(Get-SqlAuditFile -Folder $Folder -Credential $Credential)
 		if (-not $auditFiles) {
-			Write-LogMessage -Message "No audit files found in $Folder" `
-				-LogFile $LogFile
+			Write-LogMessage -Message "No audit files found in $Folder"
 			return
 		}
 		$auditsToProcess = @($auditFiles.AuditGuid | Sort-Object -Unique)
-		Write-LogMessage -Message "$($auditFiles.Count) audit file(s) found in the $Folder" `
-			-LogFile $LogFile
-		Write-LogMessage -Message "$($auditsToProcess.Count) unique audit GUID(s) found" `
-			-LogFile $LogFile
+		Write-LogMessage -Message "$($auditFiles.Count) audit file(s) found in the $Folder"
+		Write-LogMessage -Message "$($auditsToProcess.Count) unique audit GUID(s) found"
 
 		$sqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
 		$sqlConn.ConnectionString = $ConnStr
@@ -83,14 +76,14 @@ function Invoke-Fast1Audit {
 			$rowProcessed += $res.RowProcessed
 			$rowsImported += $res.RowsImported
 		}
-		Write-LogMessage -Message "$rowProcessed audit records processed" `
-			-LogFile $LogFile
-		Write-LogMessage -Message "$rowsImported audit records imported" `
-			-LogFile $LogFile
+		Write-LogMessage -Message "$rowProcessed audit records processed"
+		Write-LogMessage -Message "$rowsImported audit records imported"
+	}
+	catch {
+		$operationError = $_
+		throw
 	}
 	finally {
-		if ($null -ne $sqlConn) {
-			$sqlConn.Dispose()
-		}
+		Close-GenericSqlResource -Resources ([ordered]@{ Connection = $sqlConn }) -PrimaryError $operationError
 	}
 }

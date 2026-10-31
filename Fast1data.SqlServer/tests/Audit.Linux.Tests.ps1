@@ -97,11 +97,11 @@ printf '%s\n' \
   '  audit_615e3b8a-9980-4739-89dd-b8ca9d93c36e_x_123.sqlaudit A 100 Fri Oct 30 12:00:00 2026' \
   '                1024 blocks of size 4096. 512 blocks available'
 '@ | Set-Content -LiteralPath $script:smbPath -NoNewline
-		$logFile = Join-Path $TestDrive 'no-matches.log'
-		Invoke-Fast1Audit -ConnStr 'invalid connection string' -Folder $script:folder `
-			-Credential $script:credential -LogFile $logFile
+		$messages = @(Invoke-Fast1Audit -ConnStr 'invalid connection string' -Folder $script:folder `
+			-Credential $script:credential -Verbose 4>&1)
 
-		Get-Content -LiteralPath $logFile | Should -BeLike '*No audit files found*'
+		$messages | Should -HaveCount 1
+		$messages[0].Message | Should -BeLike '*No audit files found*'
 	}
 
 	It 'discovers three files across two audits and passes SMB credentials without password arguments' {
@@ -121,17 +121,18 @@ printf '%s\n' \
   '  audit_with_underscores_615E3B8A-9980-4739-89DD-B8CA9D93C36E_1_134289496418640004.sqlaudit A 100 Fri Oct 30 12:00:00 2026' \
   '  other_audit_715e3b8a-9980-4739-89dd-b8ca9d93c36e_0_134289496418640005.sqlaudit A 100 Fri Oct 30 12:00:00 2026'
 '@ | Set-Content -LiteralPath $script:smbPath -NoNewline
-		$logFile = Join-Path $TestDrive 'discovered.log'
+		$messages = [System.Collections.Generic.List[object]]::new()
 		# Stop at the SQL boundary without requiring a database or network access.
 		{
 			Invoke-Fast1Audit -ConnStr 'AuditTestInvalidKeyword=value' -Folder $script:folder `
-				-Credential $script:credential -LogFile $logFile
+				-Credential $script:credential -Verbose 4>&1 | ForEach-Object {
+					$messages.Add($_)
+				}
 		} | Should -Throw '*Keyword not supported*'
 
-		$messages = Get-Content -LiteralPath $logFile
 		$messages | Should -HaveCount 2
-		$messages[0] | Should -BeLike '*3 audit file(s) found*'
-		$messages[1] | Should -BeLike '*2 unique audit GUID(s) found*'
+		$messages[0].Message | Should -BeLike '*3 audit file(s) found*'
+		$messages[1].Message | Should -BeLike '*2 unique audit GUID(s) found*'
 		$env:PASSWD | Should -BeExactly 'prior-test-password'
 	}
 

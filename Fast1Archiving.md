@@ -122,7 +122,8 @@ If a run fails, leave its incomplete state and working tables intact. Running th
 | ----------- | -------- | ----------------------------------------------------------- |
 | `ConnStr`   | Yes      | Connection string for the archiving configuration database. |
 | `GroupName` | Yes      | Name of the configured table group to process.              |
-| `LogFile`   | No       | File to which progress and warning messages are appended.   |
+
+Progress messages use the verbose stream; warnings use the warning stream. Use `-Verbose` to display progress and PowerShell stream redirection if you need to save output to a file.
 
 Detailed command help is available after importing the module:
 
@@ -145,7 +146,6 @@ $connectionString = @(
 Invoke-Fast1Archiving `
 	-ConnStr $connectionString `
 	-GroupName 'Orders' `
-	-LogFile 'C:\Logs\fast1-archiving.log' `
 	-Verbose
 ```
 

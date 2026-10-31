@@ -60,7 +60,7 @@ The command reads history, obtains the complete evaluation, presents warnings/sk
 
 ## R6. Verification layers and explicit test database
 
-**Decision**: Add `tests/MigrationPhase.Tests.ps1` for the phase interface using real temporary files and supplied history. Load only the evaluator and retained filesystem helpers there so phase rules require no SQL access. Retain `tests/Migration.Tests.ps1` for command orchestration/WhatIf checks and tagged real SQL coverage. Replace shallow-reader tests with phase behavior assertions. Mock existing execution/history boundaries for command tests; retain and extend SQL checks for persistence, timestamps, SQL errors, legacy stored names, and case-sensitive collation.
+**Decision**: Add `tests/Migration.Phase.Tests.ps1` for the phase interface using real temporary files and supplied history. Load only the evaluator and retained filesystem helpers there so phase rules require no SQL access. Retain `tests/Migration.Tests.ps1` for command orchestration/WhatIf checks; tagged real SQL coverage lives in `tests/Migration.Integration.Tests.ps1`. Replace shallow-reader tests with phase behavior assertions. Mock existing execution/history boundaries for command tests; retain and extend SQL checks for persistence, timestamps, SQL errors, legacy stored names, and case-sensitive collation.
 
 **User revision after implementation**: T003's connection refactor was reverted. Retain the original local `pester_migration` connection in the test file, without a file-level connection parameter or its added guards. Keep Integration-only SQL setup, nonintegration isolation, and fixture-owned cleanup. The current commands are in quickstart.md.
 

@@ -28,6 +28,7 @@ function Get-Executed {
 	$sqlCmd = $null
 	$sqlReader = $null
 
+	$operationError = $null
 	try {
 		$sqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
 		$sqlConn.ConnectionString = $ConnStr
@@ -51,15 +52,12 @@ where phase = @phase
 			}
 		}
 	}
+	catch {
+		$operationError = $_
+		throw
+	}
 	finally {
-		if ($null -ne $sqlReader) {
-			$sqlReader.Dispose()
-		}
-		if ($null -ne $sqlCmd) {
-			$sqlCmd.Dispose()
-		}
-		if ($null -ne $sqlConn) {
-			$sqlConn.Dispose()
-		}
+		Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd; Connection = $sqlConn }) `
+			-PrimaryError $operationError
 	}
 }

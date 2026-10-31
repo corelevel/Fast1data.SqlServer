@@ -53,13 +53,11 @@ Describe 'Audit import from Windows' -Tag 'Windows' -Skip:(-not $IsWindows) {
 		)) {
 			$null = New-Item -Path (Join-Path $script:folder $name) -ItemType File
 		}
-		$logFile = Join-Path $TestDrive 'no-matches.log'
+		$messages = @(Invoke-Fast1Audit -ConnStr 'invalid connection string' `
+			-Folder $script:folder -Verbose 4>&1)
 
-		Invoke-Fast1Audit -ConnStr 'invalid connection string' -Folder $script:folder -LogFile $logFile
-
-		$messages = @(Get-Content -LiteralPath $logFile)
 		$messages | Should -HaveCount 1
-		$messages[0] | Should -BeLike '*No audit files found*'
+		$messages[0].Message | Should -BeLike '*No audit files found*'
 	}
 
 	It 'discovers three files across two audits without requiring credentials' {
@@ -70,16 +68,18 @@ Describe 'Audit import from Windows' -Tag 'Windows' -Skip:(-not $IsWindows) {
 		)) {
 			$null = New-Item -Path (Join-Path $script:folder $name) -ItemType File
 		}
-		$logFile = Join-Path $TestDrive 'discovered.log'
+		$messages = [System.Collections.Generic.List[object]]::new()
 		# Stop at the SQL boundary without requiring a database or network access.
 		{
-			Invoke-Fast1Audit -ConnStr 'AuditTestInvalidKeyword=value' -Folder $script:folder -LogFile $logFile
+			Invoke-Fast1Audit -ConnStr 'AuditTestInvalidKeyword=value' -Folder $script:folder -Verbose 4>&1 |
+				ForEach-Object {
+					$messages.Add($_)
+				}
 		} | Should -Throw '*Keyword not supported*'
 
-		$messages = Get-Content -LiteralPath $logFile
 		$messages | Should -HaveCount 2
-		$messages[0] | Should -BeLike '*3 audit file(s) found*'
-		$messages[1] | Should -BeLike '*2 unique audit GUID(s) found*'
+		$messages[0].Message | Should -BeLike '*3 audit file(s) found*'
+		$messages[1].Message | Should -BeLike '*2 unique audit GUID(s) found*'
 	}
 
 	It 'preserves full file paths and parses GUIDs in a literal folder path' {
@@ -99,12 +99,11 @@ Describe 'Audit import from Windows' -Tag 'Windows' -Skip:(-not $IsWindows) {
 
 	It 'reports a missing folder before attempting an import or logging discovery results' {
 		$missingFolder = Join-Path $script:folder 'missing'
-		$logFile = Join-Path $TestDrive 'missing-folder.log'
 		$caught = $null
 		$messages = @(
 			try {
 				Invoke-Fast1Audit -ConnStr 'invalid connection string' -Folder $missingFolder `
-					-LogFile $logFile -Verbose 4>&1
+					-Verbose 4>&1
 			}
 			catch {
 				$caught = $_
@@ -114,6 +113,5 @@ Describe 'Audit import from Windows' -Tag 'Windows' -Skip:(-not $IsWindows) {
 		$messages | Should -BeNullOrEmpty
 		$caught | Should -Not -BeNullOrEmpty
 		$caught.FullyQualifiedErrorId | Should -BeLike 'PathNotFound,*'
-		Test-Path -LiteralPath $logFile | Should -BeFalse
 	}
 }

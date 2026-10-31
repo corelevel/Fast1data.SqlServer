@@ -22,7 +22,7 @@
 	Configuration and SQL files are executable administrator inputs. Set up the
 	history schema and grant the required execution and history permissions first.
 
-	Requires PowerShell 7.4+
+	Requires PowerShell 7.6+
 	Requires SQL Server PowerShell module
 	https://learn.microsoft.com/en-us/powershell/sql-server/download-sql-server-ps-module
 
@@ -94,14 +94,15 @@ function Invoke-Fast1Migration {
 	$evaluation = Resolve-MigrationPhase -BasePath $BasePath -Phase $Phase -History $history `
 		-IgnoreScripts $IgnoreScripts -ForceScripts $ForceScripts -ErrorAction Stop
 	foreach ($warning in $evaluation.Warnings) {
-		Write-Warning $warning
+		Write-LogMessage -Message $warning -Level Warning
 	}
 	foreach ($script in $evaluation.Scripts) {
-		Write-Verbose "$($script.Action) migration script: $($script.ScriptName) ($($script.Reason))"
+		Write-LogMessage -Message "$($script.Action) migration script: $($script.ScriptName) ($($script.Reason))" `
+				-Level Verbose
 	}
 	$eligible = @($evaluation.Scripts | Where-Object Action -EQ 'Run')
 	if ($eligible.Count -eq 0) {
-		Write-Verbose 'Nothing to run'
+		Write-LogMessage -Message 'Nothing to run' -Level Verbose
 		return
 	}
 	$connStrParser = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($ConnStr)
@@ -112,7 +113,7 @@ function Invoke-Fast1Migration {
 			Set-Executed -ConnStr $ConnStr -ScriptName $script.ScriptName -Phase $Phase `
 				-Checksum $script.Checksum -HistoryScriptName $script.HistoryScriptName `
 				-ForceScript ($script.IsForced -and $script.WasExecuted) -ErrorAction Stop
-			Write-Verbose "Migration completed: $($script.ScriptName)"
+			Write-LogMessage -Message "Migration completed: $($script.ScriptName)" -Level Verbose
 		}
 	}
 }

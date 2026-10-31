@@ -158,7 +158,7 @@ function Resolve-MigrationPhase {
 				$reason = 'New'
 			}
 		}
-		$scripts.Add([pscustomobject]@{
+		$scripts.Add([PSCustomObject]@{
 			ScriptName = $name
 			FullPath = $fullPath
 			Checksum = $checksum
@@ -170,7 +170,7 @@ function Resolve-MigrationPhase {
 		})
 	}
 
-	[pscustomobject]@{
+	[PSCustomObject]@{
 		Phase = $Phase
 		ConfigFile = $configFile
 		PhaseDirectory = $phaseDirectory

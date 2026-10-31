@@ -1,5 +1,7 @@
 # Implementation validation
 
+Test layout note: the results below predate the suite split. Isolated migration command tests now live in `Migration.Tests.ps1`; live SQL cases and setup now live in `Migration.Integration.Tests.ps1`. Historical combined results have not been rerun against live SQL as part of the rename.
+
 ## User-requested T003 revert
 
 The original local `pester_migration` connection has been restored in Migration.Tests.ps1. The file-level ConnectionString parameter and added missing-connection/catalog guards have been removed. Expanded tests, Integration-only SQL setup, nonintegration isolation and fixture-owned cleanup remain. Quickstart and migration guidance now use the test-file connection. Earlier connection-parameter and prerequisite-probe evidence below describes the implementation before this user-requested revert.
@@ -67,7 +69,7 @@ The skipped phase case requires a Unix case-sensitive filesystem. Windows casing
 Import-Module Pester -MinimumVersion 5.0 -Force
 $config = New-PesterConfiguration
 $config.Run.Path = @(
-	'./Fast1data.SqlServer/tests/MigrationPhase.Tests.ps1'
+	'./Fast1data.SqlServer/tests/Migration.Phase.Tests.ps1'
 	'./Fast1data.SqlServer/tests/Migration.Tests.ps1'
 )
 $config.Filter.ExcludeTag = 'Integration'
@@ -100,7 +102,7 @@ $files = @(
 	'Fast1data.SqlServer/private/migration/Get-Executed.ps1'
 	'Fast1data.SqlServer/private/migration/Set-Executed.ps1'
 	'Fast1data.SqlServer/private/shared/Get-FileChecksum.ps1'
-	'Fast1data.SqlServer/tests/MigrationPhase.Tests.ps1'
+	'Fast1data.SqlServer/tests/Migration.Phase.Tests.ps1'
 	'Fast1data.SqlServer/tests/Migration.Tests.ps1'
 )
 $findings = @(foreach ($file in $files) {
@@ -148,7 +150,7 @@ No known material integrity failure remains in executed checks. Operational rele
 
 Phase harness loads only the evaluator, checksum and relative-path helpers. Initial run: 19 phase cases unavailable because the evaluator did not exist; the 4 existing command tests still passed after credential removal. This is an expected missing implementation boundary, not behavioral proof. After metadata/input handling (T007), 4 passed/15 failed: 14 intended behavioral failures plus a test spy recursion failure. Replaced the Get-Content spy implementation with File.ReadAllText to avoid recursively invoking the mocked command. After identity/eligibility implementation, all 19 phase tests passed (0 failed/skipped/unrun) in Pester 6.2, with no framework failures.
 
-Exact phase command: baseline configuration above with `$config.Run.Path = './Fast1data.SqlServer/tests/MigrationPhase.Tests.ps1'` and no tag filter. Real bracketed file SHA-256, zero/one/many decision arrays, literal selection, exact original history keys, rooted names from every source, relative alias spelling, unknown warnings, global conflicts, and one hash per non-ignored file are asserted. T003 restricts schema setup to Integration and requires ConnectionString plus explicit Initial Catalog; SQL remains unrun.
+Exact phase command: baseline configuration above with `$config.Run.Path = './Fast1data.SqlServer/tests/Migration.Phase.Tests.ps1'` and no tag filter. Real bracketed file SHA-256, zero/one/many decision arrays, literal selection, exact original history keys, rooted names from every source, relative alias spelling, unknown warnings, global conflicts, and one hash per non-ignored file are asserted. T003 restricts schema setup to Integration and requires ConnectionString plus explicit Initial Catalog; SQL remains unrun.
 
 ### US2 (T011–T016)
 
@@ -156,7 +158,7 @@ Added late-invalid phase and command cases before implementing containment/coord
 
 After separator-boundary containment and completed-evaluation integration: 64 passed, 0 failed, 1 skipped (Unix case-sensitive sibling test), 1 SQL test not run. The 30 command guards cover 15 invalid classes in normal/WhatIf modes, asserting expected errors and zero execution/writes. Late phase errors emit zero partial results. A null optional-selection issue found by command tests was corrected with collection iteration. `Get-Migration.ps1` and its obsolete reader tests were removed; `rg 'Get-Migration' Fast1data.SqlServer` returns no matches.
 
-Exact combined command: baseline configuration with Run.Path set to both MigrationPhase.Tests.ps1 and Migration.Tests.ps1 and Filter.ExcludeTag='Integration'. TestRegistry disabled, TestDrive enabled; no framework failures.
+Exact combined command: baseline configuration with Run.Path set to both Migration.Phase.Tests.ps1 and Migration.Tests.ps1 and Filter.ExcludeTag='Integration'. TestRegistry disabled, TestDrive enabled; no framework failures.
 
 ### US3 (T017–T020)
 

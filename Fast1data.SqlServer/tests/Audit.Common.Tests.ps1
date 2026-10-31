@@ -17,6 +17,21 @@ Describe 'Fast1data.SqlServer module' {
 			Get-Command Get-SqlAuditFileEntry | Should -Not -BeNullOrEmpty
 		}
 	}
+
+	It 'preserves audit verbose output when the archiving model is imported after shared helpers' {
+		InModuleScope Fast1data.SqlServer {
+			# Packaging can enumerate archiving scripts after the shared scripts.
+			Import-Module (Join-Path $PSScriptRoot '../private/archiving/ArchivingModel.psm1') -ErrorAction Stop
+			Mock Get-SqlAuditFile {
+				@()
+			}
+
+			$messages = @(Invoke-Fast1Audit -ConnStr 'unused' -Folder 'unused' -Verbose 4>&1)
+
+			$messages | Should -HaveCount 1
+			$messages[0].Message | Should -BeLike '*No audit files found*'
+		}
+	}
 }
 
 Describe 'PowerShell and SQL contracts' {

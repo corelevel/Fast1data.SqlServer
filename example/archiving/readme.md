@@ -9,4 +9,4 @@ To run *Fast1-Archiving*:
     * *schema\tables.sql* - creates the required tables
     * *schema\sprocs.sql* - creates the stored procedures
     * *data.sql* - inserts the sample configuration data
-* Execute *archive-StackOverflow2013.ps1* using PowerShell 7.4+
+* Execute *archive-StackOverflow2013.ps1* using PowerShell 7.6+

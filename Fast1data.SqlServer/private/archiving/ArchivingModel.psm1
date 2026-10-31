@@ -81,7 +81,7 @@ class TableGroup : System.IDisposable {
 		$this.Name = $groupName
 	}
 
-	Execute([string]$LogFile) {
+	Execute() {
 		if ($this.Started) {
 			throw 'A table group execution is single-use. Retry with a fresh execution.'
 		}
@@ -92,22 +92,22 @@ class TableGroup : System.IDisposable {
 			if ($this.Id -eq 0) {
 				throw "Specified table group ($($this.Name)) not found"
 			}
-			Write-LogMessage -Message "Archive group ($($this.Name)) found" -LogFile $LogFile
+			Write-LogMessage -Message "Archive group ($($this.Name)) found"
 			$this.ReadSourceTables()
 			if ($this.SourceTables.Count -eq 0) {
-				Write-LogMessage -Message "No tables found for the specified table group ($($this.Name))" -LogFile $LogFile
+				Write-LogMessage -Message "No tables found for the specified table group ($($this.Name))"
 			}
 			foreach ($table in $this.SourceTables) {
 				if (-not $table.Archive -and -not $table.Purge) {
 					continue
 				}
-				$table.Prepare($LogFile)
+				$table.Prepare()
 				if ($table.Archive) {
-					$table.ExecuteArchive($LogFile)
+					$table.ExecuteArchive()
 				}
 			}
 			foreach ($table in $this.SourceTables | Where-Object Purge | Sort-Object PurgeOrder) {
-				$table.ExecutePurge($LogFile)
+				$table.ExecutePurge()
 			}
 		}
 		catch {
@@ -122,7 +122,9 @@ class TableGroup : System.IDisposable {
 			}
 			$operationError.Exception.Data['Fast1Archiving.CleanupFailures'] = $entries
 			try {
-				Write-LogMessage -Message "Archiving execution failed for group ($($this.Name)); inspect the primary error and cleanup contexts." -Level Warning -LogFile $LogFile -ErrorAction Stop
+				Write-LogMessage -Message "Archiving execution failed for group ($($this.Name)); inspect the primary error and cleanup contexts." `
+					-Level Warning `
+					-ErrorAction Stop
 			}
 			catch {
 				Add-GenericSqlCleanupFailure -PrimaryError $operationError -CleanupError $_ `
@@ -133,10 +135,13 @@ class TableGroup : System.IDisposable {
 		}
 		finally {
 			Close-GenericSqlResource -Resources ([ordered]@{
-				DestinationConnection = $this.DstSqlConn
-				SourceConnection = $this.SrcSqlConn
-				ConfigurationConnection = $this.ArcSqlConn
-			}) -PrimaryError $operationError -Context @{ GroupName = $this.Name } -FailureKey 'Fast1Archiving.CleanupFailures'
+					DestinationConnection = $this.DstSqlConn
+					SourceConnection = $this.SrcSqlConn
+					ConfigurationConnection = $this.ArcSqlConn
+				}) `
+			-PrimaryError $operationError `
+			-Context @{ GroupName = $this.Name } `
+			-FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
@@ -169,7 +174,9 @@ class TableGroup : System.IDisposable {
 			throw
 		}
 		finally {
-			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) `
+				-PrimaryError $operationError `
+				-FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 		if ($this.Id -eq 0) {
 			return
@@ -232,16 +239,20 @@ class TableGroup : System.IDisposable {
 			throw
 		}
 		finally {
-			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) `
+				-PrimaryError $operationError `
+				-FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
 	Dispose() {
 		Close-GenericSqlResource -Resources ([ordered]@{
-			DestinationConnection = $this.DstSqlConn
-			SourceConnection = $this.SrcSqlConn
-			ConfigurationConnection = $this.ArcSqlConn
-		}) -Context @{ GroupName = $this.Name } -FailureKey 'Fast1Archiving.CleanupFailures'
+				DestinationConnection = $this.DstSqlConn
+				SourceConnection = $this.SrcSqlConn
+				ConfigurationConnection = $this.ArcSqlConn
+			}) `
+			-Context @{ GroupName = $this.Name } `
+			-FailureKey 'Fast1Archiving.CleanupFailures'
 	}
 }
 
@@ -505,7 +516,7 @@ class Table {
 	[List[TableColumn]]$MissedColumns = [List[TableColumn]]::new()
 	hidden [object[]]$ConstraintObligations = @()
 
-	Prepare([string]$LogFile) {
+	Prepare() {
 		if (-not $this.IsTableExistsInSource()) {
 			throw "The source table [$($this.SchemaName)].[$($this.TableName)] doesn't exist"
 		}
@@ -525,7 +536,7 @@ class Table {
 			}
 			else {
 				$this.ReadDstTableColumns()
-				Compare-Column -SrcColumns $this.SrcColumns -DstColumns $this.DstColumns -LogFile $LogFile
+				Compare-Column -SrcColumns $this.SrcColumns -DstColumns $this.DstColumns
 				[void]$this.AddMissedColumns()
 			}
 		}
@@ -575,7 +586,7 @@ class Table {
 		$this.State.RowsPurged = $Count
 	}
 
-	ExecuteArchive([string]$LogFile) {
+	ExecuteArchive() {
 		$rowsThisRun = 0
 		if ($this.State.ArchiveCompleteDate -eq [datetime]::MinValue) {
 			while ($this.State.ArchiveProcessHasRowsForNextBatch()) {
@@ -589,13 +600,13 @@ class Table {
 			}
 			$this.State.UpdateArchiveComplete()
 		}
-		Write-LogMessage -Message "Archiving completed for [$($this.SchemaName)].[$($this.TableName)]. Rows archived (now): $rowsThisRun. Rows archived (state): $($this.State.RowsArchived)" -LogFile $LogFile
+		Write-LogMessage -Message "Archiving completed for [$($this.SchemaName)].[$($this.TableName)]. Rows archived (now): $rowsThisRun. Rows archived (state): $($this.State.RowsArchived)"
 		if (-not $this.Purge) {
 			$this.Complete()
 		}
 	}
 
-	ExecutePurge([string]$LogFile) {
+	ExecutePurge() {
 		$rowsThisRun = 0
 		if ($this.State.PurgeCompleteDate -eq [datetime]::MinValue) {
 			if (-not $this.State.IncompleteProcess) {
@@ -621,7 +632,7 @@ class Table {
 			}
 			$this.State.UpdatePurgeComplete()
 		}
-		Write-LogMessage -Message "Purging completed for [$($this.SchemaName)].[$($this.TableName)]. Rows purged (now): $rowsThisRun. Rows purged (state): $($this.State.RowsPurged)" -LogFile $LogFile
+		Write-LogMessage -Message "Purging completed for [$($this.SchemaName)].[$($this.TableName)]. Rows purged (now): $rowsThisRun. Rows purged (state): $($this.State.RowsPurged)"
 		$this.Complete()
 	}
 
@@ -690,7 +701,7 @@ order by s.name, t.name, fk.name
 			$sqlCmd.Parameters.Add('@TableName', [System.Data.SqlDbType]::NVarChar, 128).Value = $this.TableName
 			$sqlReader = $sqlCmd.ExecuteReader()
 			while ($sqlReader.Read()) {
-				$constraints.Add([pscustomobject]@{
+				$constraints.Add([PSCustomObject]@{
 					DatabaseName = $sqlReader['DatabaseName']
 					SchemaName = $sqlReader['SchemaName']
 					TableName = $sqlReader['TableName']
@@ -703,7 +714,10 @@ order by s.name, t.name, fk.name
 			throw
 		}
 		finally {
-			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -Context @{ GroupName = $this.Group.Name; SourceTable = "$($this.SchemaName).$($this.TableName)" } -FailureKey 'Fast1Archiving.CleanupFailures'
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) `
+				-PrimaryError $operationError
+				-Context @{ GroupName = $this.Group.Name; SourceTable = "$($this.SchemaName).$($this.TableName)" } `
+				-FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 		return $constraints.ToArray()
 	}
@@ -762,7 +776,9 @@ order by s.name, t.name, fk.name
 			throw
 		}
 		finally {
-			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) `
+				-PrimaryError $operationError `
+				-FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
@@ -917,7 +933,9 @@ where TABLE_SCHEMA = @SchemaName and TABLE_NAME = @TableName
 			throw
 		}
 		finally {
-			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) `
+				-PrimaryError $operationError `
+				-FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
@@ -984,7 +1002,9 @@ where kc.[type] = 'PK'
 			throw
 		}
 		finally {
-			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) `
+				-PrimaryError $operationError `
+				-FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
@@ -1038,7 +1058,9 @@ where kc.[type] = 'PK'
 			throw
 		}
 		finally {
-			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+			Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) `
+				-PrimaryError $operationError `
+				-FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
@@ -1240,7 +1262,9 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 			throw
 		}
 		finally {
-			Close-GenericSqlResource -Resources ([ordered]@{ BulkCopy = $bulkCopy; Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+			Close-GenericSqlResource -Resources ([ordered]@{ BulkCopy = $bulkCopy; Reader = $sqlReader; Command = $sqlCmd }) `
+				-PrimaryError $operationError `
+				-FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 
@@ -1282,7 +1306,9 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 			}
 			finally {
 				# Never reuse the configuration connection with its reader still open.
-				Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+				Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) `
+					-PrimaryError $operationError `
+					-FailureKey 'Fast1Archiving.CleanupFailures'
 			}
 			if ($page.Count -eq 0) {
 				break
@@ -1331,7 +1357,9 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 				throw
 			}
 			finally {
-				Close-GenericSqlResource -Resources ([ordered]@{ BulkCopy = $bulkCopy; Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+				Close-GenericSqlResource -Resources ([ordered]@{ BulkCopy = $bulkCopy; Reader = $sqlReader; Command = $sqlCmd }) `
+					-PrimaryError $operationError `
+					-FailureKey 'Fast1Archiving.CleanupFailures'
 			}
 		}
 	}
@@ -1374,7 +1402,9 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 			throw
 		}
 		finally {
-			Close-GenericSqlResource -Resources ([ordered]@{ BulkCopy = $bulkCopy; Reader = $sqlReader; Command = $sqlCmd }) -PrimaryError $operationError -FailureKey 'Fast1Archiving.CleanupFailures'
+			Close-GenericSqlResource -Resources ([ordered]@{ BulkCopy = $bulkCopy; Reader = $sqlReader; Command = $sqlCmd }) `
+				-PrimaryError $operationError `
+				-FailureKey 'Fast1Archiving.CleanupFailures'
 		}
 	}
 

@@ -43,6 +43,7 @@ function Import-SqlAuditFile {
 	$sqlReader = $null
 	$filePattern = "$($Folder.TrimEnd('\', '/'))\*$AuditGuid*.sqlaudit"
 
+	$operationError = $null
 	try {
 		$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new('dbo.stp_import_audit_files', $SqlConn)
 		$sqlCmd.CommandType = [System.Data.CommandType]::StoredProcedure
@@ -59,12 +60,12 @@ function Import-SqlAuditFile {
 			}
 		}
 	}
+	catch {
+		$operationError = $_
+		throw
+	}
 	finally {
-		if ($null -ne $sqlReader) {
-			$sqlReader.Dispose()
-		}
-		if ($null -ne $sqlCmd) {
-			$sqlCmd.Dispose()
-		}
+		Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) `
+			-PrimaryError $operationError
 	}
 }

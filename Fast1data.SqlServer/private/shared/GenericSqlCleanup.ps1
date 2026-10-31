@@ -9,6 +9,11 @@ Cleanup failures are attached to PrimaryError through Add-GenericSqlCleanupFailu
 When PrimaryError is absent, the first disposal error is thrown after all resources
 have been attempted, with cleanup details attached to that error.
 
+Initialize resources and the operation error to null before entering try. In catch,
+save $_ as the operation error and rethrow it; call this helper in finally. Release
+readers before commands and commands before connections. Include only resources
+owned by the caller; leave borrowed connections for their owner to release.
+
 .PARAMETER Resources
 Maps resource role names, such as Reader or Command, to objects with a Dispose
 method. Null values are skipped. Role names are included in cleanup details.
@@ -135,7 +140,7 @@ function Add-GenericSqlCleanupFailure {
 		}
 		$entries.Add($entry)
 	}
-	$entries.Add([pscustomobject]($Context + @{
+	$entries.Add([PSCustomObject]($Context + @{
 		ErrorType = $CleanupError.Exception.GetBaseException().GetType().FullName
 		Message = 'The identified cleanup action failed.'
 	}))

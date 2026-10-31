@@ -3,7 +3,7 @@
 ## Existing public command
 
 ```powershell
-Invoke-Fast1Archiving -ConnStr <string> -GroupName <string> [-LogFile <string>]
+Invoke-Fast1Archiving -ConnStr <string> -GroupName <string>
 ```
 
 Preserve mandatory string/common parameters, manifest export and PowerShell 7.6 Core/x64 Windows/Linux/macOS support. Configuration/source share an instance; source PKs and one process per group remain required. Configuration, procedure signatures, progress fields and working names remain compatible. No new success object, public executor, fault-injection parameter or transaction option.
@@ -11,7 +11,7 @@ Preserve mandatory string/common parameters, manifest export and PowerShell 7.6 
 ## Private execution request
 
 ```powershell
-Invoke-ArchivingProcess -ConnStr <string> -GroupName <string> [-LogFile <string>]
+Invoke-ArchivingProcess -ConnStr <string> -GroupName <string>
 ```
 
 Public forwarding and acceptance tests use this same request. It constructs an inert TableGroup and requests Execute. Callers supply inputs and handle outcome; they never acquire/dispose the group, drive progress, write checkpoints or restore constraints. Private model fields/methods are not a caller coordination protocol.

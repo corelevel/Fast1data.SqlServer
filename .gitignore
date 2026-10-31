@@ -2,13 +2,5 @@ build/bin
 build/obj
 Fast1data.SqlServer/lib/*
 out/Fast1data.SqlServer
-.tmp/
-*.tmp
-*.swp
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-*.user
-*.suo
-packages/
+
+

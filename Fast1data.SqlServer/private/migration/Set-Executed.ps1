@@ -1,4 +1,5 @@
 using module ../shared/GenericSqlParam.psm1
+. "$PSScriptRoot\..\shared\GenericSqlQuery.ps1"
 
 <#
 .SYNOPSIS
@@ -56,6 +57,7 @@ function Set-Executed {
 	)
 
 	$sqlConn = $null
+	$operationError = $null
 	try {
 		$sqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
 		$sqlConn.ConnectionString = $ConnStr
@@ -107,9 +109,12 @@ values(@script_name, @phase, @checksum)
 				}
 			}
 	}
+	catch {
+		$operationError = $_
+		throw
+	}
 	finally {
-		if ($null -ne $sqlConn) {
-			$sqlConn.Dispose()
-		}
+		Close-GenericSqlResource -Resources ([ordered]@{ Connection = $sqlConn }) `
+			-PrimaryError $operationError
 	}
 }

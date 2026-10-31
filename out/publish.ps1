@@ -146,8 +146,7 @@ Write-Host ''
 Write-Host 'Running Pester...'
 $pesterConfiguration = New-PesterConfiguration
 $pesterConfiguration.Run.Path = Join-Path $moduleRoot 'tests'
-# Include both *.Tests.ps1 and qualified names such as *.Tests.Windows.ps1.
-$pesterConfiguration.Run.TestExtension = '.Tests*.ps1'
+$pesterConfiguration.Run.TestExtension = '.Tests.ps1'
 $pesterConfiguration.Run.PassThru = $true
 $pesterConfiguration.Output.Verbosity = 'Detailed'
 $pesterResult = Invoke-Pester -Configuration $pesterConfiguration

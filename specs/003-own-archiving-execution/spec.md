@@ -61,7 +61,7 @@ As a maintainer of an archiving caller, I need to request a configured group exe
 1. **Given** archive-only, purge-only, combined and disabled tables, **When** their group executes, **Then** existing selection, skipping, table traversal, group copy-before-purge ordering, configured purge order, batch settings, delays and destination reconciliation rules are preserved.
 2. **Given** a working set was durably captured for an incomplete process, **When** source eligibility changes and execution retries, **Then** the captured working set is resumed rather than replaced with a fresh selection.
 3. **Given** an unknown group, an empty group or an empty working set, **When** execution is requested, **Then** existing error or no-work behavior is retained and acquired resources are released.
-4. **Given** a caller supplies only the existing connection, group and optional logging inputs, **When** execution succeeds or fails, **Then** execution owns all required state transitions and cleanup, without the caller reading or changing process progress to drive execution.
+4. **Given** a caller supplies only the existing connection and group inputs, **When** execution succeeds or fails, **Then** execution owns all required state transitions and cleanup, without the caller reading or changing process progress to drive execution.
 
 ### Edge Cases
 

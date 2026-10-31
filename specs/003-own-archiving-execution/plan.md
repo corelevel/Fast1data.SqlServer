@@ -8,7 +8,7 @@
 
 ## Summary
 
-Deepen the existing archiving model into an execution owner. Preserve public Invoke-Fast1Archiving and private Invoke-ArchivingProcess signatures; reduce the latter to requesting execution and handling outcome. An inert TableGroup constructor stores inputs; its Execute(LogFile) operation owns guarded initialization, ordering, recovery transitions, constraint restoration and disposal. Table operations own preparation/capture/reconciliation, copy plus checkpoint and purge plus checkpoint. Retain ProcessState internally; callers never inspect or mutate progress to drive execution.
+Deepen the existing archiving model into an execution owner. Preserve public Invoke-Fast1Archiving and private Invoke-ArchivingProcess signatures; reduce the latter to requesting execution and handling outcome. An inert TableGroup constructor stores inputs; its Execute() operation owns guarded initialization, ordering, recovery transitions, constraint restoration and disposal. Table operations own preparation/capture/reconciliation, copy plus checkpoint and purge plus checkpoint. Retain ProcessState internally; callers never inspect or mutate progress to drive execution.
 
 Effects and checkpoints remain independently committed. Failed checkpoints stop sequencing while preserving durable effects and recovery information. Register source FK obligations before disabling; restore each constraint independently before new purge/overall completion. Preserve the primary error and expose every cleanup failure. See [research.md](research.md).
 
@@ -80,8 +80,8 @@ Fast1data.SqlServer/
 ├── schema/archiving/{tables,sprocs}.sql      # Retain schema/procedure signatures
 ├── Fast1data.SqlServer.{psd1,psm1}            # Verify contract/import; no new export
 └── tests/
-    ├── Archiving.Tests.ps1                   # Retain/expand SQL; explicit inputs
-    └── ArchivingExecution.Tests.ps1          # New SQL-independent ownership/error cases
+    ├── Archiving.Integration.Tests.ps1                   # Retain/expand SQL; explicit inputs
+    └── Archiving.Execution.Tests.ps1          # New SQL-independent ownership/error cases
 Fast1Archiving.md                             # Recovery/count/source FK guidance
 ```
 

@@ -42,13 +42,13 @@ Describe 'Owned archiving execution without SQL' {
 
 	It 'keeps the caller limited to construction and one execution request' {
 		$caller = Get-Content (Join-Path $PSScriptRoot '../private/archiving/Invoke-ArchivingProcess.ps1') -Raw
-		$caller | Should -Match '\.Execute\(\$LogFile\)'
+		$caller | Should -Match '\.Execute\(\)'
 		$caller | Should -Not -Match '\.State|\.Dispose\(|DisableEnableFK|UpdateArchive|UpdatePurge|foreach|while'
 	}
 
 	It 'retains the public parameter and export contract' {
 		$command = Get-Command Invoke-Fast1Archiving
-		foreach ($name in @('ConnStr', 'GroupName', 'LogFile')) {
+		foreach ($name in @('ConnStr', 'GroupName')) {
 			$command.Parameters[$name].ParameterType | Should -Be ([string])
 		}
 		foreach ($name in @('ConnStr', 'GroupName')) {
@@ -64,7 +64,7 @@ Describe 'Owned archiving execution without SQL' {
 Describe 'Execution lifetime, transitions and cleanup through the same request' {
 	BeforeEach {
 		InModuleScope ArchivingModel {
-			$script:h = [pscustomobject]@{
+			$script:h = [PSCustomObject]@{
 				Events = [System.Collections.Generic.List[string]]::new()
 				Failures = @{}
 				CommitThenThrow = ''
@@ -312,7 +312,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	It 'merges nested cleanup contexts from wrapped errors before their enclosing disposal context' {
 		InModuleScope ArchivingModel {
 			$nested = [InvalidOperationException]::new('outer disposal failure')
-			$nested.Data['Fast1Sql.CleanupFailures'] = @([pscustomobject]@{ Action = 'Dispose'; ResourceRole = 'NestedCommand'; ErrorType = 'Controlled'; Message = 'Nested cleanup failed.' })
+			$nested.Data['Fast1Sql.CleanupFailures'] = @([PSCustomObject]@{ Action = 'Dispose'; ResourceRole = 'NestedCommand'; ErrorType = 'Controlled'; Message = 'Nested cleanup failed.' })
 			$script:h.Failures['open Destination'] = [InvalidOperationException]::new('primary failure')
 			$script:h.Failures['release Destination'] = $nested
 			try {
@@ -341,8 +341,8 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 		InModuleScope ArchivingModel {
 			$script:h.Tables = @()
 			$group = [TableGroup]::new('Server=controlled;Database=config', 'controlled')
-			$group.Execute('')
-			{ $group.Execute('') } | Should -Throw '*single-use*'
+			$group.Execute()
+			{ $group.Execute() } | Should -Throw '*single-use*'
 		}
 	}
 
@@ -392,8 +392,8 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	It 'restores the whole registered scope after partial disable and gates completion on cleanup success' {
 		InModuleScope ArchivingModel {
 			$script:h.Constraints = @(
-				[pscustomobject]@{ DatabaseName = 'source'; SchemaName = 'dbo'; TableName = 'child'; ConstraintName = 'first' }
-				[pscustomobject]@{ DatabaseName = 'source'; SchemaName = 'dbo'; TableName = 'child'; ConstraintName = 'second' }
+				[PSCustomObject]@{ DatabaseName = 'source'; SchemaName = 'dbo'; TableName = 'child'; ConstraintName = 'first' }
+				[PSCustomObject]@{ DatabaseName = 'source'; SchemaName = 'dbo'; TableName = 'child'; ConstraintName = 'second' }
 			)
 			$script:h.Failures['constraint first True'] = [InvalidOperationException]::new('disable failed')
 			$script:h.Failures['constraint first False'] = [InvalidOperationException]::new('restore failed')
@@ -454,7 +454,7 @@ Describe 'Shared SQL command setup and release' {
 		InModuleScope ArchivingModel {
 			$script:helperConnection = [Microsoft.Data.SqlClient.SqlConnection]::new()
 			$script:helperCommand = [Microsoft.Data.SqlClient.SqlCommand]::new()
-			$script:helperStatus = [pscustomobject]@{ Released = $false; FailRelease = $false; Execution = '' }
+			$script:helperStatus = [PSCustomObject]@{ Released = $false; FailRelease = $false; Execution = '' }
 			$script:helperCommand | Add-Member -NotePropertyName Status -NotePropertyValue $script:helperStatus
 			$script:helperCommand | Add-Member -MemberType ScriptMethod -Name Dispose -Force -Value {
 				$this.Status.Released = $true

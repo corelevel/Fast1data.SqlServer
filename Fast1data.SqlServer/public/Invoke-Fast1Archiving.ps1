@@ -5,7 +5,8 @@ Archives and purges configured SQL Server tables.
 .DESCRIPTION
 Runs the configured archiving process for a table group. The process can copy
 eligible rows from source tables to archive tables, purge source rows in
-batches, resume incomplete work, and write progress messages to a log file.
+batches, and resume incomplete work. Progress messages use the verbose stream;
+warnings use the warning stream. Use -Verbose to display progress.
 
 One request owns initialization, effects, checkpoints, constraint restoration and
 resource release. Copy/delete effects and checkpoints commit independently. A
@@ -31,9 +32,6 @@ configuration database.
 
 .PARAMETER GroupName
 Specifies the configured table-group name to archive or purge.
-
-.PARAMETER LogFile
-Specifies an optional file to which archiving progress messages are appended.
 #>
 function Invoke-Fast1Archiving {
 	[CmdletBinding()]
@@ -42,13 +40,10 @@ function Invoke-Fast1Archiving {
 		[string]$ConnStr,
 
 		[Parameter(Mandatory)]
-		[string]$GroupName,
-
-		[string]$LogFile
+		[string]$GroupName
 	)
 
 	Invoke-ArchivingProcess `
 		-ConnStr $ConnStr `
-		-GroupName $GroupName `
-		-LogFile $LogFile
+		-GroupName $GroupName
 }

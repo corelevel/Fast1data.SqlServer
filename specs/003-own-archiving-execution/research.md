@@ -52,7 +52,7 @@ Review found an additional recovery hole: BulkCopyDestinationPK (ArchivingModel.
 
 **Decision**: Preserve PowerShell 7.6 Core/x64 Windows/Linux/macOS, exports, dependencies and formats. Separate controlled ownership tests from SQL setup; add explicit target inputs/guards before running retained fixtures.
 
-**Rationale**: Manifest/build specify existing runtime/dependencies (net10.0, SqlClient 7.1.1). stp_GetSourceTable filters Active without ORDER BY; retain supplied traversal/PurgeOrder semantics. tests/Archiving.Tests.ps1:423–498 retains copy interruption, committed earlier rows and counts distinct from destination population; :500–590 retains delete interruption. Global setup currently uses fixed SQL targets/credentials even for untagged checks. Excluding Integration does not make it SQL independent. Existing fresh observer connections provide a useful evidence pattern.
+**Rationale**: Manifest/build specify existing runtime/dependencies (net10.0, SqlClient 7.1.1). stp_GetSourceTable filters Active without ORDER BY; retain supplied traversal/PurgeOrder semantics. tests/Archiving.Integration.Tests.ps1:423–498 retains copy interruption, committed earlier rows and counts distinct from destination population; :500–590 retains delete interruption. Global setup currently uses fixed SQL targets/credentials even for untagged checks. Excluding Integration does not make it SQL independent. Existing fresh observer connections provide a useful evidence pattern.
 
 **Alternatives considered**: Mocks cannot prove durable rows/trust bits. Guessing targets violates explicit selection. Public injection flags change the operator contract; private seams and test-only triggers/procedure wrappers suffice.
 

@@ -1,46 +1,35 @@
 <#
 .SYNOPSIS
-Writes a formatted Fast1 Audit log message.
+Writes a formatted Fast1 log message.
 
 .DESCRIPTION
-Writes informational messages to the verbose stream, warnings to the warning
-stream, and errors to the error stream. When LogFile is supplied, the formatted
-message is also appended to that file.
+Writes informational messages to the verbose stream and warnings to the warning
+stream.
 
 .PARAMETER Message
-Specifies the text of the log message.
-
-.PARAMETER LogFile
-Specifies an optional file to which the formatted message is appended.
+Specifies the log message text.
 
 .PARAMETER Level
-Specifies the message level. Valid values are Info, Warning, and Error.
+Specifies the logging level. Valid values are Verbose and Warning. The default is Verbose.
 #>
+
 function Write-LogMessage {
 	[CmdletBinding()]
 	param(
 		[Parameter(Mandatory)]
 		[string]$Message,
 
-		[string]$LogFile,
-
-		[ValidateSet('Info','Warning','Error')]
-		[string]$Level = 'Info'
+		[ValidateSet('Warning', 'Verbose')]
+		[string]$Level = 'Verbose'
 	)
 
-	$line = "$((Get-Date).ToString('[MM/dd/yy HH:mm:ss.ff]')) [$Level] $Message"
+	$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
+	$line = "[$timestamp] [$Level] $Message"
 
 	if ($Level -eq 'Warning') {
 		Write-Warning $line
 	}
-	elseif ($Level -eq 'Error') {
-		Write-Error $line
-	}
 	else {
 		Write-Verbose $line
-	}
-
-	if ($LogFile) {
-		Add-Content -Path $LogFile -Value $line
 	}
 }

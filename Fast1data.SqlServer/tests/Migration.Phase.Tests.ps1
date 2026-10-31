@@ -87,7 +87,7 @@ Describe 'Migration phase containment and complete evaluation' {
 				$selection.ForceScripts = @('last.sql')
 			}
 			'drift' {
-				$fixture.History = @([pscustomobject]@{ script_name = 'LAST.SQL'; checksum = 'old' })
+				$fixture.History = @([PSCustomObject]@{ script_name = 'LAST.SQL'; checksum = 'old' })
 			}
 		}
 		$config = @{}
@@ -103,7 +103,7 @@ Describe 'Migration phase containment and complete evaluation' {
 		$config = @{}
 		$config[$fixture.Phase] = @{ scripts = @('missing.sql', 'changed.sql') }
 		$config | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $fixture.BasePath 'migration.json')
-		$fixture.History = @([pscustomobject]@{ script_name = 'changed.sql'; checksum = 'old' })
+		$fixture.History = @([PSCustomObject]@{ script_name = 'changed.sql'; checksum = 'old' })
 		Mock Get-FileChecksum { throw 'Ignored scripts must never be hashed.' }
 		$result = Resolve-MigrationPhase @fixture -IgnoreScripts 'missing.sql', 'changed.sql'
 		$result.Scripts.Reason | Should -Be @('Ignored', 'Ignored')
@@ -205,9 +205,9 @@ Describe 'Migration phase identity and decisions' {
 	It 'matches case and both separators across history, ignore, and force with exact original keys' {
 		$fixture = New-PhaseFixture -Scripts 'Nested\Old.sql', 'Nested/Ignore.sql', 'Nested/Force.sql', 'New.sql'
 		$fixture.History = @(
-			[pscustomobject]@{ script_name = 'NESTED\OLD.SQL'; checksum = (Get-FileChecksum (Join-Path $fixture.BasePath "$($fixture.Phase)/Nested/Old.sql")) }
-			[pscustomobject]@{ script_name = 'nested\FORCE.sql'; checksum = 'old-checksum' }
-			[pscustomobject]@{ script_name = 'history-only.sql'; checksum = 'unconfigured' }
+			[PSCustomObject]@{ script_name = 'NESTED\OLD.SQL'; checksum = (Get-FileChecksum (Join-Path $fixture.BasePath "$($fixture.Phase)/Nested/Old.sql")) }
+			[PSCustomObject]@{ script_name = 'nested\FORCE.sql'; checksum = 'old-checksum' }
+			[PSCustomObject]@{ script_name = 'history-only.sql'; checksum = 'unconfigured' }
 		)
 		$result = Resolve-MigrationPhase @fixture -IgnoreScripts 'NESTED\IGNORE.SQL' -ForceScripts 'NESTED\force.SQL'
 		$result.Scripts.ScriptName | Should -Be @('Nested/Old.sql', 'Nested/Ignore.sql', 'Nested/Force.sql', 'New.sql')
@@ -272,7 +272,7 @@ Describe 'Migration phase identity and decisions' {
 					Set-Content -LiteralPath (Join-Path $fixture.BasePath 'migration.json')
 			}
 			'history' {
-				$fixture.History = @([pscustomobject]@{ script_name = $absolute; checksum = (Get-FileChecksum $absolute) })
+				$fixture.History = @([PSCustomObject]@{ script_name = $absolute; checksum = (Get-FileChecksum $absolute) })
 			}
 			'ignore' {
 				$selection.IgnoreScripts = @($absolute)
@@ -306,13 +306,13 @@ Describe 'Migration phase identity and decisions' {
 	It 'rejects unforced checksum drift with identity and expected/current checksums' {
 		$fixture = New-PhaseFixture -Scripts 'one.sql'
 		$checksum = Get-FileChecksum (Join-Path $fixture.BasePath "$($fixture.Phase)/one.sql")
-		$fixture.History = @([pscustomobject]@{ script_name = 'ONE.SQL'; checksum = 'expected-value' })
+		$fixture.History = @([PSCustomObject]@{ script_name = 'ONE.SQL'; checksum = 'expected-value' })
 		{ Resolve-MigrationPhase @fixture } | Should -Throw "*one.sql*Expected: expected-value*Current: $checksum*"
 	}
 
 	It 'reads configuration once and hashes every non-ignored script once, including skips' {
 		$fixture = New-PhaseFixture -Scripts 'one.sql', 'two.sql', 'ignored.sql'
-		$fixture.History = @([pscustomobject]@{
+		$fixture.History = @([PSCustomObject]@{
 			script_name = 'one.sql'
 			checksum = (Get-FileChecksum (Join-Path $fixture.BasePath "$($fixture.Phase)/one.sql"))
 		})

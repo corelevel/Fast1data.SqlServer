@@ -1,5 +1,7 @@
 # Own Archiving Execution — Validation
 
+Test layout note: the results below predate the suite split. Isolated migration command tests now live in `Migration.Tests.ps1`; live SQL cases and setup now live in `Migration.Integration.Tests.ps1`. Historical combined results have not been rerun against live SQL as part of the rename.
+
 Validated 2026-10-30 on x64 Windows, PowerShell 7.6.9 Core. All available acceptance checks passed. Required SQL durability and FK evidence was obtained; Linux/macOS execution remains unverified.
 
 ## Environment and isolation
@@ -16,19 +18,19 @@ Final teardown verified zero remaining configuration fixture rows and zero sourc
 
 | Check | Passed | Failed | Skipped / unverified |
 | --- | ---: | ---: | --- |
-| SQL-independent ArchivingExecution.Tests.ps1 | 28 | 0 | 0 |
-| Explicitly targeted Archiving.Tests.ps1 | 29 | 0 | 0 |
-| Audit.Tests.Common.ps1 | 3 | 0 | 0 |
-| Audit.Tests.Windows.ps1 | 7 | 0 | 0 |
-| Audit.Tests.Linux.ps1 | 0 | 0 | 21: requires Linux |
+| SQL-independent Archiving.Execution.Tests.ps1 | 28 | 0 | 0 |
+| Explicitly targeted Archiving.Integration.Tests.ps1 | 29 | 0 | 0 |
+| Audit.Common.Tests.ps1 | 3 | 0 | 0 |
+| Audit.Windows.Tests.ps1 | 7 | 0 | 0 |
+| Audit.Linux.Tests.ps1 | 0 | 0 | 21: requires Linux |
 | Migration.Tests.ps1, including disposable SQL integration | 47 | 0 | 1: requires case-sensitive database collation |
-| Migration.Tests.Phase.ps1 | 33 | 0 | 1: requires case-sensitive Unix filesystem |
+| Migration.Phase.Tests.ps1 | 33 | 0 | 1: requires case-sensitive Unix filesystem |
 | PSScriptAnalyzer, seven changed feature PowerShell files | Clean | 0 findings | No rules suppressed; no repository settings found |
 | Fresh-process manifest and direct .psm1 imports | Both passed | 0 | Linux/macOS hosts unavailable; WSL is not installed |
 
 Total: **147 tests passed, 0 failed, 23 conditional skips**. Skips are not evidence of Linux or case-sensitive behavior. Class changes were tested in fresh pwsh processes. Pester's unused TestRegistry was disabled after its default temporary registry setup was rejected in the restricted Windows environment.
 
-Analyzer coverage: ArchivingModel.psm1, Invoke-ArchivingProcess.ps1, Metadata.psm1, GenericSqlQuery.ps1, public Invoke-Fast1Archiving.ps1, Archiving.Tests.ps1 and ArchivingExecution.Tests.ps1. SQL provider types were loaded before analysis. Tab indentation and multiline control-flow blocks were retained. New analyzer warnings were corrected without suppression.
+Analyzer coverage: ArchivingModel.psm1, Invoke-ArchivingProcess.ps1, Metadata.psm1, GenericSqlQuery.ps1, public Invoke-Fast1Archiving.ps1, Archiving.Integration.Tests.ps1 and Archiving.Execution.Tests.ps1. SQL provider types were loaded before analysis. Tab indentation and multiline control-flow blocks were retained. New analyzer warnings were corrected without suppression.
 
 ## Durable batch and checkpoint evidence
 
@@ -82,7 +84,7 @@ Operation errors retained the original exception reference and stack. Ordered sa
 
 Compatibility passed for archive-only, purge-only, combined, inactive, both-disabled, empty groups, unknown groups and empty captured sets; computed/rowversion exclusion, missing-column creation and missing destination schema/table creation were retained. Controlled traversal preserved supplied preparation/archive order, group copy-before-purge, configured PurgeOrder, batch sizes, delays and purge-only reconciliation triggers. No new ordering guarantee was added.
 
-Both fresh imports exposed `Invoke-Fast1Archiving [-ConnStr] <string> [-GroupName] <string> [[-LogFile] <string>] [<CommonParameters>]`. Mandatory string parameters, optional LogFile, three manifest exports and no-success-object behavior passed. Caller inspection found only inert construction and one Execute request, with no state/checkpoint/FK/disposal coordination.
+Both fresh imports passed the then-current parameter contract, three manifest exports and no-success-object behavior. The optional file-output parameter has since been removed; the current signature is `Invoke-Fast1Archiving [-ConnStr] <string> [-GroupName] <string> [<CommonParameters>]`. The historical validation here predates that removal. Caller inspection found only inert construction and one Execute request, with no state/checkpoint/FK/disposal coordination.
 
 Test target guards rejected missing inputs, system databases, overlapping targets, configuration/source instance mismatches and a uniquely registered preexisting target mismatch. Procedure modify_date was unchanged during mismatch rejection, demonstrating rejection before schema deployment. A read-only guard check also succeeded before archiving schema existed.
 

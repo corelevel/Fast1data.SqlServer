@@ -8,7 +8,7 @@ This guide validates the private evaluator, public command, and SQL history beha
 - Use a compatible Pester installation; record the version. Planning found Pester 6.2.0. The tests use temporary files and Pester mocking/module-scope facilities.
 - Command/integration tests require the existing SqlServer module and loadable Microsoft.Data.SqlClient. Follow [README source installation](../../README.md#install-from-source) if runtime assets need building; no build/dependency change is planned.
 - Install/use PSScriptAnalyzer for the constitution's mandatory changed-PowerShell gate. Find and use repository settings when available. Planning found no settings file.
-- Real SQL checks use the original local `pester_migration` connection declared in `Migration.Tests.ps1`, restored at the user's request. Review that test connection before running; use a disposable database.
+- Real SQL checks use the connection settings in `Migration.Integration.Tests.ps1`. Review them before running; the login must be able to create and drop disposable test databases.
 
 Record environment versions without printing connection strings:
 
@@ -20,12 +20,12 @@ Get-Module -ListAvailable Pester, PSScriptAnalyzer, SqlServer |
 
 ## Phase behavior without SQL access
 
-`MigrationPhase.Tests.ps1` loads only `Resolve-MigrationPhase` and retained filesystem helpers. It supplies real temporary configuration/files and in-memory history, with no SQL connection or deployment. Run it independently:
+`Migration.Phase.Tests.ps1` loads only `Resolve-MigrationPhase` and retained filesystem helpers. It supplies real temporary configuration/files and in-memory history, with no SQL connection or deployment. Run it independently:
 
 ```powershell
 Import-Module Pester -MinimumVersion 5.0 -Force
 $migrationPhaseConfig = New-PesterConfiguration
-$migrationPhaseConfig.Run.Path = './Fast1data.SqlServer/tests/MigrationPhase.Tests.ps1'
+$migrationPhaseConfig.Run.Path = './Fast1data.SqlServer/tests/Migration.Phase.Tests.ps1'
 $migrationPhaseConfig.Run.PassThru = $true
 $migrationPhaseConfig.Output.Verbosity = 'Detailed'
 if ($migrationPhaseConfig.PSObject.Properties['TestRegistry']) {
@@ -57,7 +57,7 @@ For platform-sensitive tests, use host-appropriate fixtures. Run the suite on Wi
 
 ## Command preview and coordination
 
-Verify import/export boundaries, then run command tests excluding real integration:
+Verify import/export boundaries, then run the isolated command suite:
 
 ```powershell
 Import-Module './Fast1data.SqlServer/Fast1data.SqlServer.psd1' -Force
@@ -66,7 +66,6 @@ Get-Command -Module Fast1data.SqlServer
 Import-Module Pester -MinimumVersion 5.0 -Force
 $migrationCommandConfig = New-PesterConfiguration
 $migrationCommandConfig.Run.Path = './Fast1data.SqlServer/tests/Migration.Tests.ps1'
-$migrationCommandConfig.Filter.ExcludeTag = 'Integration'
 $migrationCommandConfig.Run.PassThru = $true
 $migrationCommandConfig.Output.Verbosity = 'Detailed'
 if ($migrationCommandConfig.PSObject.Properties['TestRegistry']) {
@@ -92,16 +91,16 @@ The commands disable the unused TestRegistry facility when supported and retain 
 
 ## Real SQL execution and history
 
-`Migration.Tests.ps1` declares its local `pester_migration` connection in BeforeAll. The file-level `ConnectionString` parameter and its validation guards were reverted at the user's request. Nonintegration tests still make no real connection, and SQL/schema setup remains restricted to Integration fixtures. The database must already exist.
+`Migration.Integration.Tests.ps1` contains the live SQL cases and their connection settings. Its setup creates a uniquely named disposable database and installs the migration schema; teardown drops that database. The case-sensitive legacy-key test creates and drops an additional database with case-sensitive collation.
 
-Provision the disposable database before testing. Grant the test principal connection rights, rights to execute migration SQL and create/drop fixture tables, and select/insert/update/delete on history. Initial schema setup additionally requires permission to create `dbo.fast1_migration_history` and its constraint; apply [schema/migration/tables.sql](../../Fast1data.SqlServer/schema/migration/tables.sql) with a setup principal if needed. The existing tagged setup can apply that idempotent schema when authorized. See [Fast1Migration.md](../../Fast1Migration.md#database-setup).
+Grant the test login database creation/drop permissions and the permissions needed to install the schema, create fixtures, and execute migration SQL. See [Fast1Migration.md](../../Fast1Migration.md#database-setup).
 
 Run the Integration fixtures against the connection declared in the test file:
 
 ```powershell
 Import-Module Pester -MinimumVersion 5.0 -Force
 $migrationSqlConfig = New-PesterConfiguration
-$migrationSqlConfig.Run.Path = './Fast1data.SqlServer/tests/Migration.Tests.ps1'
+$migrationSqlConfig.Run.Path = './Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1'
 $migrationSqlConfig.Filter.Tag = 'Integration'
 $migrationSqlConfig.Output.Verbosity = 'Detailed'
 $migrationSqlConfig.Run.PassThru = $true
@@ -126,15 +125,11 @@ Fixtures use unique phase/table names and clean up only their own rows/tables in
 
 Real SQL checks complement controlled orchestration tests; do not replace persistence/error assertions with mocks. An unavailable server/database or missing permissions means checks remain unverified, not passed. Do not log connection strings when reporting errors.
 
-The two legacy-key cases run the same assertions, with one requiring case-sensitive
-collation. That case explicitly skips when the selected database collation is not
-case-sensitive. Edit the test-file connection to select a case-sensitive disposable
-database and run the SQL command again to satisfy that gate; never change an existing
-database's collation for the test. Setup reports the actual collation.
+The two legacy-key cases run the same assertions against the main test database and a separately created case-sensitive database. Setup reports the main database collation; the case-sensitive fixture verifies its own comparison behavior.
 
 ## Static analysis and documentation review
 
-Analyze every added/modified `.ps1`, `.psm1`, and `.psd1`, including tests. Expected initial scope is the evaluator, public command, history reader/writer, checksum helper, and both migration test files. Expand that scope if implementation edits anything else. The removed reader is reviewed for absent callers rather than analyzed as an existing file.
+Analyze every added/modified `.ps1`, `.psm1`, and `.psd1`, including tests. Expected initial scope is the evaluator, public command, history reader/writer, checksum helper, and all three migration test files. Expand that scope if implementation edits anything else. The removed reader is reviewed for absent callers rather than analyzed as an existing file.
 
 ```powershell
 Import-Module PSScriptAnalyzer -ErrorAction Stop
@@ -144,8 +139,9 @@ $migrationAnalyzerFiles = @(
 	'./Fast1data.SqlServer/private/migration/Get-Executed.ps1'
 	'./Fast1data.SqlServer/private/migration/Set-Executed.ps1'
 	'./Fast1data.SqlServer/private/shared/Get-FileChecksum.ps1'
-	'./Fast1data.SqlServer/tests/MigrationPhase.Tests.ps1'
+	'./Fast1data.SqlServer/tests/Migration.Phase.Tests.ps1'
 	'./Fast1data.SqlServer/tests/Migration.Tests.ps1'
+	'./Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1'
 )
 
 $migrationAnalyzerOptions = @{
