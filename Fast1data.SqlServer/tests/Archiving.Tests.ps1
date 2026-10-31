@@ -152,7 +152,7 @@ order by ps.ProcessStateId desc for json path, include_null_values
 			$workingKeys = '[]'
 		}
 		$evidence = [ordered]@{ Fixture = $script:groupName; Stage = $Stage; SourceKeys = @($sourceKeys | ConvertFrom-Json); DestinationKeys = @($destinationKeys | ConvertFrom-Json); WorkingKeys = @($workingKeys | ConvertFrom-Json); State = Get-ArchivingTestState }
-		Write-Verbose ($evidence | ConvertTo-Json -Depth 5 -Compress)
+		Write-Information ($evidence | ConvertTo-Json -Depth 5 -Compress) -InformationAction Continue
 	}
 
 	function Initialize-ArchivingTestForeignKey {
@@ -179,7 +179,7 @@ insert dbo.[$($script:tableName)_child_$child] values (1, 1);
 select name, is_disabled, is_not_trusted from sys.foreign_keys
 where name in (@first, @second) order by name for json path
 '@ -Parameters @{ first = "FK_$($script:tableName)_a"; second = "FK_$($script:tableName)_b" }
-		Write-Verbose "Foreign keys $json"
+		Write-Information "Foreign keys $json" -InformationAction Continue
 		$json | ConvertFrom-Json
 	}
 
@@ -235,7 +235,7 @@ Describe 'Fast1data.SqlServer archiving' {
 			Invoke-Fast1Archiving `
 				-ConnStr $script:configConnectionString `
 				-GroupName $missingGroup `
-				-ErrorAction SilentlyContinue 3>$null
+				-ErrorAction SilentlyContinue
 		} | Should -Throw '*table group*not found*'
 	}
 }
@@ -382,7 +382,7 @@ if object_id(N'dbo.$script:tableName', N'U') is not null
 		Invoke-ArchivingTestCheckpointFault -Condition 'i.LastArchivedKey > isnull(d.LastArchivedKey, 0)'
 		Save-ArchivingTestEvidence -Stage 'before copy checkpoint fixture'
 		{
-			Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue 3>$null
+			Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue
 		} | Should -Throw '*Intentional checkpoint interruption*'
 		$state = Get-ArchivingTestState
 		$state.LastArchivedKey | Should -Be 0
@@ -408,7 +408,7 @@ if object_id(N'dbo.$script:tableName', N'U') is not null
 		Invoke-ArchivingTestCheckpointFault -Condition 'i.LastPurgedKey > isnull(d.LastPurgedKey, 0)'
 		Save-ArchivingTestEvidence -Stage 'before delete checkpoint fixture'
 		{
-			Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue 3>$null
+			Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue
 		} | Should -Throw '*Intentional checkpoint interruption*'
 		$state = Get-ArchivingTestState
 		$state.LastPurgedKey | Should -Be 0
@@ -435,7 +435,7 @@ if object_id(N'dbo.$script:tableName', N'U') is not null
 	) {
 		Invoke-ArchivingTestCheckpointFault -Condition $Condition
 		{
-			Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue 3>$null
+			Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue
 		} | Should -Throw '*Intentional checkpoint interruption*'
 		$state = Get-ArchivingTestState
 		$state.CompleteDate | Should -BeNullOrEmpty
@@ -464,7 +464,7 @@ if object_id(N'dbo.$script:tableName', N'U') is not null
 			$script:injections.Add(@{ ConnectionString = $script:sourceConnectionString; Query = "drop trigger if exists dbo.[$trigger]" })
 			Invoke-ArchivingTestSql -ConnectionString $script:sourceConnectionString -Query "create trigger dbo.[$trigger] on dbo.[$script:tableName] after delete as throw 51002, 'Intentional delete interruption', 1;"
 		}
-		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue 3>$null } | Should -Throw '*Intentional*interruption*'
+		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue } | Should -Throw '*Intentional*interruption*'
 		$state = Get-ArchivingTestState
 		$state.SourceTableId | Should -Not -Be $state.ProcessStateId
 		$state.PurgeCompleteDate | Should -BeNullOrEmpty
@@ -510,7 +510,7 @@ if object_id(N'dbo.$script:tableName', N'U') is not null
 		}
 		$caught = $null
 		try {
-			Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue 3>$null
+			Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue
 		}
 		catch {
 			$caught = $_
@@ -588,7 +588,7 @@ where st.TableName = @table_name and ps.CompleteDate is not null;
 				$bulk
 			}
 		}
-		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue 3>$null } | Should -Throw '*partial capture interruption*'
+		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue } | Should -Throw '*partial capture interruption*'
 		(Get-ArchivingTestState).KeyCopyDate | Should -BeNullOrEmpty
 		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Scalar -Query "select count(*) from dbo.[dbo_$($script:tableName)__src]" | Should -Be 2
 		InModuleScope ArchivingModel { $script:captureFault = $false }
@@ -612,7 +612,7 @@ select value * 7, concat(N'key', value * 17), value * 11.25, N'eligible' from ge
 "@
 		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Query "update dbo.SourceTable set DataCopyBatchSize = 200, PurgeBatchSize = 300, KeyCopyBatchSize = 5000, AlwaysRunCheck = 1, KeyQuery = N'select Code, Sequence from dbo.[$script:tableName] where Value <> N''excluded''' where TableName = @table_name" -Parameters @{ table_name = $script:tableName }
 		Invoke-ArchivingTestCheckpointFault -Condition 'i.LastArchivedKey > isnull(d.LastArchivedKey, 0)'
-		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue 3>$null } | Should -Throw '*checkpoint interruption*'
+		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue } | Should -Throw '*checkpoint interruption*'
 		Invoke-ArchivingTestSql -ConnectionString $script:destinationConnectionString -Scalar -Query "select count(*) from dbo.[$script:tableName]" | Should -Be 200
 		Invoke-ArchivingTestSql -ConnectionString $script:sourceConnectionString -Query "update dbo.[$script:tableName] set Value = N'excluded' where Id in (select top (1) Id from dbo.[$script:tableName]); insert dbo.[$script:tableName] values (99999, N'outside', 99999.99, N'eligible');"
 		Invoke-ArchivingTestSql -ConnectionString $script:destinationConnectionString -Query "update dbo.[$script:tableName] set Value = N'excluded'"
@@ -633,7 +633,7 @@ select value * 7, concat(N'key', value * 17), value * 11.25, N'eligible' from ge
 				$bulk
 			}
 		}
-		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue 3>$null } | Should -Throw '*partial snapshot interruption*'
+		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue } | Should -Throw '*partial snapshot interruption*'
 		(Get-ArchivingTestState).LastArchivedKey | Should -Be 0
 		(Get-ArchivingTestState).WorkingSetExists | Should -Be 1
 		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Scalar -Query "select count(*) from dbo.[dbo_$($script:tableName)__dst]" | Should -BeGreaterThan 0
@@ -646,7 +646,7 @@ select value * 7, concat(N'key', value * 17), value * 11.25, N'eligible' from ge
 		Invoke-ArchivingTestSql -ConnectionString $script:sourceConnectionString -Scalar -Query "select count(*) from dbo.[$script:tableName] where Id <> 99999" | Should -Be 0
 		Invoke-ArchivingTestSql -ConnectionString $script:sourceConnectionString -Scalar -Query "select count(*) from dbo.[$script:tableName] where Id = 99999" | Should -Be 1
 		(Get-ArchivingTestState).KeyMaxValue | Should -Be 1105
-		Write-Verbose "Composite fixture $($script:groupName): captured 1105, committed before checkpoint 200, page bound 1000, completed destination 1105 unique keys, retained outside key 99999."
+		Write-Information "Composite fixture $($script:groupName): captured 1105, committed before checkpoint 200, page bound 1000, completed destination 1105 unique keys, retained outside key 99999." -InformationAction Continue
 	}
 
 	It 'preserves earlier table completion when a later table fails' {
@@ -663,7 +663,7 @@ select TableGroupId, SchemaName, @later_name, Active, DataCopyBatchSize, KeyCopy
 N'select Id from dbo.[$laterName]', 1, 1, 2, DelayInterval, 0
 from dbo.SourceTable where TableName = @table_name;
 "@ -Parameters @{ table_name = $script:tableName; later_name = $laterName }
-		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue 3>$null } | Should -Throw '*duplicate key*'
+		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue } | Should -Throw '*duplicate key*'
 		$completedId = Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Scalar -Query @'
 select ps.ProcessStateId from dbo.ProcessState ps join dbo.SourceTable st on st.SourceTableId = ps.SourceTableId
 where st.TableName = @table_name and ps.CompleteDate is not null;
@@ -676,7 +676,7 @@ where st.TableName = @later_name and ps.CompleteDate is null;
 		Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName
 		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Scalar -Query 'select count(*) from dbo.ProcessState where ProcessStateId = @id and CompleteDate is not null' -Parameters @{ id = $completedId } | Should -Be 1
 		Invoke-ArchivingTestSql -ConnectionString $script:destinationConnectionString -Scalar -Query "select count(*) from dbo.[$laterName]" | Should -Be 5
-		Write-Verbose "Multi-table fixture $($script:groupName): earlier completed process $completedId retained while later process retried to five unique archive keys."
+		Write-Information "Multi-table fixture $($script:groupName): earlier completed process $completedId retained while later process retried to five unique archive keys." -InformationAction Continue
 	}
 
 	It 'creates a missing destination schema using the configured source schema' {
@@ -697,7 +697,7 @@ where st.TableName = @later_name and ps.CompleteDate is null;
 		InModuleScope ArchivingModel {
 			Mock Invoke-ArchivingConstraintAction { throw 'Unexpected FK toggle' }
 		}
-		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue 3>$null } | Should -Throw '*REFERENCE constraint*'
+		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue } | Should -Throw '*REFERENCE constraint*'
 		InModuleScope ArchivingModel { Should -Invoke Invoke-ArchivingConstraintAction -Exactly -Times 0 }
 		$fks = @(Get-ArchivingTestForeignKey)
 		($fks | Where-Object { $_.name.EndsWith('_a') }).is_disabled | Should -BeFalse
@@ -901,7 +901,7 @@ insert dbo.$script:tableName(Id, Value) values(3, N'three');
 			Invoke-Fast1Archiving `
 				-ConnStr $script:configConnectionString `
 				-GroupName $script:groupName `
-				-ErrorAction SilentlyContinue 3>$null
+				-ErrorAction SilentlyContinue
 		} | Should -Throw
 
 		$partialState = Invoke-ArchivingTestSql `
@@ -983,7 +983,7 @@ end;
 			Invoke-Fast1Archiving `
 				-ConnStr $script:configConnectionString `
 				-GroupName $script:groupName `
-				-ErrorAction SilentlyContinue 3>$null
+				-ErrorAction SilentlyContinue
 		} | Should -Throw '*Intentional purge interruption*'
 
 		$partialState = Invoke-ArchivingTestSql `
