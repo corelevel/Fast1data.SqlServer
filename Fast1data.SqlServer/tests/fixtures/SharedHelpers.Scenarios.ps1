@@ -188,9 +188,9 @@ Describe 'Real operational logging in one session' {
 
 Describe 'Internal ownership and unchanged distribution contract' {
 	It 'retains separate defining session states and selected-root paths for every helper' {
-		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-GenericSqlQuery', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure', 'Compare-Column', 'Get-DelayIntervalInSecond')
-		$rootOnly = @('Get-RuntimeIdentifier', 'Import-SqlClientLib', 'Get-FileChecksum', 'Get-RelativePath', 'Invoke-ArchivingProcess', 'Get-SqlAuditFile', 'Get-SqlAuditFileEntry', 'Import-SqlAuditFile', 'Get-ImportState', 'Get-Executed', 'Set-Executed', 'Invoke-Migration', 'Resolve-MigrationPhase')
-		$modelOnly = @('Get-ArchivingConnection', 'Get-ArchivingCommand', 'Get-ArchivingTable', 'Get-ArchivingBulkCopy', 'Get-ArchivingServerIdentity', 'ConvertTo-ArchivingIdentifier', 'Invoke-ArchivingConstraintAction')
+		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-GenericSqlQuery', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure', 'Get-FileChecksum', 'Get-RelativePath')
+		$rootOnly = @('Get-RuntimeIdentifier', 'Import-SqlClientLib', 'Invoke-ArchivingProcess', 'Get-SqlAuditFile', 'Get-SqlAuditFileEntry', 'Import-SqlAuditFile', 'Get-ImportState', 'Get-Executed', 'Set-Executed', 'Invoke-Migration', 'Resolve-MigrationPhase')
+		$modelOnly = @('Compare-Column', 'Get-DelayIntervalInSecond', 'Get-ArchivingConnection', 'Get-ArchivingCommand', 'Get-ArchivingTable', 'Get-ArchivingBulkCopy', 'Get-ArchivingServerIdentity', 'ConvertTo-ArchivingIdentifier', 'Invoke-ArchivingConstraintAction')
 		$model = Get-Module ArchivingModel
 		foreach ($entry in @(@{ Module = $rootModule; Names = $shared + $rootOnly }, @{ Module = $model; Names = $shared + $modelOnly })) {
 			foreach ($name in $entry.Names) {
@@ -203,6 +203,10 @@ Describe 'Internal ownership and unchanged distribution contract' {
 		[object]::ReferenceEquals($OwnerBefore, (& $rootModule { (Get-Command Write-LogMessage).Module })) | Should -BeTrue
 		foreach ($name in $modelOnly) {
 			& $rootModule { param ($Name) Get-Command $Name -ErrorAction SilentlyContinue } $name | Should -BeNullOrEmpty
+		}
+		foreach ($name in $rootOnly) {
+			$command = & $model { param ($Name) Get-Command $Name -ErrorAction SilentlyContinue } $name
+			[object]::ReferenceEquals($command.Module, $model) | Should -BeFalse
 		}
 		foreach ($module in Get-Module -All | Where-Object Name -In @('ArchivingModel', 'Metadata', 'GenericSqlParam')) {
 			$module.ExportedCommands.Count | Should -Be 0

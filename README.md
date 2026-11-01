@@ -92,6 +92,24 @@ Migration command tests are in `Migration.Tests.ps1`, phase validation is in
 `Migration.Integration.Tests.ps1`. Review each integration suite's connection and
 fixture settings before selecting it. See the feature guides for prerequisites.
 
+## Maintaining private loaders
+
+`Fast1data.SqlServer/private/shared/Load.ps1` is the only shared behavior list.
+Root and `private/archiving/ArchivingModel.psm1` dot-source it independently, giving
+each module its own eight private functions. Root explicitly selects audit,
+migration, and the archiving adapter; the model selects comparison/delay helpers
+and retains its local functions and classes. Ordinary function files contain
+behavior; their loaders supply dependencies.
+
+Root bootstraps SqlClient before loading shared behavior and the declaration-only
+`private/archiving/Load.ps1`, then loads the archiving adapter and public commands.
+Direct model-first imports require explicit SqlClient bootstrap before parsing
+model classes. After repairing a missing or corrupt required dependency, retry in
+a fresh PowerShell process because class definitions persist within a process.
+The three public commands, runtime requirements, configuration, and persisted
+data contracts are unchanged. See the [loader validation guide](specs/005-explicit-module-loaders/quickstart.md)
+for cold imports, fault isolation, and source/package checks.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

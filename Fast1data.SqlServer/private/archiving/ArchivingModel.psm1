@@ -2,10 +2,22 @@ using module ../shared/GenericSqlParam.psm1
 using module ./Metadata.psm1
 using namespace System.Collections.Generic
 
-. "$PSScriptRoot\..\shared\GenericSqlQuery.ps1"
-. "$PSScriptRoot\Get-DelayIntervalInSecond.ps1"
-. "$PSScriptRoot\Compare-Column.ps1"
-. "$PSScriptRoot\..\shared\Write-LogMessage.ps1"
+$previousErrorActionPreference = $ErrorActionPreference
+try {
+	$ErrorActionPreference = 'Stop'
+	. "$PSScriptRoot/../shared/Load.ps1"
+	. "$PSScriptRoot/Get-DelayIntervalInSecond.ps1"
+	. "$PSScriptRoot/Compare-Column.ps1"
+}
+catch {
+	throw [System.InvalidOperationException]::new(
+		"Archiving model dependency loading failed at '$($_.InvocationInfo.ScriptName)': $($_.Exception.Message)`n$($_.ScriptStackTrace)",
+		$_.Exception
+	)
+}
+finally {
+	$ErrorActionPreference = $previousErrorActionPreference
+}
 
 function Get-ArchivingConnection {
 	param ([string]$ConnectionString, [string]$Role)

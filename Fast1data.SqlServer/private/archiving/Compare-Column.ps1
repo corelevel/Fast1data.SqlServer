@@ -1,5 +1,3 @@
-using module ./Metadata.psm1
-
 <#
 .SYNOPSIS
 Compares source and destination table columns.

@@ -1,6 +1,3 @@
-using module ../shared/GenericSqlParam.psm1
-. "$PSScriptRoot\..\shared\GenericSqlQuery.ps1"
-
 <#
 .SYNOPSIS
 Records a successfully executed migration script.

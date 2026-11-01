@@ -1,5 +1,3 @@
-using module ./ArchivingModel.psm1
-
 <#
 .SYNOPSIS
 Executes archiving and purging for a configured table group.

@@ -1,7 +1,3 @@
-using module ./GenericSqlParam.psm1
-
-. "$PSScriptRoot\GenericSqlCleanup.ps1"
-
 <#
 .SYNOPSIS
 Creates a SQL command for an existing connection.
