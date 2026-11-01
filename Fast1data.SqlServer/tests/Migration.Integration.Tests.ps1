@@ -2,6 +2,7 @@ BeforeAll {
 	$script:moduleRoot = Split-Path -Parent $PSScriptRoot
 	$modulePath = Join-Path $script:moduleRoot 'Fast1data.SqlServer.psd1'
 	Import-Module $modulePath -Force
+	. (Join-Path $PSScriptRoot 'fixtures/Import-SharedHelperDependency.ps1') -DistributionRoot $script:moduleRoot
 
 	function Invoke-TestSql {
 		param(

@@ -1,8 +1,8 @@
 using module ../private/shared/GenericSqlParam.psm1
 
 BeforeAll {
-	Import-Module (Join-Path $PSScriptRoot '../Fast1data.SqlServer.psd1') -Force
-	InModuleScope ArchivingModel {
+	. (Join-Path $PSScriptRoot 'fixtures/Import-SharedHelperDependency.ps1') -DistributionRoot (Split-Path -Parent $PSScriptRoot)
+	InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 		function script:Get-ControlledReader {
 			param ([object[]]$Rows, [string]$Role)
 			$data = [System.Data.DataTable]::new()
@@ -32,7 +32,7 @@ BeforeAll {
 
 Describe 'Owned archiving execution without SQL' {
 	It 'constructs an inert single-use owner without allocating connections' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$group = [TableGroup]::new('not a connection string', 'controlled')
 			$group.ArcSqlConn | Should -BeNullOrEmpty
 			$group.SrcSqlConn | Should -BeNullOrEmpty
@@ -40,11 +40,6 @@ Describe 'Owned archiving execution without SQL' {
 		}
 	}
 
-	It 'keeps the caller limited to construction and one execution request' {
-		$caller = Get-Content (Join-Path $PSScriptRoot '../private/archiving/Invoke-ArchivingProcess.ps1') -Raw
-		$caller | Should -Match '\.Execute\(\)'
-		$caller | Should -Not -Match '\.State|\.Dispose\(|DisableEnableFK|UpdateArchive|UpdatePurge|foreach|while'
-	}
 
 	It 'retains the public parameter and export contract' {
 		$command = Get-Command Invoke-Fast1Archiving
@@ -63,7 +58,7 @@ Describe 'Owned archiving execution without SQL' {
 
 Describe 'Execution lifetime, transitions and cleanup through the same request' {
 	BeforeEach {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h = [PSCustomObject]@{
 				Events = [System.Collections.Generic.List[string]]::new()
 				Failures = @{}
@@ -82,7 +77,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 					throw $this.Failures[$RecordedEvent]
 				}
 			}
-			Mock Get-ArchivingConnection {
+			Mock Get-ArchivingConnection -ModuleName 'Fast1data.SqlServer/ArchivingModel' {
 				param ($ConnectionString, $Role)
 				$connection = [Microsoft.Data.SqlClient.SqlConnection]::new($ConnectionString)
 				$connection | Add-Member -NotePropertyName Harness -NotePropertyValue $script:h
@@ -97,8 +92,8 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 				$script:h.Record("allocate $Role")
 				$connection
 			}
-			Mock Get-ArchivingServerIdentity { 'controlled-instance' }
-			Mock Get-ArchivingCommand {
+			Mock Get-ArchivingServerIdentity -ModuleName 'Fast1data.SqlServer/ArchivingModel' { 'controlled-instance' }
+			Mock Get-ArchivingCommand -ModuleName 'Fast1data.SqlServer/ArchivingModel' {
 				param ($Query, $Connection)
 				$rows = @()
 				if ($Query -eq 'dbo.stp_GetTableGroup') {
@@ -132,7 +127,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 				}
 				$command
 			}
-			Mock Get-ArchivingTable {
+			Mock Get-ArchivingTable -ModuleName 'Fast1data.SqlServer/ArchivingModel' {
 				param ($Values)
 				$table = [Table]$Values
 				$table | Add-Member -NotePropertyName Harness -NotePropertyValue $script:h
@@ -174,7 +169,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 				}
 				$table
 			}
-			Mock Get-ArchivingBulkCopy {
+			Mock Get-ArchivingBulkCopy -ModuleName 'Fast1data.SqlServer/ArchivingModel' {
 				param ($Connection, [Microsoft.Data.SqlClient.SqlBulkCopyOptions]$Options = 0)
 				$bulk = [Microsoft.Data.SqlClient.SqlBulkCopy]::new($Connection, $Options, $null)
 				$bulk | Add-Member -NotePropertyName Harness -NotePropertyValue $script:h
@@ -189,7 +184,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 				}
 				$bulk
 			}
-			Mock Invoke-GenericSqlQuery {
+			Mock Invoke-GenericSqlQuery -ModuleName 'Fast1data.SqlServer/ArchivingModel' {
 				param ($Query, $Parameters)
 				$id = [int]$Parameters.ProcessStateId.Value - 100
 				$state = $script:h.Persisted[$id]
@@ -211,12 +206,27 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 					$state[$name] = $Parameters[$name].Value
 				}
 			}
-			Mock Invoke-ArchivingConstraintAction {
+			Mock Invoke-ArchivingConstraintAction -ModuleName 'Fast1data.SqlServer/ArchivingModel' {
 				param ($Constraint, $Disable)
 				$script:h.Record("constraint $($Constraint.ConstraintName) $Disable")
 			}
-			Mock Start-Sleep { $script:h.Record("delay $Seconds") }
-			Mock Write-LogMessage { $script:h.Record("log $Level") }
+			Mock Start-Sleep -ModuleName 'Fast1data.SqlServer/ArchivingModel' { $script:h.Record("delay $Seconds") }
+		}
+	}
+
+	It 'constructs and executes exactly once with real nested verbose messages' {
+		$messages = @(Invoke-Fast1Archiving -ConnStr 'Server=controlled' -GroupName controlled -Verbose 4>&1)
+		$messages | Should -HaveCount 3
+		$messages[0].Message | Should -Match '\[Verbose\] Archive group \(controlled\) found$'
+		$messages[1].Message | Should -Match 'Archiving completed for \[dbo\]\.\[t11\]'
+		$messages[2].Message | Should -Match 'Purging completed for \[dbo\]\.\[t11\]'
+		foreach ($record in $messages) {
+			$record | Should -BeOfType ([System.Management.Automation.VerboseRecord])
+		}
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
+			@($script:h.Events | Where-Object { $_ -eq 'allocate Configuration' }).Count | Should -Be 1
+			@($script:h.Events | Where-Object { $_ -eq 'write 11 CompleteDate' }).Count | Should -Be 1
+			@($script:h.Events | Where-Object { $_ -eq 'release Configuration' }).Count | Should -Be 1
 		}
 	}
 
@@ -224,7 +234,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 		@{ Role = 'Source'; Released = 'release Source,release Configuration' }
 		@{ Role = 'Destination'; Released = 'release Destination,release Source,release Configuration' }
 	) {
-		InModuleScope ArchivingModel -Parameters @{ Role = $Role; Released = $Released } {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' -Parameters @{ Role = $Role; Released = $Released } {
 			$script:h.Failures["open $Role"] = [InvalidOperationException]::new('opening failed')
 			{ Invoke-Fast1Archiving -ConnStr 'Server=controlled;Database=config' -GroupName 'controlled' } | Should -Throw '*opening failed*'
 			@($script:h.Events | Where-Object { $_ -match '^release (Source|Destination|Configuration)$' }) -join ',' | Should -Be $Released
@@ -232,7 +242,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'owns successful batches, resets activity, confirms effects then completion and releases connections' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			@(Invoke-Fast1Archiving -ConnStr 'Server=controlled;Database=config' -GroupName 'controlled').Count | Should -Be 0
 			$script:h.Persisted[11].RowsArchived | Should -Be 5
 			$script:h.Persisted[11].RowsPurged | Should -Be 5
@@ -252,7 +262,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 		@{ Fault = 'write 11 PurgeCompleteDate' }
 		@{ Fault = 'write 11 CompleteDate' }
 	) {
-		InModuleScope ArchivingModel -Parameters @{ Fault = $Fault } {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' -Parameters @{ Fault = $Fault } {
 			$script:h.Failures[$Fault] = [InvalidOperationException]::new('controlled fault')
 			{ Invoke-Fast1Archiving -ConnStr 'Server=controlled;Database=config' -GroupName 'controlled' } | Should -Throw '*controlled fault*'
 			$script:h.Events | Should -Not -Contain 'drop 11'
@@ -266,7 +276,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'reloads a committed write after a lost response using a fresh owner' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.CommitThenThrow = 'write 11 ArchiveCompleteDate'
 			$script:h.Failures[$script:h.CommitThenThrow] = [InvalidOperationException]::new('lost response')
 			{ Invoke-Fast1Archiving -ConnStr 'Server=controlled;Database=config' -GroupName 'controlled' } | Should -Throw '*lost response*'
@@ -279,10 +289,11 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'preserves the operation error and reports all independent cleanup failures in encounter order' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.Failures['open Destination'] = [InvalidOperationException]::new('original opening failure')
 			$script:h.Failures['release Destination'] = [InvalidOperationException]::new('Password=secret')
 			$script:h.Failures['release Source'] = [InvalidOperationException]::new('sensitive SQL')
+			Mock Write-LogMessage -ModuleName 'Fast1data.SqlServer/ArchivingModel' { $script:h.Record("log $Level") }
 			$script:h.Failures['log Warning'] = [InvalidOperationException]::new('log failed')
 			try {
 				Invoke-Fast1Archiving -ConnStr 'Server=controlled;Database=config' -GroupName 'controlled'
@@ -301,7 +312,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'returns cleanup-only failure after durable completion and keeps attempting releases' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.Failures['release Destination'] = [InvalidOperationException]::new('disposal failed')
 			{ Invoke-Fast1Archiving -ConnStr 'Server=controlled;Database=config' -GroupName 'controlled' } | Should -Throw '*disposal failed*'
 			$script:h.Persisted[11].ContainsKey('CompleteDate') | Should -BeTrue
@@ -310,7 +321,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'merges nested cleanup contexts from wrapped errors before their enclosing disposal context' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$nested = [InvalidOperationException]::new('outer disposal failure')
 			$nested.Data['Fast1Sql.CleanupFailures'] = @([PSCustomObject]@{ Action = 'Dispose'; ResourceRole = 'NestedCommand'; ErrorType = 'Controlled'; Message = 'Nested cleanup failed.' })
 			$script:h.Failures['open Destination'] = [InvalidOperationException]::new('primary failure')
@@ -329,7 +340,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'returns drop failure after completion without rewriting the committed marker' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.Failures['drop 11'] = [InvalidOperationException]::new('drop failed')
 			{ Invoke-Fast1Archiving -ConnStr 'Server=controlled;Database=config' -GroupName 'controlled' } | Should -Throw '*drop failed*'
 			$script:h.Persisted[11].ContainsKey('CompleteDate') | Should -BeTrue
@@ -338,7 +349,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'rejects reuse of an owner after a no-work execution' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.Tables = @()
 			$group = [TableGroup]::new('Server=controlled;Database=config', 'controlled')
 			$group.Execute()
@@ -347,7 +358,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'retains reconciliation during purge-only preparation' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.Tables = @(@{ Id = 11; Archive = $false; Purge = $true; PurgeOrder = 1 })
 			Invoke-Fast1Archiving -ConnStr 'Server=controlled;Database=config' -GroupName 'controlled'
 			$script:h.Events | Should -Contain 'snapshot create 11'
@@ -358,7 +369,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'releases unknown and empty group resources' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.Found = $false
 			{ Invoke-Fast1Archiving -ConnStr 'Server=controlled;Database=config' -GroupName 'controlled' } | Should -Throw '*not found*'
 			$script:h.Events[-1] | Should -Be 'release Configuration'
@@ -370,7 +381,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'finishes supplied preparation/archive traversal before sorted purging and skips disabled tables' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.Tables = @(
 				@{ Id = 12; Archive = $true; Purge = $true; PurgeOrder = 2 }
 				@{ Id = 11; Archive = $true; Purge = $true; PurgeOrder = 1 }
@@ -385,12 +396,12 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 			$script:h.Instances[0].DataCopyBatchSize | Should -Be 2
 			$script:h.Instances[0].PurgeBatchSize | Should -Be 2
 			@($script:h.Events | Where-Object { $_ -eq 'delay 1' }).Count | Should -Be 12
-			Should -Invoke Invoke-ArchivingConstraintAction -Exactly -Times 0
+			Should -Invoke Invoke-ArchivingConstraintAction -ModuleName 'Fast1data.SqlServer/ArchivingModel' -Exactly -Times 0
 		}
 	}
 
 	It 'restores the whole registered scope after partial disable and gates completion on cleanup success' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.Constraints = @(
 				[PSCustomObject]@{ DatabaseName = 'source'; SchemaName = 'dbo'; TableName = 'child'; ConstraintName = 'first' }
 				[PSCustomObject]@{ DatabaseName = 'source'; SchemaName = 'dbo'; TableName = 'child'; ConstraintName = 'second' }
@@ -406,7 +417,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'keeps attempting command and connection cleanup when a reader release fails' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.Failures['release reader dbo.stp_GetTableGroup'] = [InvalidOperationException]::new('reader disposal failed')
 			$script:h.Failures['release command dbo.stp_GetTableGroup'] = [InvalidOperationException]::new('command disposal failed')
 			try {
@@ -425,7 +436,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'releases streaming readers before checkpoint reuse through the actual batch operation' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.RealCopy = $true
 			Invoke-Fast1Archiving -ConnStr 'Server=controlled;Database=config' -GroupName 'controlled'
 			$script:h.Events.IndexOf('bulk write') | Should -BeLessThan $script:h.Events.IndexOf('release reader dbo.stp_GetBulkCopyData')
@@ -436,7 +447,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 	}
 
 	It 'preserves bulk failure and independently releases bulk, reader, command and connections' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:h.RealCopy = $true
 			$script:h.Failures['bulk write'] = [InvalidOperationException]::new('copy failed')
 			$script:h.Failures['release bulk'] = [InvalidOperationException]::new('bulk disposal failed')
@@ -451,7 +462,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 
 Describe 'Shared SQL command setup and release' {
 	BeforeEach {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:helperConnection = [Microsoft.Data.SqlClient.SqlConnection]::new()
 			$script:helperCommand = [Microsoft.Data.SqlClient.SqlCommand]::new()
 			$script:helperStatus = [PSCustomObject]@{ Released = $false; FailRelease = $false; Execution = '' }
@@ -471,16 +482,16 @@ Describe 'Shared SQL command setup and release' {
 				$this.Status.Execution = 'non-query'
 				-1
 			}
-			Mock Get-GenericSqlCommand { $script:helperCommand }
+			Mock Get-GenericSqlCommand -ModuleName 'Fast1data.SqlServer/ArchivingModel' { $script:helperCommand }
 		}
 	}
 
 	AfterEach {
-		InModuleScope ArchivingModel { $script:helperConnection.Dispose() }
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' { $script:helperConnection.Dispose() }
 	}
 
 	It 'disposes on parameter validation failure without masking the primary error' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:helperStatus.FailRelease = $true
 			try {
 				Invoke-GenericSqlQuery -SqlConn $script:helperConnection -Query 'unused' -Parameters @{ invalid = 'wrong type' }
@@ -496,7 +507,7 @@ Describe 'Shared SQL command setup and release' {
 	}
 
 	It 'retains scalar, non-query and typed null/size/precision/scale mapping' {
-		InModuleScope ArchivingModel {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$value = Invoke-GenericSqlQuery -SqlConn $script:helperConnection -Query 'unused' -Scalar -CommandType StoredProcedure -Parameters @{
 				text = [GenericSqlParam]@{ Value = $null; Type = [System.Data.SqlDbType]::NVarChar; Size = 20 }
 				number = [GenericSqlParam]@{ Value = 1.25; Type = [System.Data.SqlDbType]::Decimal; Precision = 8; Scale = 2 }

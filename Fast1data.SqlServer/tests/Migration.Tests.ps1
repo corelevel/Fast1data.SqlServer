@@ -1,7 +1,7 @@
 BeforeAll {
 	$script:moduleRoot = Split-Path -Parent $PSScriptRoot
 	$modulePath = Join-Path $script:moduleRoot 'Fast1data.SqlServer.psd1'
-	Import-Module $modulePath -Force
+	. (Join-Path $PSScriptRoot 'fixtures/Import-SharedHelperDependency.ps1') -DistributionRoot (Split-Path -Parent $modulePath)
 
 	function New-CommandFixture {
 		[CmdletBinding(SupportsShouldProcess)]
@@ -292,8 +292,8 @@ public sealed class Fast1MigrationDecliningUI : PSHostUserInterface {
 			Should -Invoke Invoke-Migration -Times 0 -Exactly
 			Should -Invoke Set-Executed -Times 0 -Exactly
 			$normal = @(Invoke-Fast1Migration @arguments 4>&1 3>&1)
-			$previewDecisions = @($preview | Where-Object { "$_" -match '^(Run|Skip) migration script:' } | ForEach-Object { "$_" })
-			$normalDecisions = @($normal | Where-Object { "$_" -match '^(Run|Skip) migration script:' } | ForEach-Object { "$_" })
+			$previewDecisions = @($preview | Where-Object { $_ -is [System.Management.Automation.VerboseRecord] -and $_.Message -match '\[Verbose\] (Run|Skip) migration script:' } | ForEach-Object { $_.Message -replace '^\[[^\]]+\] \[Verbose\] ', '' })
+			$normalDecisions = @($normal | Where-Object { $_ -is [System.Management.Automation.VerboseRecord] -and $_.Message -match '\[Verbose\] (Run|Skip) migration script:' } | ForEach-Object { $_.Message -replace '^\[[^\]]+\] \[Verbose\] ', '' })
 			$normalDecisions | Should -Be $previewDecisions
 			$previewDecisions | Should -Be @(
 				'Run migration script: z[1].sql (New)'
@@ -302,8 +302,8 @@ public sealed class Fast1MigrationDecliningUI : PSHostUserInterface {
 				'Run migration script: Nested/Force.sql (Forced)'
 				'Run migration script: ForcedNew.sql (Forced)'
 			)
-			$previewWarnings = @($preview | Where-Object { $_ -is [System.Management.Automation.WarningRecord] } | ForEach-Object { "$_" })
-			$normalWarnings = @($normal | Where-Object { $_ -is [System.Management.Automation.WarningRecord] } | ForEach-Object { "$_" })
+			$previewWarnings = @($preview | Where-Object { $_ -is [System.Management.Automation.WarningRecord] } | ForEach-Object { $_.Message -replace '^\[[^\]]+\] \[Warning\] ', '' })
+			$normalWarnings = @($normal | Where-Object { $_ -is [System.Management.Automation.WarningRecord] } | ForEach-Object { $_.Message -replace '^\[[^\]]+\] \[Warning\] ', '' })
 			$previewWarnings.Count | Should -Be 2
 			$normalWarnings | Should -Be $previewWarnings
 			Should -Invoke Get-Executed -Times 2 -Exactly
@@ -337,7 +337,7 @@ public sealed class Fast1MigrationDecliningUI : PSHostUserInterface {
 			foreach ($preview in @($false, $true)) {
 				$messages = @(Invoke-Fast1Migration -ConnStr 'Data Source=unused;Initial Catalog=unused' -BasePath $BasePath `
 					-Phase 'phase01' @selection -WhatIf:$preview -Confirm:$false -Verbose 4>&1)
-				@($messages | Where-Object { "$_" -eq 'Nothing to run' }).Count | Should -Be 1
+				@($messages | Where-Object { $_ -is [System.Management.Automation.VerboseRecord] -and $_.Message -match '\[Verbose\] Nothing to run$' }).Count | Should -Be 1
 			}
 			Should -Invoke Get-Executed -Times 2 -Exactly
 			Should -Invoke Invoke-Migration -Times 0 -Exactly

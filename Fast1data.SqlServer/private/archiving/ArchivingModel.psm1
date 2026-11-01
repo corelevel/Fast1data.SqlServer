@@ -81,6 +81,10 @@ class TableGroup : System.IDisposable {
 		$this.Name = $groupName
 	}
 
+	Execute([System.Management.Automation.ActionPreference]$VerbosePreference) {
+		$this.Execute()
+	}
+
 	Execute() {
 		if ($this.Started) {
 			throw 'A table group execution is single-use. Retry with a fresh execution.'
@@ -1425,3 +1429,5 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 	}
 }
 
+# Class consumers use `using module`; helpers belong to this module's session state.
+Export-ModuleMember -Function @() -Alias @()

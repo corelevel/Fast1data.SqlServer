@@ -31,6 +31,7 @@ Describe 'Live audit import from Linux' -Tag 'Linux', 'Integration' -Skip:(-not 
 		}
 		$script:moduleRoot = Split-Path -Parent $PSScriptRoot
 		Import-Module (Join-Path $script:moduleRoot 'Fast1data.SqlServer.psd1') -Force
+		. (Join-Path $PSScriptRoot 'fixtures/Import-SharedHelperDependency.ps1') -DistributionRoot $script:moduleRoot
 
 		function Invoke-AuditTestSql {
 			param (
@@ -193,5 +194,28 @@ delete from dbo.import_state;
 		Invoke-AuditTestSql -Query 'select count_big(*) from dbo.fast1_audit;' -Scalar | Should -Be 0
 		($repeatMessages.Message -join "`n") | Should -Match '\[Verbose\] 0 audit records processed'
 		($repeatMessages.Message -join "`n") | Should -Match '\[Verbose\] 0 audit records imported'
+	}
+
+	It 'resumes durable offsets after a lost response and closes the failed invocation connection' {
+		InModuleScope Fast1data.SqlServer -Parameters @{ Arguments = $script:importArguments } {
+			$script:originalAuditImport = Get-Command Import-SqlAuditFile
+			$script:interruptAuditOnce = $true
+			$script:interruptedConnection = $null
+			Mock Import-SqlAuditFile {
+				param ($SqlConn, $Folder, $AuditGuid, $FileName, $FileOffset)
+				$script:interruptedConnection = $SqlConn
+				$result = & $script:originalAuditImport -SqlConn $SqlConn -Folder $Folder -AuditGuid $AuditGuid -FileName $FileName -FileOffset $FileOffset
+				if ($script:interruptAuditOnce) {
+					$script:interruptAuditOnce = $false
+					throw 'Controlled lost response after durable audit import'
+				}
+				$result
+			}
+			{ Invoke-Fast1Audit @Arguments } | Should -Throw '*Controlled lost response*'
+			$script:interruptedConnection.State | Should -Be 'Closed'
+		}
+		Invoke-AuditTestSql -Query 'select count_big(*) from dbo.import_state;' -Scalar | Should -BeGreaterThan 0
+		Invoke-Fast1Audit @script:importArguments
+		Invoke-AuditTestSql -Query 'select count_big(*) from dbo.fast1_audit;' -Scalar | Should -Be $script:expectedRowCount
 	}
 }

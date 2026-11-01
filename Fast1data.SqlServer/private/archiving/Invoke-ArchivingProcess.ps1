@@ -9,6 +9,10 @@ Creates a fresh TableGroup instance and delegates the execution request to its
 Execute method. The instance owns initialization, configured archive and purge
 operations, checkpoints, foreign-key restoration and resource cleanup.
 
+The effective verbose preference is forwarded for this invocation only. Explicit
+-Verbose:$false on the public command overrides ambient verbosity; without an
+override, execution follows the caller's applicable ambient preference.
+
 Operation errors propagate to the caller with the original error preserved.
 Secondary cleanup details are attached to the exception under
 Exception.Data['Fast1Archiving.CleanupFailures']. Cleanup failures also terminate
@@ -50,5 +54,5 @@ function Invoke-ArchivingProcess {
 	)
 
 	$group = [TableGroup]::new($ConnStr, $GroupName)
-	$group.Execute()
+	$group.Execute($VerbosePreference)
 }

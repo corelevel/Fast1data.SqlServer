@@ -15,3 +15,6 @@
 	```pwsh
 	if (-not $IsLinux) { throw 'Unsupported operating system. Audit discovery supports Windows and Linux.' }
 	```
+
+## .gitignore
+- Do not add `.vscode/` to the `.gitignore` file. It's used for VS Code Tasks

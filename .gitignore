@@ -3,4 +3,8 @@ build/obj
 Fast1data.SqlServer/lib/*
 out/Fast1data.SqlServer
 
-
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.idea/

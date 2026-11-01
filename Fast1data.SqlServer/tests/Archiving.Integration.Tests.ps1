@@ -3,6 +3,7 @@ BeforeAll {
 	$script:moduleRoot = Split-Path -Parent $PSScriptRoot
 	$modulePath = Join-Path $script:moduleRoot 'Fast1data.SqlServer.psd1'
 	Import-Module $modulePath -Force
+	. (Join-Path $PSScriptRoot 'fixtures/Import-SharedHelperDependency.ps1') -DistributionRoot $script:moduleRoot
 
 	# The SQL login must be allowed to create/drop databases.
 	# Live test configuration: edit only the server and credentials.
