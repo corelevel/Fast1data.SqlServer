@@ -188,8 +188,8 @@ Describe 'Real operational logging in one session' {
 
 Describe 'Internal ownership and unchanged distribution contract' {
 	It 'retains separate defining session states and selected-root paths for every helper' {
-		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-GenericSqlQuery', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure', 'Get-FileChecksum', 'Get-RelativePath')
-		$rootOnly = @('Get-RuntimeIdentifier', 'Import-SqlClientLib', 'Invoke-ArchivingProcess', 'Get-SqlAuditFile', 'Get-SqlAuditFileEntry', 'Import-SqlAuditFile', 'Get-ImportState', 'Get-Executed', 'Set-Executed', 'Invoke-Migration', 'Resolve-MigrationPhase')
+		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-GenericSqlQuery', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure')
+		$rootOnly = @('Get-FileChecksum', 'Get-RelativePath', 'Get-RuntimeIdentifier', 'Import-SqlClientLib', 'Invoke-ArchivingProcess', 'Get-SqlAuditFile', 'Get-SqlAuditFileEntry', 'Import-SqlAuditFile', 'Get-ImportState', 'Get-Executed', 'Set-Executed', 'Invoke-Migration', 'Resolve-MigrationPhase')
 		$modelOnly = @('Compare-Column', 'Get-DelayIntervalInSecond', 'Get-ArchivingConnection', 'Get-ArchivingCommand', 'Get-ArchivingTable', 'Get-ArchivingBulkCopy', 'Get-ArchivingServerIdentity', 'ConvertTo-ArchivingIdentifier', 'Invoke-ArchivingConstraintAction')
 		$model = Get-Module ArchivingModel
 		foreach ($entry in @(@{ Module = $rootModule; Names = $shared + $rootOnly }, @{ Module = $model; Names = $shared + $modelOnly })) {

@@ -62,6 +62,7 @@ function Set-Executed {
 		$query = ''
 		if ($ForceScript) {
 			$query = @'
+set nocount on
 update dbo.fast1_migration_history
 set script_name = @script_name, [checksum] = @checksum, executed_at = sysutcdatetime()
 where script_name = @history_script_name and phase = @phase
@@ -74,6 +75,7 @@ end
 		}
 		else {
 			$query = @'
+set nocount on
 insert dbo.fast1_migration_history(script_name, phase, [checksum])
 values(@script_name, @phase, @checksum)
 '@

@@ -19,6 +19,8 @@ try {
 	. "$PSScriptRoot/private/audit/Get-SqlAuditFile.ps1"
 	. "$PSScriptRoot/private/audit/Get-SqlAuditFileEntry.ps1"
 	. "$PSScriptRoot/private/audit/Import-SqlAuditFile.ps1"
+	. "$PSScriptRoot/private/migration/Get-FileChecksum.ps1"
+	. "$PSScriptRoot/private/migration/Get-RelativePath.ps1"
 	. "$PSScriptRoot/private/migration/Get-Executed.ps1"
 	. "$PSScriptRoot/private/migration/Set-Executed.ps1"
 	. "$PSScriptRoot/private/migration/Resolve-MigrationPhase.ps1"

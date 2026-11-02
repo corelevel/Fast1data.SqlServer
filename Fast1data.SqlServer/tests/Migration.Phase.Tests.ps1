@@ -1,8 +1,8 @@
 BeforeAll {
 	$moduleRoot = Split-Path -Parent $PSScriptRoot
 	. (Join-Path $PSScriptRoot 'fixtures/Import-SharedHelperDependency.ps1') -DistributionRoot $moduleRoot
-	. "$moduleRoot/private/shared/Get-FileChecksum.ps1"
-	. "$moduleRoot/private/shared/Get-RelativePath.ps1"
+	. "$moduleRoot/private/migration/Get-FileChecksum.ps1"
+	. "$moduleRoot/private/migration/Get-RelativePath.ps1"
 	. "$moduleRoot/private/migration/Resolve-MigrationPhase.ps1"
 
 	function New-PhaseFixture {

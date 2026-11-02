@@ -33,6 +33,7 @@ function Get-Executed {
 		$sqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
 		$sqlConn.ConnectionString = $ConnStr
 		$query = @'
+set nocount on
 select script_name, [checksum]
 from dbo.fast1_migration_history
 where phase = @phase

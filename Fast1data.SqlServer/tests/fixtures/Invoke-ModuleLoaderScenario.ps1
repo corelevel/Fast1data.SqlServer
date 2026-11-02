@@ -29,7 +29,7 @@ try {
 		$rootText = Get-Content -LiteralPath $rootPath -Raw
 		$rootText = $rootText -replace '(?m)^(\s*)Import-SqlClientLib\s*$', "`$1Import-SqlClientLib`n[AppDomain]::CurrentDomain.GetData('Fast1ModuleLoaderTrace').Add(@{ Stage = 'bootstrap' })"
 		Set-Content -LiteralPath $rootPath -Value $rootText
-		foreach ($relative in @('private/shared/Load.ps1', 'private/audit/Get-ImportState.ps1', 'private/audit/Get-SqlAuditFile.ps1', 'private/audit/Get-SqlAuditFileEntry.ps1', 'private/audit/Import-SqlAuditFile.ps1', 'private/migration/Get-Executed.ps1', 'private/migration/Set-Executed.ps1', 'private/migration/Resolve-MigrationPhase.ps1', 'private/migration/Invoke-Migration.ps1', 'private/archiving/Load.ps1', 'private/archiving/Invoke-ArchivingProcess.ps1')) {
+		foreach ($relative in @('private/shared/Load.ps1', 'private/audit/Get-ImportState.ps1', 'private/audit/Get-SqlAuditFile.ps1', 'private/audit/Get-SqlAuditFileEntry.ps1', 'private/audit/Import-SqlAuditFile.ps1', 'private/migration/Get-FileChecksum.ps1', 'private/migration/Get-RelativePath.ps1', 'private/migration/Get-Executed.ps1', 'private/migration/Set-Executed.ps1', 'private/migration/Resolve-MigrationPhase.ps1', 'private/migration/Invoke-Migration.ps1', 'private/archiving/Load.ps1', 'private/archiving/Invoke-ArchivingProcess.ps1')) {
 			$path = Join-Path $DistributionRoot $relative
 			$code = Get-Content -LiteralPath $path -Raw -ErrorAction Stop
 			# Using declarations must remain before executable instrumentation.
@@ -152,7 +152,7 @@ try {
 		if ($null -eq $root -or $null -eq $model -or $observation.PublicCommands.Count -ne 3) {
 			throw 'Import did not assemble both consumers and three public commands.'
 		}
-		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-GenericSqlQuery', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure', 'Get-FileChecksum', 'Get-RelativePath')
+		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-GenericSqlQuery', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure')
 		$observation.Owners = @(
 			foreach ($module in @($root, $model)) {
 				foreach ($name in $shared) {

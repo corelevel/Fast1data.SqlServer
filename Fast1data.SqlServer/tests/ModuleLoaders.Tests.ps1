@@ -38,8 +38,8 @@ BeforeAll {
 Describe 'Explicit dependency boundaries' -Tag US2 {
 	It 'accounts for the complete 23-file inventory through designated loaders' {
 		$selection = @{
-			'Fast1data.SqlServer.psm1' = @('private/shared/GenericSqlParam.psm1', 'private/shared/Get-RuntimeIdentifier.ps1', 'private/shared/Import-SqlClientLib.ps1', 'private/shared/Load.ps1', 'private/audit/Get-ImportState.ps1', 'private/audit/Get-SqlAuditFile.ps1', 'private/audit/Get-SqlAuditFileEntry.ps1', 'private/audit/Import-SqlAuditFile.ps1', 'private/migration/Get-Executed.ps1', 'private/migration/Set-Executed.ps1', 'private/migration/Resolve-MigrationPhase.ps1', 'private/migration/Invoke-Migration.ps1', 'private/archiving/Load.ps1', 'private/archiving/Invoke-ArchivingProcess.ps1')
-			'private/shared/Load.ps1' = @('GenericSqlCleanup.ps1', 'GenericSqlQuery.ps1', 'Write-LogMessage.ps1', 'Get-FileChecksum.ps1', 'Get-RelativePath.ps1')
+			'Fast1data.SqlServer.psm1' = @('private/shared/GenericSqlParam.psm1', 'private/shared/Get-RuntimeIdentifier.ps1', 'private/shared/Import-SqlClientLib.ps1', 'private/shared/Load.ps1', 'private/audit/Get-ImportState.ps1', 'private/audit/Get-SqlAuditFile.ps1', 'private/audit/Get-SqlAuditFileEntry.ps1', 'private/audit/Import-SqlAuditFile.ps1', 'private/migration/Get-FileChecksum.ps1', 'private/migration/Get-RelativePath.ps1', 'private/migration/Get-Executed.ps1', 'private/migration/Set-Executed.ps1', 'private/migration/Resolve-MigrationPhase.ps1', 'private/migration/Invoke-Migration.ps1', 'private/archiving/Load.ps1', 'private/archiving/Invoke-ArchivingProcess.ps1')
+			'private/shared/Load.ps1' = @('GenericSqlCleanup.ps1', 'GenericSqlQuery.ps1', 'Write-LogMessage.ps1')
 			'private/archiving/Load.ps1' = @('ArchivingModel.psm1')
 			'private/archiving/ArchivingModel.psm1' = @('../shared/GenericSqlParam.psm1', 'Metadata.psm1', '../shared/Load.ps1', 'Get-DelayIntervalInSecond.ps1', 'Compare-Column.ps1')
 		}
@@ -87,7 +87,7 @@ Describe 'Explicit dependency boundaries' -Tag US2 {
 	}
 
 	It '<Consumer> rejects <FaultKind> dependency <FaultPath>' -ForEach @(
-		foreach ($path in @('private/shared/GenericSqlCleanup.ps1', 'private/shared/GenericSqlQuery.ps1', 'private/shared/Write-LogMessage.ps1', 'private/shared/Get-FileChecksum.ps1', 'private/shared/Get-RelativePath.ps1', 'private/shared/Load.ps1', 'private/archiving/Load.ps1', 'private/shared/GenericSqlParam.psm1', 'private/archiving/Metadata.psm1', 'private/archiving/ArchivingModel.psm1', 'private/shared/Get-RuntimeIdentifier.ps1', 'private/shared/Import-SqlClientLib.ps1', 'private/audit/Get-ImportState.ps1', 'private/audit/Get-SqlAuditFile.ps1', 'private/audit/Get-SqlAuditFileEntry.ps1', 'private/audit/Import-SqlAuditFile.ps1', 'private/migration/Get-Executed.ps1', 'private/migration/Set-Executed.ps1', 'private/migration/Resolve-MigrationPhase.ps1', 'private/migration/Invoke-Migration.ps1', 'private/archiving/Invoke-ArchivingProcess.ps1', 'private/archiving/Get-DelayIntervalInSecond.ps1', 'private/archiving/Compare-Column.ps1', 'SqlClient')) {
+		foreach ($path in @('private/shared/GenericSqlCleanup.ps1', 'private/shared/GenericSqlQuery.ps1', 'private/shared/Write-LogMessage.ps1', 'private/migration/Get-FileChecksum.ps1', 'private/migration/Get-RelativePath.ps1', 'private/shared/Load.ps1', 'private/archiving/Load.ps1', 'private/shared/GenericSqlParam.psm1', 'private/archiving/Metadata.psm1', 'private/archiving/ArchivingModel.psm1', 'private/shared/Get-RuntimeIdentifier.ps1', 'private/shared/Import-SqlClientLib.ps1', 'private/audit/Get-ImportState.ps1', 'private/audit/Get-SqlAuditFile.ps1', 'private/audit/Get-SqlAuditFileEntry.ps1', 'private/audit/Import-SqlAuditFile.ps1', 'private/migration/Get-Executed.ps1', 'private/migration/Set-Executed.ps1', 'private/migration/Resolve-MigrationPhase.ps1', 'private/migration/Invoke-Migration.ps1', 'private/archiving/Invoke-ArchivingProcess.ps1', 'private/archiving/Get-DelayIntervalInSecond.ps1', 'private/archiving/Compare-Column.ps1', 'SqlClient')) {
 			@{ FaultPath = $path; FaultKind = 'Missing'; Consumer = 'Root' }
 		}
 		foreach ($path in @('SqlClient', 'private/shared/GenericSqlQuery.ps1', 'private/shared/Load.ps1', 'private/archiving/Load.ps1', 'private/shared/GenericSqlParam.psm1', 'private/archiving/Metadata.psm1', 'private/archiving/ArchivingModel.psm1')) {
@@ -114,15 +114,15 @@ Describe 'Fresh-process loader harness' -Tag US3 {
 }
 
 Describe 'One shared behavior list and independent consumers' -Tag US1 {
-	It 'selects exactly the five shared files in their required order' {
+	It 'selects exactly the three shared files in their required order' {
 		$path = Join-Path $script:distributionRoot 'private/shared/Load.ps1'
 		$tokens = $null
 		$parseErrors = $null
 		$ast = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$parseErrors)
 		$parseErrors | Should -BeNullOrEmpty
 		$commands = @($ast.FindAll({ param ($Node) $Node -is [System.Management.Automation.Language.CommandAst] }, $true))
-		$commands | Should -HaveCount 5
-		$expected = @('GenericSqlCleanup.ps1', 'GenericSqlQuery.ps1', 'Write-LogMessage.ps1', 'Get-FileChecksum.ps1', 'Get-RelativePath.ps1')
+		$commands | Should -HaveCount 3
+		$expected = @('GenericSqlCleanup.ps1', 'GenericSqlQuery.ps1', 'Write-LogMessage.ps1')
 		for ($i = 0; $i -lt $commands.Count; $i++) {
 			$commands[$i].InvocationOperator | Should -Be 'Dot'
 			$commands[$i].CommandElements[0].Extent.Text | Should -Be ('"$PSScriptRoot/' + $expected[$i] + '"')
@@ -138,11 +138,11 @@ Describe 'One shared behavior list and independent consumers' -Tag US1 {
 
 	It '<Scenario> executes the list twice without initialization output' -ForEach @(@{ Scenario = 'Direct' }, @{ Scenario = 'ModelFirst' }) {
 		$result = Invoke-LoaderWorker -Scenario $Scenario -Copy -Instrument
-		$result.Owners | Should -HaveCount 16
+		$result.Owners | Should -HaveCount 12
 	}
 
 	It 'extends both consumers by editing only a disposable shared list' {
 		$result = Invoke-LoaderWorker -Scenario Extension -Copy -Instrument
-		$result.Owners | Should -HaveCount 16
+		$result.Owners | Should -HaveCount 12
 	}
 }

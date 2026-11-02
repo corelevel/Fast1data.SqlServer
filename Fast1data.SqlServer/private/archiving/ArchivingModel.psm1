@@ -42,7 +42,7 @@ function Get-ArchivingBulkCopy {
 
 function Get-ArchivingServerIdentity {
 	param ($Connection)
-	Invoke-GenericSqlQuery -SqlConn $Connection -Query "select cast(serverproperty('ServerName') as nvarchar(128))" -Scalar
+	Invoke-GenericSqlQuery -SqlConn $Connection -Query "set nocount on; select cast(serverproperty('ServerName') as nvarchar(128))" -Scalar
 }
 
 function ConvertTo-ArchivingIdentifier {
@@ -678,16 +678,17 @@ class Table {
 				if ($null -eq $failure) {
 					$failure = $_
 				}
-				Add-GenericSqlCleanupFailure -PrimaryError $failure -CleanupError $_ -FailureKey 'Fast1Archiving.CleanupFailures' -Context @{
-					Action = 'RestoreConstraint'
-					GroupName = $this.Group.Name
-					SourceTable = "$($this.SchemaName).$($this.TableName)"
-					ProcessStateId = $this.State.Id
-					DatabaseName = $constraint.DatabaseName
-					SchemaName = $constraint.SchemaName
-					TableName = $constraint.TableName
-					ConstraintName = $constraint.ConstraintName
-				}
+				Add-GenericSqlCleanupFailure -PrimaryError $failure -CleanupError $_ -FailureKey 'Fast1Archiving.CleanupFailures' `
+					-Context @{
+						Action = 'RestoreConstraint'
+						GroupName = $this.Group.Name
+						SourceTable = "$($this.SchemaName).$($this.TableName)"
+						ProcessStateId = $this.State.Id
+						DatabaseName = $constraint.DatabaseName
+						SchemaName = $constraint.SchemaName
+						TableName = $constraint.TableName
+						ConstraintName = $constraint.ConstraintName
+					}
 			}
 		}
 		$this.ConstraintObligations = @()
@@ -698,12 +699,17 @@ class Table {
 
 	hidden [object[]]ReadSourceConstraints() {
 		$query = @'
+set nocount on
 select distinct db_name() DatabaseName, s.name SchemaName, t.name TableName, fk.name ConstraintName
-from sys.foreign_keys fk
-join sys.tables t on t.object_id = fk.parent_object_id
-join sys.schemas s on s.schema_id = t.schema_id
-join sys.tables r on r.object_id = fk.referenced_object_id
-join sys.schemas rs on rs.schema_id = r.schema_id
+from	sys.foreign_keys fk
+		join sys.tables t
+		on t.object_id = fk.parent_object_id
+		join sys.schemas s
+		on s.schema_id = t.schema_id
+		join sys.tables r
+		on r.object_id = fk.referenced_object_id
+		join sys.schemas rs
+		on rs.schema_id = r.schema_id
 where rs.name = @SchemaName and r.name = @TableName
 order by s.name, t.name, fk.name
 '@
@@ -1039,6 +1045,7 @@ where [object_id] = object_id(@ObjectName)
 
 	static [Index] GetTablePrimaryKeyIndex([string]$schemaName, [string]$tableName, [Microsoft.Data.SqlClient.SqlConnection]$sqlConnection) {
 		$query = @"
+set nocount on
 select	i.[name] [Name],
 		i.is_unique [Unique]
 from	sys.key_constraints kc
@@ -1303,7 +1310,14 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 			$sqlReader = $null
 			$operationError = $null
 			try {
-				$sqlCmd = Get-ArchivingCommand -Query "select top (@PageSize) $position, $columnsSql from dbo.$working where $position > @After order by $position" -Connection $this.Group.ArcSqlConn
+				$query = @"
+set nocount on
+select top (@PageSize) $position, $columnsSql
+from	dbo.$working
+where $position > @After
+order by $position
+"@
+				$sqlCmd = Get-ArchivingCommand -Query $query -Connection $this.Group.ArcSqlConn
 				$sqlCmd.Parameters.Add('@PageSize', [System.Data.SqlDbType]::Int).Value = $pageSize
 				$sqlCmd.Parameters.Add('@After', [System.Data.SqlDbType]::Int).Value = $after
 				$sqlReader = $sqlCmd.ExecuteReader()
@@ -1357,7 +1371,7 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 					}
 					$predicates.Add('(' + ($parts -join ' and ') + ')')
 				}
-				$sqlCmd.CommandText = "select $columnsSql from $schema.$tableNameSql where " + ($predicates -join ' or ')
+				$sqlCmd.CommandText = "set nocount on; select $columnsSql from $schema.$tableNameSql where " + ($predicates -join ' or ')
 				$sqlReader = $sqlCmd.ExecuteReader()
 				$bulkCopy = Get-ArchivingBulkCopy -Connection $this.Group.ArcSqlConn
 				$bulkCopy.DestinationTableName = 'dbo.' + (ConvertTo-ArchivingIdentifier $this.DstWorkingTableName)
