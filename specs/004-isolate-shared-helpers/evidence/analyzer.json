@@ -1,0 +1,21 @@
+{
+  "Files": [
+    "Fast1data.SqlServer/private/archiving/ArchivingModel.psm1",
+    "Fast1data.SqlServer/private/archiving/Invoke-ArchivingProcess.ps1",
+    "Fast1data.SqlServer/tests/Archiving.Execution.Tests.ps1",
+    "Fast1data.SqlServer/tests/Archiving.Integration.Tests.ps1",
+    "Fast1data.SqlServer/tests/Audit.Integration.Linux.Tests.ps1",
+    "Fast1data.SqlServer/tests/Audit.Integration.Windows.Tests.ps1",
+    "Fast1data.SqlServer/tests/fixtures/Get-SharedHelperPublicContract.ps1",
+    "Fast1data.SqlServer/tests/fixtures/Import-SharedHelperDependency.ps1",
+    "Fast1data.SqlServer/tests/fixtures/Invoke-SharedHelperScenario.ps1",
+    "Fast1data.SqlServer/tests/fixtures/SharedHelpers.Classes.ps1",
+    "Fast1data.SqlServer/tests/fixtures/SharedHelpers.Scenarios.ps1",
+    "Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1",
+    "Fast1data.SqlServer/tests/Migration.Phase.Tests.ps1",
+    "Fast1data.SqlServer/tests/Migration.Tests.ps1",
+    "Fast1data.SqlServer/tests/SharedHelpers.Import.Tests.ps1",
+    "Fast1data.SqlServer/tests/SqlCleanup.Tests.ps1"
+  ],
+  "Findings": []
+}

@@ -4,8 +4,8 @@ Gets migration scripts already recorded as executed.
 
 .DESCRIPTION
 Reads script names and checksums from dbo.fast1_migration_history for the
-specified phase. Script paths are returned with portable forward-slash
-separators.
+specified phase. Stored script names are returned exactly as persisted so forced
+updates can locate the original key; phase evaluation owns identity normalization.
 
 .PARAMETER ConnStr
 Specifies the Microsoft.Data.SqlClient connection string for the target
@@ -28,10 +28,12 @@ function Get-Executed {
 	$sqlCmd = $null
 	$sqlReader = $null
 
+	$operationError = $null
 	try {
 		$sqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
 		$sqlConn.ConnectionString = $ConnStr
 		$query = @'
+set nocount on
 select script_name, [checksum]
 from dbo.fast1_migration_history
 where phase = @phase
@@ -46,20 +48,17 @@ where phase = @phase
 
 		while ($sqlReader.Read()) {
 			[PSCustomObject]@{
-				script_name = $sqlReader['script_name'].Replace('\', '/')
+				script_name = $sqlReader['script_name']
 				checksum = $sqlReader['checksum']
 			}
 		}
 	}
+	catch {
+		$operationError = $_
+		throw
+	}
 	finally {
-		if ($null -ne $sqlReader) {
-			$sqlReader.Dispose()
-		}
-		if ($null -ne $sqlCmd) {
-			$sqlCmd.Dispose()
-		}
-		if ($null -ne $sqlConn) {
-			$sqlConn.Dispose()
-		}
+		Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd; Connection = $sqlConn }) `
+			-PrimaryError $operationError
 	}
 }

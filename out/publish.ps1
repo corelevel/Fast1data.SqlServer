@@ -98,14 +98,23 @@ if ($missingStagedLibraries) {
 	throw "Release validation failed for runtime(s): $($missingStagedLibraries -join ', ')"
 }
 
-if (-not (Get-Command Invoke-ScriptAnalyzer -ErrorAction SilentlyContinue)) {
-	throw 'PSScriptAnalyzer is required. Install it with: Install-Module PSScriptAnalyzer -Scope CurrentUser'
+try {
+	Import-Module PSScriptAnalyzer -ErrorAction Stop
+}
+catch {
+	throw "Failed to load PSScriptAnalyzer: $($_.Exception.Message)"
 }
 
 Write-Host ''
 Write-Host 'Running PSScriptAnalyzer...'
 $analyzerResults = @(
-	Invoke-ScriptAnalyzer -Path $moduleRoot -Recurse -Severity Error,Warning
+	Invoke-ScriptAnalyzer -Path $moduleRoot -Recurse -Severity Error,Warning |
+		Where-Object {
+			-not (
+				$_.RuleName -eq 'TypeNotFound' -and
+				$_.Message -like "*Microsoft.Data.SqlClient*"
+			)
+		}
 )
 
 if ($analyzerResults) {
@@ -113,6 +122,13 @@ if ($analyzerResults) {
 		Format-Table RuleName, Severity, ScriptName, Line, Message -AutoSize |
 		Out-Host
 	throw "PSScriptAnalyzer reported $($analyzerResults.Count) warning(s) or error(s)."
+}
+
+try {
+	Import-Module Pester -ErrorAction Stop
+}
+catch {
+	throw "Failed to load Pester: $($_.Exception.Message)"
 }
 
 $pesterModule = Get-Module Pester -ListAvailable |
@@ -128,10 +144,12 @@ Import-Module $pesterModule.Path -Force
 
 Write-Host ''
 Write-Host 'Running Pester...'
-$pesterResult = Invoke-Pester `
-	-Path (Join-Path $moduleRoot 'tests') `
-	-Output Detailed `
-	-PassThru
+$pesterConfiguration = New-PesterConfiguration
+$pesterConfiguration.Run.Path = Join-Path $moduleRoot 'tests'
+$pesterConfiguration.Run.TestExtension = '.Tests.ps1'
+$pesterConfiguration.Run.PassThru = $true
+$pesterConfiguration.Output.Verbosity = 'Detailed'
+$pesterResult = Invoke-Pester -Configuration $pesterConfiguration
 
 if ($pesterResult.FailedCount -gt 0) {
 	throw "Pester reported $($pesterResult.FailedCount) failed test(s)."

@@ -8,7 +8,7 @@ Fast1data.SqlServer is a PowerShell module for SQL Server administration and dep
 
 ## Requirements
 
-- PowerShell 7.4 or later
+- PowerShell 7.6 or later
 - SQL Server PowerShell module [SqlServer](https://learn.microsoft.com/en-us/powershell/sql-server/download-sql-server-ps-module) module
 - An x64 Windows, Linux, or macOS runtime
 - Network and database permissions required by the selected feature
@@ -71,6 +71,45 @@ Get-Help Invoke-Fast1Audit -Full
 Get-Help Invoke-Fast1Migration -Full
 Get-Help Invoke-Fast1Archiving -Full
 ```
+
+## Tests
+
+All suites in `Fast1data.SqlServer/tests` end in `.Tests.ps1`. Files containing
+`.Integration.` require live SQL Server or audit resources; platform-specific
+suites include `.Linux.` or `.Windows.` before the suffix.
+
+Run the suites that do not require live services from the repository root:
+
+```powershell
+$testPaths = Get-ChildItem ./Fast1data.SqlServer/tests/*.Tests.ps1 |
+	Where-Object Name -NotLike '*.Integration.*' |
+	Select-Object -ExpandProperty FullName
+Invoke-Pester -Path $testPaths -Output Detailed
+```
+
+Migration command tests are in `Migration.Tests.ps1`, phase validation is in
+`Migration.Phase.Tests.ps1`, and live SQL cases are in
+`Migration.Integration.Tests.ps1`. Review each integration suite's connection and
+fixture settings before selecting it. See the feature guides for prerequisites.
+
+## Maintaining private loaders
+
+`Fast1data.SqlServer/private/shared/Load.ps1` is the only shared behavior list.
+Root and `private/archiving/ArchivingModel.psm1` dot-source it independently, giving
+each module its own private functions. Root explicitly selects audit,
+migration (including checksum and relative-path helpers), and the archiving
+adapter; the model selects comparison/delay helpers and retains its local
+functions and classes. Ordinary function files contain behavior; their loaders
+supply dependencies.
+
+Root bootstraps SqlClient before loading shared behavior and the declaration-only
+`private/archiving/Load.ps1`, then loads the archiving adapter and public commands.
+Direct model-first imports require explicit SqlClient bootstrap before parsing
+model classes. After repairing a missing or corrupt required dependency, retry in
+a fresh PowerShell process because class definitions persist within a process.
+The three public commands, runtime requirements, configuration, and persisted
+data contracts are unchanged. See the [loader validation guide](specs/005-explicit-module-loaders/quickstart.md)
+for cold imports, fault isolation, and source/package checks.
 
 ## License
 

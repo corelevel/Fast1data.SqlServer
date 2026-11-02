@@ -11,7 +11,7 @@
 RootModule = 'Fast1data.SqlServer.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.3'
+ModuleVersion = '0.0.5'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -32,7 +32,7 @@ Copyright = '(c) Ilya Baybikov. All rights reserved.'
 Description = 'SQL Server Audit, Migrations and Archiving built on modern PowerShell 7 and Microsoft.Data.SqlClient'
 
 # Minimum version of the PowerShell engine required by this module
-PowerShellVersion = '7.4'
+PowerShellVersion = '7.6'
 
 # Name of the PowerShell host required by this module
 # PowerShellHostName = ''
@@ -121,7 +121,13 @@ PrivateData = @{
 		# IconUri = ''
 
 		# ReleaseNotes of this module
-		ReleaseNotes = 'Initial public release.'
+		ReleaseNotes = 'Upgraded to .NET 10; now requires PowerShell 7.6 or later.
+		Updated Microsoft.Data.SqlClient to 7.1.1.
+		Added Linux audit discovery over SMB with credential support and unified Windows/Linux file handling.
+		Improved migration validation, path handling, execution history, and -WhatIf previews.
+		Strengthened archiving recovery, checkpoint handling, foreign-key restoration, and resource cleanup.
+		Improved module loading and expanded automated test coverage.
+		Breaking change: Removed -LogFile from audit and archiving commands. Use PowerShell stream redirection to save output.'
 
 		# Prerelease string of this module
 		# Prerelease = ''

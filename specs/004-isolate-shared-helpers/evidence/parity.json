@@ -1,0 +1,16 @@
+{
+  "Host": "Linux x64",
+  "SourceRoot": "/home/core/dev/Fast1data.SqlServer/Fast1data.SqlServer",
+  "PackageRoot": "/home/core/dev/Fast1data.SqlServer/out/Fast1data.SqlServer",
+  "UniqueDistributionLoadingOrderTuples": 60,
+  "CasesPerTuple": 136,
+  "WorkerCases": 8160,
+  "NormalizedMatricesEqual": true,
+  "ControlledResultsEqual": true,
+  "LiveResultsEqual": true,
+  "LivePassedPerDistribution": 40,
+  "UnavailableHosts": [
+    "Windows x64",
+    "macOS x64"
+  ]
+}

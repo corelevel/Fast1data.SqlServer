@@ -28,6 +28,7 @@ function Get-ImportState {
 	$sqlCmd = $null
 	$sqlReader = $null
 
+	$operationError = $null
 	try {
 		$tvp = [System.Data.DataTable]::new()
 		[void]$tvp.Columns.Add('value', [Guid])
@@ -54,12 +55,12 @@ function Get-ImportState {
 
 		$importStatesMap
 	}
+	catch {
+		$operationError = $_
+		throw
+	}
 	finally {
-		if ($null -ne $sqlReader) {
-			$sqlReader.Dispose()
-		}
-		if ($null -ne $sqlCmd) {
-			$sqlCmd.Dispose()
-		}
+		Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd }) `
+			-PrimaryError $operationError
 	}
 }

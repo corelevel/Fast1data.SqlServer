@@ -1,0 +1,9 @@
+{
+  "Command": "pwsh -NoProfile -File ./out/publish.ps1",
+  "ExitCode": 0,
+  "Analyzer": "Passed",
+  "Passed": 223,
+  "Failed": 0,
+  "Skipped": 11,
+  "PublishedToGallery": false
+}

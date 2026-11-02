@@ -1,4 +1,4 @@
-class EasySqlParam {
+class GenericSqlParam {
 	[object]$Value
 	[System.Data.SqlDbType]$Type
 	[int]$Size

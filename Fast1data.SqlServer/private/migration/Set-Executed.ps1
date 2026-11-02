@@ -1,12 +1,11 @@
-using module ../shared/EasySqlParam.psm1
-
 <#
 .SYNOPSIS
 Records a successfully executed migration script.
 
 .DESCRIPTION
 Inserts a migration-history record for a newly executed script. For a forced
-rerun of an existing script, updates its checksum and execution timestamp.
+rerun of an existing script, locates the original stored key and updates its name,
+checksum and database UTC execution timestamp.
 
 .PARAMETER ConnStr
 Specifies the Microsoft.Data.SqlClient connection string for the target
@@ -23,6 +22,10 @@ Specifies the SHA-256 checksum of the executed migration script.
 
 .PARAMETER ForceScript
 Indicates whether an existing migration-history record must be updated.
+
+.PARAMETER HistoryScriptName
+Original stored script name used to locate a forced historical update. Defaults
+to ScriptName for existing private callers; inserts do not use this value.
 #>
 function Set-Executed {
 	[Diagnostics.CodeAnalysis.SuppressMessageAttribute(
@@ -45,10 +48,13 @@ function Set-Executed {
 		[string]$Checksum,
 
 		[Parameter(Mandatory)]
-		[bool]$ForceScript
+		[bool]$ForceScript,
+
+		[string]$HistoryScriptName = $ScriptName
 	)
 
 	$sqlConn = $null
+	$operationError = $null
 	try {
 		$sqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
 		$sqlConn.ConnectionString = $ConnStr
@@ -56,9 +62,10 @@ function Set-Executed {
 		$query = ''
 		if ($ForceScript) {
 			$query = @'
+set nocount on
 update dbo.fast1_migration_history
-set [checksum] = @checksum, executed_at = sysutcdatetime()
-where script_name = @script_name and phase = @phase
+set script_name = @script_name, [checksum] = @checksum, executed_at = sysutcdatetime()
+where script_name = @history_script_name and phase = @phase
 
 if @@rowcount = 0
 begin
@@ -68,36 +75,45 @@ end
 		}
 		else {
 			$query = @'
+set nocount on
 insert dbo.fast1_migration_history(script_name, phase, [checksum])
 values(@script_name, @phase, @checksum)
 '@
 		}
 
 		$sqlConn.Open()
-		Invoke-EasySqlQuery `
+		Invoke-GenericSqlQuery `
 			-SqlConn $sqlConn `
 			-Query $query `
 			-Parameters @{
-				script_name = [EasySqlParam]@{
+				script_name = [GenericSqlParam]@{
 					Value = $ScriptName
 					Type = [System.Data.SqlDbType]::NVarChar
 					Size = 255
 				}
-				phase = [EasySqlParam]@{
+				phase = [GenericSqlParam]@{
 					Value = $Phase
 					Type = [System.Data.SqlDbType]::NVarChar
 					Size = 32
 				}
-				checksum = [EasySqlParam]@{
+				checksum = [GenericSqlParam]@{
 					Value = $Checksum
 					Type = [System.Data.SqlDbType]::Char
 					Size = 64
 				}
+				history_script_name = [GenericSqlParam]@{
+					Value = $HistoryScriptName
+					Type = [System.Data.SqlDbType]::NVarChar
+					Size = 255
+				}
 			}
 	}
+	catch {
+		$operationError = $_
+		throw
+	}
 	finally {
-		if ($null -ne $sqlConn) {
-			$sqlConn.Dispose()
-		}
+		Close-GenericSqlResource -Resources ([ordered]@{ Connection = $sqlConn }) `
+			-PrimaryError $operationError
 	}
 }

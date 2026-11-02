@@ -1,6 +1,10 @@
 class TableColumn {
 	[string]$Name
 	[string]$DataType
+	[string]$SqlType
+	[int]$SqlSize
+	[byte]$SqlPrecision
+	[byte]$SqlScale
 	[string]$Collation
 	[bool]$Computed
 	[bool]$Nullable

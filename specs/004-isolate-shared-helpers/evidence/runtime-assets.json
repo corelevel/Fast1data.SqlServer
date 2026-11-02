@@ -1,0 +1,17 @@
+[
+  {
+    "Path": "lib/win-x64/Microsoft.Data.SqlClient.dll",
+    "SHA256": "f4c6a8822a5d078ed9d3466d05a0936eba301135aa75014d02c8d53f11cd9f0f",
+    "SourceEqualsPackage": true
+  },
+  {
+    "Path": "lib/linux-x64/Microsoft.Data.SqlClient.dll",
+    "SHA256": "f4c6a8822a5d078ed9d3466d05a0936eba301135aa75014d02c8d53f11cd9f0f",
+    "SourceEqualsPackage": true
+  },
+  {
+    "Path": "lib/osx-x64/Microsoft.Data.SqlClient.dll",
+    "SHA256": "f4c6a8822a5d078ed9d3466d05a0936eba301135aa75014d02c8d53f11cd9f0f",
+    "SourceEqualsPackage": true
+  }
+]
