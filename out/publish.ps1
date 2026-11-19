@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param()
+param (
+	# Prepare a reviewable package without running integration suites on implicit targets.
+	[switch]$StageOnly
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -36,6 +39,7 @@ $requiredPaths = @(
 
 foreach ($rid in $supportedRids) {
 	$requiredPaths += Join-Path $sourceModuleRoot "lib\$rid\Microsoft.Data.SqlClient.dll"
+	$requiredPaths += Join-Path $sourceModuleRoot "lib\$rid\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
 }
 
 $missingPaths = $requiredPaths | Where-Object {
@@ -91,6 +95,8 @@ $manifest = Test-ModuleManifest -Path $manifestPath
 $missingStagedLibraries = $supportedRids | Where-Object {
 	-not (Test-Path -LiteralPath (
 		Join-Path $moduleLibRoot "$_\Microsoft.Data.SqlClient.dll"
+	)) -or -not (Test-Path -LiteralPath (
+		Join-Path $moduleLibRoot "$_\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
 	))
 }
 
@@ -99,6 +105,7 @@ if ($missingStagedLibraries) {
 }
 
 try {
+	Import-Module $manifestPath -Force -ErrorAction Stop
 	Import-Module PSScriptAnalyzer -ErrorAction Stop
 }
 catch {
@@ -122,6 +129,11 @@ if ($analyzerResults) {
 		Format-Table RuleName, Severity, ScriptName, Line, Message -AutoSize |
 		Out-Host
 	throw "PSScriptAnalyzer reported $($analyzerResults.Count) warning(s) or error(s)."
+}
+
+if ($StageOnly) {
+	Write-Information "Package staged at '$moduleRoot'; analyzer passed. Tests were not run; release validation is incomplete." -InformationAction Continue
+	return
 }
 
 try {
@@ -148,6 +160,7 @@ $pesterConfiguration = New-PesterConfiguration
 $pesterConfiguration.Run.Path = Join-Path $moduleRoot 'tests'
 $pesterConfiguration.Run.TestExtension = '.Tests.ps1'
 $pesterConfiguration.Run.PassThru = $true
+$pesterConfiguration.TestRegistry.Enabled = $false
 $pesterConfiguration.Output.Verbosity = 'Detailed'
 $pesterResult = Invoke-Pester -Configuration $pesterConfiguration
 

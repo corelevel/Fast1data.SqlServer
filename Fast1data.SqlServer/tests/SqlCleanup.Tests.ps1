@@ -84,7 +84,6 @@ Describe 'Audit and migration cleanup on operation failure' {
 
 	It '<CommandName> preserves its operation error when cleanup also fails' -ForEach @(
 		@{ CommandName = 'Get-Executed'; Roles = 'Reader,Command,Connection'; Released = 'Connection' }
-		@{ CommandName = 'Set-Executed'; Roles = 'Connection'; Released = 'Connection' }
 		@{ CommandName = 'Get-ImportState'; Roles = 'Reader,Command'; Released = 'Command' }
 		@{ CommandName = 'Import-SqlAuditFile'; Roles = 'Reader,Command'; Released = 'Command' }
 		@{ CommandName = 'Invoke-Fast1Audit'; Roles = 'Connection'; Released = 'Connection' }
@@ -96,9 +95,6 @@ Describe 'Audit and migration cleanup on operation failure' {
 				switch ($CommandName) {
 					'Get-Executed' {
 						Get-Executed -ConnStr 'InvalidKeyword=value' -Phase 'test'
-					}
-					'Set-Executed' {
-						Set-Executed -ConnStr 'InvalidKeyword=value' -ScriptName 'test.sql' -Phase 'test' -Checksum 'hash' -ForceScript $false
 					}
 					'Get-ImportState' {
 						Get-ImportState -SqlConn $connection -AuditGuids @([guid]::Empty)
@@ -268,6 +264,188 @@ Describe 'Real query contract in <Owner>' -ForEach @(@{ Owner = 'Fast1data.SqlSe
 			}
 			$script:queryState.Released | Should -BeTrue
 			$script:queryState.BorrowedReleased | Should -BeFalse
+		}
+	}
+}
+Describe 'Migration executor owned cleanup' {
+	It 'preserves the first failure and attempts all cleanup (batch=<Batch>, command=<Command>, connection=<Connection>, scope=<Scope>)' -ForEach @(
+		foreach ($batch in @($false, $true)) {
+			foreach ($command in @($false, $true)) {
+				foreach ($connection in @($false, $true)) {
+					foreach ($scope in @($false, $true)) {
+						@{ Batch = $batch; Command = $command; Connection = $connection; Scope = $scope }
+					}
+				}
+			}
+		}
+	) {
+		$path = Join-Path $TestDrive 'cleanup.sql'
+		[System.IO.File]::WriteAllText($path, 'SELECT 1;')
+		InModuleScope Fast1data.SqlServer -Parameters @{
+			Path = $path; Fixture = (Join-Path $PSScriptRoot 'fixtures/Get-MigrationTestCommand.ps1')
+			Batch = $Batch; Command = $Command; Connection = $Connection; Scope = $Scope
+		} {
+			. $Fixture
+			$script:execution = Get-MigrationTestExecution
+			$script:execution.FailCommandCleanup = $Command
+			$script:execution.FailConnectionCleanup = $Connection
+			$script:scopeFailure = $Scope
+			if ($Batch) {
+				$script:execution.Command.FailAt = 1
+			}
+			Mock Get-MigrationScriptConnection { $script:execution.Connection }
+			Mock Get-MigrationScriptCommand { $script:execution.Command }
+			Mock Get-MigrationSuppressionScope {
+				$scope = [pscustomobject]@{
+					Actual = [System.Transactions.TransactionScope]::new([System.Transactions.TransactionScopeOption]::Suppress)
+					Events = $script:execution.Events
+					FailCleanup = $script:scopeFailure
+				}
+				$scope | Add-Member -MemberType ScriptMethod -Name Dispose -Value {
+					$this.Events.Add('scope-dispose')
+					$this.Actual.Dispose()
+					if ($this.FailCleanup) {
+						throw 'private scope disposal details'
+					}
+				}
+				$scope
+			}
+			$caught = $null
+			$ambient = [System.Transactions.TransactionScope]::new()
+			try {
+				$callerTransaction = [System.Transactions.Transaction]::Current
+				try {
+					Invoke-Migration -ConnStr 'Server=unused;Database=configured_target' -Script $Path
+				}
+				catch {
+					$caught = $_
+				}
+				[object]::ReferenceEquals([System.Transactions.Transaction]::Current, $callerTransaction) | Should -BeTrue
+				$ambient.Complete()
+			}
+			finally {
+				$ambient.Dispose()
+			}
+			$script:execution.Events.ToArray() | Should -Be @('open', 'command-dispose', 'connection-dispose', 'scope-dispose')
+			if ($Batch -or $Command -or $Connection -or $Scope) {
+				$caught | Should -Not -BeNullOrEmpty
+				$caught.Exception.Message | Should -Not -Match 'private .* details'
+				if ($Batch) {
+					$caught.Exception.Message | Should -Match 'batch 1'
+				}
+				else {
+					$caught.Exception.Message | Should -Match 'cleanup'
+				}
+				$entries = @(Get-GenericSqlCleanupFailure -ErrorRecord $caught)
+				$entries.Count | Should -Be ([int]$Command + [int]$Connection + [int]$Scope)
+				$expectedRoles = @(
+					if ($Command) {
+						'ExecutionCommand'
+					}
+					if ($Connection) {
+						'ExecutionConnection'
+					}
+					if ($Scope) {
+						'SuppressionScope'
+					}
+				)
+				@($entries | Select-Object -ExpandProperty ResourceRole) | Should -Be $expectedRoles
+				($entries | ConvertTo-Json) | Should -Not -Match 'private .* details|Server='
+			}
+			else {
+				$caught | Should -BeNullOrEmpty
+			}
+		}
+	}
+}
+Describe 'Migration public owner cleanup' {
+	BeforeAll {
+		$script:migrationCleanupBase = Join-Path $TestDrive 'owner'
+		$null = New-Item -ItemType Directory -Path (Join-Path $script:migrationCleanupBase 'phase') -Force
+		'{"phase":{"scripts":["one.sql"]}}' | Set-Content -LiteralPath (Join-Path $script:migrationCleanupBase 'migration.json')
+		'SELECT 1;' | Set-Content -LiteralPath (Join-Path $script:migrationCleanupBase 'phase/one.sql')
+	}
+
+	It 'preserves <Failure> while attempting every owned resource (cleanup fails=<CleanupFails>)' -ForEach @(
+		foreach ($failure in @('none', 'open', 'script', 'history')) {
+			foreach ($cleanup in @($false, $true)) {
+				@{ Failure = $failure; CleanupFails = $cleanup }
+			}
+		}
+	) {
+		InModuleScope Fast1data.SqlServer -Parameters @{ Base = $script:migrationCleanupBase; Failure = $Failure; CleanupFails = $CleanupFails } {
+			$script:ownerFailure = $Failure
+			$script:ownerCleanupFails = $CleanupFails
+			$script:ownerReleased = [System.Collections.Generic.List[string]]::new()
+			Mock Get-Executed { @() }
+			Mock Get-MigrationConnection {
+				$connection = [Microsoft.Data.SqlClient.SqlConnection]::new()
+				$connection | Add-Member -NotePropertyName Events -NotePropertyValue $script:ownerReleased
+				$connection | Add-Member -NotePropertyName FailOpen -NotePropertyValue ($script:ownerFailure -eq 'open')
+				$connection | Add-Member -NotePropertyName FailCleanup -NotePropertyValue $script:ownerCleanupFails
+				$connection | Add-Member -MemberType ScriptMethod -Name Open -Force -Value {
+					if ($this.FailOpen) {
+						throw 'controlled open failure'
+					}
+				}
+				$connection | Add-Member -MemberType ScriptMethod -Name Dispose -Force -Value {
+					$this.Events.Add('Connection')
+					if ($this.FailCleanup) {
+						throw 'controlled connection cleanup failure'
+					}
+				}
+				$connection
+			}
+			Mock Get-GenericSqlCommand {
+				$command = [Microsoft.Data.SqlClient.SqlCommand]::new('', $SqlConn)
+				$command | Add-Member -NotePropertyName Events -NotePropertyValue $script:ownerReleased
+				$command | Add-Member -NotePropertyName FailCleanup -NotePropertyValue $script:ownerCleanupFails
+				$command | Add-Member -MemberType ScriptMethod -Name Dispose -Force -Value {
+					$this.Events.Add('Command')
+					if ($this.FailCleanup) {
+						throw 'controlled command cleanup failure'
+					}
+				}
+				$command
+			}
+			Mock Invoke-Migration {
+				if ($script:ownerFailure -eq 'script') {
+					throw 'controlled script failure'
+				}
+			}
+			Mock Set-Executed {
+				if ($script:ownerFailure -eq 'history') {
+					throw 'controlled history failure'
+				}
+			}
+			$caught = $null
+			try {
+				Invoke-Fast1Migration -ConnStr 'Server=unused;Database=unused' -BasePath $Base -Phase phase -Confirm:$false
+			}
+			catch {
+				$caught = $_
+			}
+			$expected = @('Command', 'Connection')
+			if ($Failure -eq 'open') {
+				$expected = @('Connection')
+			}
+			$script:ownerReleased.ToArray() | Should -Be $expected
+			if ($Failure -eq 'none' -and -not $CleanupFails) {
+				$caught | Should -BeNullOrEmpty
+			}
+			elseif ($Failure -eq 'open') {
+				$caught.Exception.Message | Should -Match 'could not open mutation resources'
+				$caught.Exception.InnerException | Should -Not -BeNullOrEmpty
+			}
+			elseif ($Failure -ne 'none') {
+				$caught.Exception.Message | Should -Match "controlled $Failure failure"
+			}
+			else {
+				$caught.Exception.Message | Should -Match 'controlled command cleanup failure'
+			}
+			if ($CleanupFails) {
+				@(Get-GenericSqlCleanupFailure -ErrorRecord $caught).ResourceRole | Should -Be $expected
+			}
 		}
 	}
 }

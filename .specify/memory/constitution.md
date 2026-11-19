@@ -52,8 +52,10 @@ setup order, limitations, and recovery behavior affected by a change.
 
 ## Database and Runtime Constraints
 
-- PowerShell orchestration, Microsoft.Data.SqlClient, the SqlServer module, and versioned SQL
-  setup scripts form the supported implementation stack.
+- PowerShell orchestration, Microsoft.Data.SqlClient, Microsoft.SqlServer.TransactSql.ScriptDom,
+  and versioned SQL setup scripts form the supported implementation stack. Required client
+  and parser assemblies MUST be bundled for each supported runtime and initialized through
+  designated loaders; a separate SqlServer PowerShell module installation is not required.
 - Database object changes MUST account for existing installations and persisted migration,
   audit, and archiving state. Required upgrade steps MUST be documented.
 - Archiving MUST retain its documented primary-key requirement and the requirement that the
@@ -102,4 +104,13 @@ module versions are independent. Amendments MUST retain the original ratificatio
 update the last-amended date when content changes. Dependent workflows MUST read the active
 constitution at runtime; their templates are outside this amendment's scope.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-28: maintainer must confirm adoption date | **Last Amended**: 2026-10-28
+### Amendment 1.1.0 — 2026-11-19
+
+Maintainer approved replacing the SqlServer PowerShell prerequisite with bundled
+SqlClient and ScriptDom, constitution 1.1.0, and module release 0.1.0. Direct migration
+execution with whole-file parsing motivates this change. Installation, private helper
+signatures, script syntax, and loader/build contracts change. Rebuild all supported RID
+bundles and update manifest/help/guides; reject unsupported SQLCMD syntax before execution
+and retain idempotent retry requirements. Existing migration history requires no upgrade.
+
+**Version**: 1.1.0 | **Ratified**: 2026-10-28: maintainer must confirm adoption date | **Last Amended**: 2026-11-19

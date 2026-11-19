@@ -24,7 +24,7 @@ Describe 'Isolated shared-helper import and operation matrix' {
 		$result.Root | Should -Be $script:distributionRoot
 		$result.Loading | Should -Be $Loading
 		$result.Order | Should -Be $Order
-		$result.Total | Should -Be 136
+		$result.Total | Should -Be 162
 		($result.Passed + $result.Skipped) | Should -Be $result.Total
 		$result.Failed | Should -Be 0
 		$result.UnexpectedSkipped | Should -Be 0

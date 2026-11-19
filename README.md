@@ -9,15 +9,19 @@ Fast1data.SqlServer is a PowerShell module for SQL Server administration and dep
 ## Requirements
 
 - PowerShell 7.6 or later
-- SQL Server PowerShell module [SqlServer](https://learn.microsoft.com/en-us/powershell/sql-server/download-sql-server-ps-module) module
+- No separate SqlServer PowerShell module installation is required.
 - An x64 Windows, Linux, or macOS runtime
 - Network and database permissions required by the selected feature
 
-The module bundles `Microsoft.Data.SqlClient` for these runtime identifiers:
+The module bundles `Microsoft.Data.SqlClient`, `Microsoft.SqlServer.TransactSql.ScriptDom`,
+and their required native/resource dependencies for these runtime identifiers:
 
 - `win-x64`
 - `linux-x64`
 - `osx-x64`
+
+See [migration authoring and recovery guidance](Fast1Migration.md) for supported
+T-SQL batches, unsupported SQLCMD syntax, and idempotent retries after partial failures.
 
 ## Install from PowerShell Gallery
 
@@ -29,7 +33,7 @@ Install-Module -Name Fast1data.SqlServer
 ## Install from source
 
 - Clone the repository
-- Build the bundled SQL client libraries if `lib` is not already populated:
+- With a .NET SDK supporting `net10.0` installed, build the bundled client/parser libraries if `lib` is not already populated:
 ```powershell
 .\build\build.ps1
 ```
@@ -102,8 +106,22 @@ adapter; the model selects comparison/delay helpers and retains its local
 functions and classes. Ordinary function files contain behavior; their loaders
 supply dependencies.
 
-Root bootstraps SqlClient before loading shared behavior and the declaration-only
+Root bootstraps SqlClient and ScriptDom before loading shared behavior and the declaration-only
 `private/archiving/Load.ps1`, then loads the archiving adapter and public commands.
+Both libraries use `private/shared/Import-RequiredLibrary.ps1` with `-DllName` and
+`-RequiredTypeName`. Other bundled managed DLLs use the same function without another
+loader. It validates the selected RID asset on every call, even with a preload;
+reuse requires matching name, version, culture, public key token and requested types.
+Missing/corrupt assets and incompatible preloads fail with rebuild guidance.
+Each executable migration file opens its own connection from the original `ConnStr`
+under ambient transaction suppression and uses an owned command with timeout `0`.
+The string determines authentication/options and configured/default catalog. History
+uses its separate borrowed `SqlCmd` with unchanged settings and assigned transaction.
+Input and whole-file validation precede execution allocation; zero-batch files need
+no login. History follows a zero-transaction check and successful command, connection
+and scope cleanup. Complete explicit SQL transactions within each file.
+Session state remains isolated across files with pooling. Committed SQL can survive
+execution or cleanup/history failure; follow the [migration retry guidance](Fast1Migration.md#failure-and-retry).
 Direct model-first imports require explicit SqlClient bootstrap before parsing
 model classes. After repairing a missing or corrupt required dependency, retry in
 a fresh PowerShell process because class definitions persist within a process.

@@ -1,7 +1,7 @@
 BeforeAll {
 	$script:distributionRoot = Split-Path -Parent $PSScriptRoot
 	function Invoke-LoaderWorker {
-		param ([string]$Scenario = 'Direct', [switch]$Copy, [switch]$Instrument, [string]$FaultPath, [string]$FaultKind = 'Missing', [string]$Consumer = 'Root')
+		param ([string]$Scenario = 'Direct', [switch]$Copy, [switch]$Instrument, [string]$FaultPath, [string]$FaultKind = 'Missing', [string]$Consumer = 'Root', [string]$LibraryCase = 'Cold', [string]$DllName = 'Microsoft.SqlServer.TransactSql.ScriptDom.dll', [string]$RequiredTypeName = 'Microsoft.SqlServer.TransactSql.ScriptDom.TSql160Parser')
 		$root = $script:distributionRoot
 		if ($Copy) {
 			$root = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
@@ -9,6 +9,9 @@ BeforeAll {
 			$null = New-Item -Path (Join-Path $root '.loader-test-copy') -ItemType File
 		}
 		$arguments = @('-NoLogo', '-NoProfile', '-File', (Join-Path $root 'tests/fixtures/Invoke-ModuleLoaderScenario.ps1'), '-DistributionRoot', $root, '-Scenario', $Scenario, '-Consumer', $Consumer)
+		if ($Scenario -eq 'Library') {
+			$arguments += @('-LibraryCase', $LibraryCase, '-DllName', $DllName, '-RequiredTypeName', $RequiredTypeName)
+		}
 		if ($Instrument) {
 			$arguments += '-Instrument'
 		}
@@ -35,10 +38,55 @@ BeforeAll {
 	}
 }
 
+Describe 'Parameterized bundled managed library initialization' {
+	It 'validates optional, multiple and case-sensitive types on <Case>' -ForEach @(
+		foreach ($case in @('OmittedTypesCold', 'OmittedTypesReuse', 'MultipleTypesCold', 'MultipleTypesReuse', 'CaseSensitiveCold', 'CaseSensitiveReuse')) {
+			@{ Case = $case }
+		}
+	) {
+		$result = Invoke-LoaderWorker -Scenario Library -Copy -LibraryCase $Case
+		if ($Case.StartsWith('CaseSensitive')) {
+			$result.LibraryError | Should -Match 'ScriptDom.dll.*runtime.*build/build.ps1'
+		}
+		else {
+			$result.Assembly | Should -Not -BeNullOrEmpty
+		}
+	}
+
+	It 'initializes and reuses <DllName> with case <Case>' -ForEach @(
+		foreach ($case in @('Cold', 'Reuse', 'CompatiblePreload')) {
+			@{ Case = $case; DllName = 'Microsoft.Data.SqlClient.dll'; Type = 'Microsoft.Data.SqlClient.SqlConnection' }
+			@{ Case = $case; DllName = 'Microsoft.SqlServer.TransactSql.ScriptDom.dll'; Type = 'Microsoft.SqlServer.TransactSql.ScriptDom.TSql160Parser' }
+			@{ Case = $case; DllName = 'Microsoft.SqlServer.Server.dll'; Type = 'Microsoft.SqlServer.Server.SqlFunctionAttribute' }
+		}
+	) {
+		$result = Invoke-LoaderWorker -Scenario Library -Copy -LibraryCase $Case -DllName $DllName -RequiredTypeName $Type
+		$result.Assembly | Should -Not -BeNullOrEmpty
+	}
+
+	It 'rejects <Case> before usable initialization' -ForEach @(
+		foreach ($case in @('ColdMissing', 'ColdCorrupt', 'WarmMissing', 'WarmCorrupt', 'WrongIdentity', 'PreloadVersion', 'PreloadCulture', 'PreloadToken', 'ColdType', 'WarmType')) {
+			@{ Case = $case }
+		}
+	) {
+		$result = Invoke-LoaderWorker -Scenario Library -Copy -LibraryCase $Case
+		$result.LibraryError | Should -Match 'Microsoft.SqlServer.TransactSql.ScriptDom.dll.*runtime.*build/build.ps1'
+	}
+
+	It 'rejects a noncontained or invalid filename <DllName>' -ForEach @(
+		foreach ($name in @('../library.dll', '..\library.dll', '/library.dll', 'C:\library.dll', 'C:library.dll', '*.dll', 'library?.dll', 'library.txt', '.dll', 'nested/library.dll', 'bad:name.dll')) {
+			@{ DllName = $name }
+		}
+	) {
+		$result = Invoke-LoaderWorker -Scenario Library -Copy -LibraryCase InvalidName -DllName $DllName
+		$result.LibraryError | Should -Match 'DllName'
+	}
+}
+
 Describe 'Explicit dependency boundaries' -Tag US2 {
 	It 'accounts for the complete 23-file inventory through designated loaders' {
 		$selection = @{
-			'Fast1data.SqlServer.psm1' = @('private/shared/GenericSqlParam.psm1', 'private/shared/Get-RuntimeIdentifier.ps1', 'private/shared/Import-SqlClientLib.ps1', 'private/shared/Load.ps1', 'private/audit/Get-ImportState.ps1', 'private/audit/Get-SqlAuditFile.ps1', 'private/audit/Get-SqlAuditFileEntry.ps1', 'private/audit/Import-SqlAuditFile.ps1', 'private/migration/Get-FileChecksum.ps1', 'private/migration/Get-RelativePath.ps1', 'private/migration/Get-Executed.ps1', 'private/migration/Set-Executed.ps1', 'private/migration/Resolve-MigrationPhase.ps1', 'private/migration/Invoke-Migration.ps1', 'private/archiving/Load.ps1', 'private/archiving/Invoke-ArchivingProcess.ps1')
+			'Fast1data.SqlServer.psm1' = @('private/shared/GenericSqlParam.psm1', 'private/shared/Get-RuntimeIdentifier.ps1', 'private/shared/Import-RequiredLibrary.ps1', 'private/shared/Load.ps1', 'private/audit/Get-ImportState.ps1', 'private/audit/Get-SqlAuditFile.ps1', 'private/audit/Get-SqlAuditFileEntry.ps1', 'private/audit/Import-SqlAuditFile.ps1', 'private/migration/Get-FileChecksum.ps1', 'private/migration/Get-RelativePath.ps1', 'private/migration/Get-Executed.ps1', 'private/migration/Set-Executed.ps1', 'private/migration/Resolve-MigrationPhase.ps1', 'private/migration/Invoke-Migration.ps1', 'private/archiving/Load.ps1', 'private/archiving/Invoke-ArchivingProcess.ps1')
 			'private/shared/Load.ps1' = @('GenericSqlCleanup.ps1', 'GenericSqlQuery.ps1', 'Write-LogMessage.ps1')
 			'private/archiving/Load.ps1' = @('ArchivingModel.psm1')
 			'private/archiving/ArchivingModel.psm1' = @('../shared/GenericSqlParam.psm1', 'Metadata.psm1', '../shared/Load.ps1', 'Get-DelayIntervalInSecond.ps1', 'Compare-Column.ps1')
@@ -87,7 +135,10 @@ Describe 'Explicit dependency boundaries' -Tag US2 {
 	}
 
 	It '<Consumer> rejects <FaultKind> dependency <FaultPath>' -ForEach @(
-		foreach ($path in @('private/shared/GenericSqlCleanup.ps1', 'private/shared/GenericSqlQuery.ps1', 'private/shared/Write-LogMessage.ps1', 'private/migration/Get-FileChecksum.ps1', 'private/migration/Get-RelativePath.ps1', 'private/shared/Load.ps1', 'private/archiving/Load.ps1', 'private/shared/GenericSqlParam.psm1', 'private/archiving/Metadata.psm1', 'private/archiving/ArchivingModel.psm1', 'private/shared/Get-RuntimeIdentifier.ps1', 'private/shared/Import-SqlClientLib.ps1', 'private/audit/Get-ImportState.ps1', 'private/audit/Get-SqlAuditFile.ps1', 'private/audit/Get-SqlAuditFileEntry.ps1', 'private/audit/Import-SqlAuditFile.ps1', 'private/migration/Get-Executed.ps1', 'private/migration/Set-Executed.ps1', 'private/migration/Resolve-MigrationPhase.ps1', 'private/migration/Invoke-Migration.ps1', 'private/archiving/Invoke-ArchivingProcess.ps1', 'private/archiving/Get-DelayIntervalInSecond.ps1', 'private/archiving/Compare-Column.ps1', 'SqlClient')) {
+		foreach ($kind in @('Missing', 'Corrupt', 'Incompatible')) {
+			@{ FaultPath = 'ScriptDom'; FaultKind = $kind; Consumer = 'Root' }
+		}
+		foreach ($path in @('private/shared/GenericSqlCleanup.ps1', 'private/shared/GenericSqlQuery.ps1', 'private/shared/Write-LogMessage.ps1', 'private/migration/Get-FileChecksum.ps1', 'private/migration/Get-RelativePath.ps1', 'private/shared/Load.ps1', 'private/archiving/Load.ps1', 'private/shared/GenericSqlParam.psm1', 'private/archiving/Metadata.psm1', 'private/archiving/ArchivingModel.psm1', 'private/shared/Get-RuntimeIdentifier.ps1', 'private/shared/Import-RequiredLibrary.ps1', 'private/audit/Get-ImportState.ps1', 'private/audit/Get-SqlAuditFile.ps1', 'private/audit/Get-SqlAuditFileEntry.ps1', 'private/audit/Import-SqlAuditFile.ps1', 'private/migration/Get-Executed.ps1', 'private/migration/Set-Executed.ps1', 'private/migration/Resolve-MigrationPhase.ps1', 'private/migration/Invoke-Migration.ps1', 'private/archiving/Invoke-ArchivingProcess.ps1', 'private/archiving/Get-DelayIntervalInSecond.ps1', 'private/archiving/Compare-Column.ps1', 'SqlClient')) {
 			@{ FaultPath = $path; FaultKind = 'Missing'; Consumer = 'Root' }
 		}
 		foreach ($path in @('SqlClient', 'private/shared/GenericSqlQuery.ps1', 'private/shared/Load.ps1', 'private/archiving/Load.ps1', 'private/shared/GenericSqlParam.psm1', 'private/archiving/Metadata.psm1', 'private/archiving/ArchivingModel.psm1')) {
@@ -103,6 +154,10 @@ Describe 'Explicit dependency boundaries' -Tag US2 {
 		$result = Invoke-LoaderWorker -Scenario Fault -Copy -FaultPath $FaultPath -FaultKind $FaultKind -Consumer $Consumer
 		$result.OriginalError | Should -Not -BeNullOrEmpty
 		$result.PublicCommands | Should -HaveCount 0
+		if ($FaultPath -eq 'ScriptDom') {
+			$result.OriginalError | Should -Match 'ScriptDom.*runtime|runtime.*ScriptDom'
+			$result.OriginalError | Should -Match 'Rebuild'
+		}
 	}
 }
 

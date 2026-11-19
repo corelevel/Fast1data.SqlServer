@@ -11,7 +11,7 @@
 RootModule = 'Fast1data.SqlServer.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.5'
+ModuleVersion = '0.1.0'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -50,9 +50,7 @@ PowerShellVersion = '7.6'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @(
-	'SqlServer'
-)
+RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -121,8 +119,18 @@ PrivateData = @{
 		# IconUri = ''
 
 		# ReleaseNotes of this module
-		ReleaseNotes = 'Upgraded to .NET 10; now requires PowerShell 7.6 or later.
-		Updated Microsoft.Data.SqlClient to 7.1.1.
+		ReleaseNotes = '0.1.0: Removed the SqlServer PowerShell module prerequisite; bundled SqlClient 7.1.2 and ScriptDom 180.154.0.
+		Migrations validate complete files with TSql160Parser and execute original batches on one owned command/session per file.
+		Private Invoke-Migration takes original ConnStr and owns execution resources; Set-Executed borrows SqlCmd for history.
+		One Import-RequiredLibrary bootstrap validates selected bundle identity and requested types for all managed DLLs.
+		Each executable file opens a separate connection from original ConnStr with ambient enlistment suppressed and timeout 0.
+		Target, authentication and options follow original ConnStr, including configured/default catalog; pooled sessions reset between files.
+		Rejected/zero-batch files open no execution connection; explicit SQL transactions must finish within each file.
+		History retains its command timeout/transaction and follows transaction validation and owned command/connection/scope cleanup.
+		SQLCMD directives, substitutions (including quoted mentions), and counted GO separators are unsupported.
+		Earlier SQL may remain committed after execution/cleanup/history failures; retries require idempotent scripts.
+		Upgraded to .NET 10; now requires PowerShell 7.6 or later.
+		Dependency project targets net10.0 with System.Security.Cryptography.Pkcs 11.0.0.
 		Added Linux audit discovery over SMB with credential support and unified Windows/Linux file handling.
 		Improved migration validation, path handling, execution history, and -WhatIf previews.
 		Strengthened archiving recovery, checkpoint handling, foreign-key restoration, and resource cleanup.
