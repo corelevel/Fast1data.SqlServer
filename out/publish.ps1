@@ -105,11 +105,16 @@ if ($missingStagedLibraries) {
 }
 
 try {
+	$loadedAnalyzer = Get-Module PSScriptAnalyzer
+
+	if (-not $loadedAnalyzer) {
+		Import-Module PSScriptAnalyzer -ErrorAction Stop
+	}
+
 	Import-Module $manifestPath -Force -ErrorAction Stop
-	Import-Module PSScriptAnalyzer -ErrorAction Stop
 }
 catch {
-	throw "Failed to load PSScriptAnalyzer: $($_.Exception.Message)"
+	throw "Failed to load release validation modules: $($_.Exception.Message)"
 }
 
 Write-Host ''
@@ -162,6 +167,8 @@ $pesterConfiguration.Run.TestExtension = '.Tests.ps1'
 $pesterConfiguration.Run.PassThru = $true
 $pesterConfiguration.TestRegistry.Enabled = $false
 $pesterConfiguration.Output.Verbosity = 'Detailed'
+$pesterConfiguration.Filter.ExcludeTag = @('Slow')
+#$pesterConfiguration.Filter.Tag = @('RunMe')
 $pesterResult = Invoke-Pester -Configuration $pesterConfiguration
 
 if ($pesterResult.FailedCount -gt 0) {

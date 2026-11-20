@@ -85,8 +85,10 @@ Describe 'Migration SQL integration (select FAST1_TEST_MIGRATION_SQL_CONN_STR to
 		function Get-SqlFixtureHistory {
 			param ([string]$ConnStr = $script:testConnectionString)
 			$json = Invoke-TestSql -ConnStr $ConnStr -Query @'
-select script_name, [checksum], executed_at from dbo.fast1_migration_history
-where phase = @phase order by script_name for json path;
+select coalesce((
+	select script_name, [checksum], executed_at from dbo.fast1_migration_history
+	where phase = @phase order by script_name for json path
+), N'[]');
 '@ -Parameters @{ phase = $script:phase }
 			$json | ConvertFrom-Json
 		}
@@ -172,6 +174,36 @@ select 1;
 alter database [$script:testDatabaseName] set single_user with rollback immediate;
 drop database [$script:testDatabaseName];
 "@ | Out-Null
+		}
+	}
+
+	It 'reads empty fixture history without JSON conversion errors' {
+		$ErrorActionPreference = 'Stop'
+		@(Get-SqlFixtureHistory) | Should -HaveCount 0
+	}
+
+	It 'reads empty and populated delegated history with exact persisted legacy keys' {
+		$module = Get-Module Fast1data.SqlServer
+		$read = {
+			param ($ConnectionString, $PhaseName)
+			Get-Executed -ConnStr $ConnectionString -Phase $PhaseName
+		}
+		@(& $module $read $script:testConnectionString $script:phase) | Should -HaveCount 0
+		$names = @('Legacy\UPPER.sql', 'Other/Mixed.sql')
+		foreach ($name in $names) {
+			Invoke-TestSql -Query 'INSERT dbo.fast1_migration_history (phase, script_name, [checksum]) VALUES (@phase, @name, @checksum);' -Parameters @{
+				phase = $script:phase
+				name = $name
+				checksum = ('a' * 64)
+			} | Out-Null
+		}
+		$rows = @(& $module $read $script:testConnectionString $script:phase)
+		$rows | Should -HaveCount 2
+		foreach ($name in $names) {
+			$matched = @($rows | Where-Object script_name -CEQ $name)
+			$matched | Should -HaveCount 1
+			$matched[0].checksum | Should -BeExactly ('a' * 64)
+			$matched[0].PSObject.Properties.Name -join ',' | Should -Be 'script_name,checksum'
 		}
 	}
 
@@ -656,6 +688,7 @@ INSERT dbo.$script:tableName VALUES(2, @@SPID);
 			ExpectedFailure = $ExpectedFailure
 		} {
 			$script:realOwnerTrace = [System.Collections.Generic.List[string]]::new()
+			$script:realOwnerConnection = $null
 			$script:realMigration = (Get-Command Invoke-Migration).ScriptBlock
 			$script:realHistory = (Get-Command Set-Executed).ScriptBlock
 			Mock Get-MigrationConnection {
@@ -672,8 +705,13 @@ INSERT dbo.$script:tableName VALUES(2, @@SPID);
 				$command = [Microsoft.Data.SqlClient.SqlCommand]::new($Query, $SqlConn)
 				$command.CommandTimeout = 27
 				$command | Add-Member -NotePropertyName Events -NotePropertyValue $script:realOwnerTrace
+				$disposalEvent = 'dispose discovery command'
+				if ([object]::ReferenceEquals($SqlConn, $script:realOwnerConnection)) {
+					$disposalEvent = 'dispose mutation command'
+				}
+				$command | Add-Member -NotePropertyName DisposalEvent -NotePropertyValue $disposalEvent
 				$command | Add-Member -MemberType ScriptMethod -Name Dispose -Force -Value {
-					$this.Events.Add('dispose command')
+					$this.Events.Add($this.DisposalEvent)
 					$this.psbase.Dispose()
 				}
 				$command
@@ -691,11 +729,11 @@ INSERT dbo.$script:tableName VALUES(2, @@SPID);
 			}
 			if ($ExpectedFailure) {
 				$invoke | Should -Throw
-				$script:realOwnerTrace.ToArray() | Should -Be @('script', 'dispose command', 'dispose connection')
+				$script:realOwnerTrace.ToArray() | Should -Be @('dispose discovery command', 'script', 'dispose mutation command', 'dispose connection')
 			}
 			else {
 				& $invoke
-				$script:realOwnerTrace.ToArray() | Should -Be @('script', 'history timeout 27', 'dispose command', 'dispose connection')
+				$script:realOwnerTrace.ToArray() | Should -Be @('dispose discovery command', 'script', 'history timeout 27', 'dispose mutation command', 'dispose connection')
 			}
 			$script:realOwnerConnection.State | Should -Be 'Closed'
 		}

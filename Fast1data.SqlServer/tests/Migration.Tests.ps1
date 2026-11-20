@@ -1,3 +1,5 @@
+. (Join-Path $PSScriptRoot 'fixtures/GenericSqlQuery.HistoryCases.ps1')
+
 BeforeAll {
 	$script:moduleRoot = Split-Path -Parent $PSScriptRoot
 	$modulePath = Join-Path $script:moduleRoot 'Fast1data.SqlServer.psd1'

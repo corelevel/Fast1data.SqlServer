@@ -34,7 +34,7 @@ The only production definition is planned at `Fast1data.SqlServer/private/shared
 | Order | File | Functions |
 |---|---|---|
 | 1 | GenericSqlCleanup.ps1 | Close-GenericSqlResource, Add-GenericSqlCleanupFailure, Get-GenericSqlCleanupFailure |
-| 2 | GenericSqlQuery.ps1 | Get-GenericSqlCommand, Invoke-GenericSqlQuery |
+| 2 | GenericSqlQuery.ps1 | Get-GenericSqlCommand, Invoke-Fast1GenericSqlQuery |
 | 3 | Write-LogMessage.ps1 | Write-LogMessage |
 | 4 | Get-FileChecksum.ps1 | Get-FileChecksum |
 | 5 | Get-RelativePath.ps1 | Get-RelativePath |

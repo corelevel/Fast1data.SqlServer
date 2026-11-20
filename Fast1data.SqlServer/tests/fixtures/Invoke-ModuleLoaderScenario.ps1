@@ -243,7 +243,7 @@ try {
 	$observation.DeclarationErrors = $declarationErrors
 	$observation.OriginalError = "$originalError"
 	$observation.Trace = @($loaderTrace)
-	$observation.PublicCommands = @(Get-Command -Name Invoke-Fast1Audit, Invoke-Fast1Migration, Invoke-Fast1Archiving -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
+	$observation.PublicCommands = @(Get-Command -Name Invoke-Fast1Audit, Invoke-Fast1Migration, Invoke-Fast1Archiving, Invoke-Fast1GenericSqlQuery, Invoke-Fast1GenericSqlQueryReader, New-Fast1GenericSqlParam -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
 	if ($Scenario -eq 'Fault') {
 		if ($null -eq $originalError) {
 			throw 'Required dependency did not terminate initialization.'
@@ -269,10 +269,10 @@ try {
 		if ($null -ne $originalError -or $importErrors.Count -gt 0 -or $records.Count -gt 0) {
 			throw "Unexpected initialization errors/output: $originalError $($records -join ' ')"
 		}
-		if ($null -eq $root -or $null -eq $model -or $observation.PublicCommands.Count -ne 3) {
-			throw 'Import did not assemble both consumers and three public commands.'
+		if ($null -eq $root -or $null -eq $model -or $observation.PublicCommands.Count -ne 6) {
+			throw 'Import did not assemble both consumers and six public commands.'
 		}
-		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-GenericSqlQuery', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure')
+		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-Fast1GenericSqlQuery', 'Invoke-Fast1GenericSqlQueryReader', 'Add-GenericSqlParameter', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure')
 		$observation.Owners = @(
 			foreach ($module in @($root, $model)) {
 				foreach ($name in $shared) {

@@ -83,7 +83,7 @@ Describe 'Audit and migration cleanup on operation failure' {
 	}
 
 	It '<CommandName> preserves its operation error when cleanup also fails' -ForEach @(
-		@{ CommandName = 'Get-Executed'; Roles = 'Reader,Command,Connection'; Released = 'Connection' }
+		@{ CommandName = 'Get-Executed'; Roles = 'Connection'; Released = 'Connection' }
 		@{ CommandName = 'Get-ImportState'; Roles = 'Reader,Command'; Released = 'Command' }
 		@{ CommandName = 'Import-SqlAuditFile'; Roles = 'Reader,Command'; Released = 'Command' }
 		@{ CommandName = 'Invoke-Fast1Audit'; Roles = 'Connection'; Released = 'Connection' }
@@ -172,11 +172,11 @@ Describe 'Real query contract in <Owner>' -ForEach @(@{ Owner = 'Fast1data.SqlSe
 
 	It 'preserves text, type, parameter fields, scalar result and borrowed connection ownership' {
 		InModuleScope $Owner {
-			$fields = [ordered]@{ Value = [object]; Type = [System.Data.SqlDbType]; Size = [int]; Precision = [byte]; Scale = [byte] }
+			$fields = [ordered]@{ Value = [object]; Type = [Nullable[System.Data.SqlDbType]]; Size = [int]; Precision = [byte]; Scale = [byte] }
 			foreach ($name in $fields.Keys) {
 				[GenericSqlParam].GetProperty($name).PropertyType | Should -Be $fields[$name]
 			}
-			$value = Invoke-GenericSqlQuery -SqlConn $script:queryConnection -Query 'dbo.controlled' -CommandType StoredProcedure -Scalar -Parameters @{
+			$value = Invoke-Fast1GenericSqlQuery -SqlConn $script:queryConnection -Query 'dbo.controlled' -CommandType StoredProcedure -Scalar -Parameters @{
 				text = [GenericSqlParam]@{ Value = $null; Type = 'NVarChar'; Size = 20 }
 				number = [GenericSqlParam]@{ Value = 1.25; Type = 'Decimal'; Precision = 8; Scale = 2 }
 			}
@@ -199,7 +199,7 @@ Describe 'Real query contract in <Owner>' -ForEach @(@{ Owner = 'Fast1data.SqlSe
 
 	It 'emits no non-query success output and retains default text command type' {
 		InModuleScope $Owner {
-			@(Invoke-GenericSqlQuery -SqlConn $script:queryConnection -Query 'controlled').Count | Should -Be 0
+			@(Invoke-Fast1GenericSqlQuery -SqlConn $script:queryConnection -Query 'controlled').Count | Should -Be 0
 			$script:queryCommand.CommandText | Should -Be 'controlled'
 			$script:queryCommand.CommandType | Should -Be 'Text'
 			$script:queryState.Execution | Should -Be 'non-query'
@@ -217,7 +217,7 @@ Describe 'Real query contract in <Owner>' -ForEach @(@{ Owner = 'Fast1data.SqlSe
 			if ($Kind -eq 'missing type') {
 				$parameter = [GenericSqlParam]::new()
 			}
-			{ Invoke-GenericSqlQuery -SqlConn $script:queryConnection -Query 'controlled' -Parameters @{ value = $parameter } } | Should -Throw $Message
+			{ Invoke-Fast1GenericSqlQuery -SqlConn $script:queryConnection -Query 'controlled' -Parameters @{ value = $parameter } } | Should -Throw $Message
 			$script:queryState.Execution | Should -Be ''
 			$script:queryState.Released | Should -BeTrue
 			$script:queryState.BorrowedReleased | Should -BeFalse
@@ -227,7 +227,7 @@ Describe 'Real query contract in <Owner>' -ForEach @(@{ Owner = 'Fast1data.SqlSe
 	It 'preserves construction errors without disposing the borrowed connection' {
 		InModuleScope $Owner {
 			Mock Get-GenericSqlCommand { throw 'controlled construction failure' }
-			{ Invoke-GenericSqlQuery -SqlConn $script:queryConnection -Query 'controlled' } | Should -Throw '*controlled construction failure*'
+			{ Invoke-Fast1GenericSqlQuery -SqlConn $script:queryConnection -Query 'controlled' } | Should -Throw '*controlled construction failure*'
 			$script:queryState.Released | Should -BeFalse
 			$script:queryState.BorrowedReleased | Should -BeFalse
 		}
@@ -243,7 +243,7 @@ Describe 'Real query contract in <Owner>' -ForEach @(@{ Owner = 'Fast1data.SqlSe
 			$script:queryState.CleanupFailure = $Cleanup
 			$caught = $null
 			try {
-				Invoke-GenericSqlQuery -SqlConn $script:queryConnection -Query 'controlled'
+				Invoke-Fast1GenericSqlQuery -SqlConn $script:queryConnection -Query 'controlled'
 			}
 			catch {
 				$caught = $_
@@ -449,3 +449,5 @@ Describe 'Migration public owner cleanup' {
 		}
 	}
 }
+
+. (Join-Path $PSScriptRoot 'fixtures/GenericSqlQuery.CleanupCases.ps1')

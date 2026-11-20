@@ -38,6 +38,19 @@ BeforeAll {
 	}
 }
 
+Describe 'Public query callers in fresh processes' {
+	It 'exposes six commands and a usable factory through <Extension>' -ForEach @(@{ Extension = 'psd1' }, @{ Extension = 'psm1' }) {
+		$path = (Join-Path $script:distributionRoot "Fast1data.SqlServer.$Extension").Replace("'", "''")
+		$code = "Import-Module '$path' -ErrorAction Stop; @{ Names = @((Get-Command -Module Fast1data.SqlServer).Name | Sort-Object); Type = [string](New-Fast1GenericSqlParam -Type BigInt -Value 42).Type; Value = (New-Fast1GenericSqlParam -Type BigInt -Value 42).Value } | ConvertTo-Json -Compress"
+		$output = @(& (Join-Path $PSHOME 'pwsh') -NoProfile -NonInteractive -Command $code 2>&1)
+		$LASTEXITCODE | Should -Be 0 -Because ($output -join "`n")
+		$result = ($output -join "`n") | ConvertFrom-Json
+		$result.Names -join ',' | Should -Be 'Invoke-Fast1Archiving,Invoke-Fast1Audit,Invoke-Fast1GenericSqlQuery,Invoke-Fast1GenericSqlQueryReader,Invoke-Fast1Migration,New-Fast1GenericSqlParam'
+		$result.Type | Should -Be 'BigInt'
+		$result.Value | Should -Be 42
+	}
+}
+
 Describe 'Parameterized bundled managed library initialization' {
 	It 'validates optional, multiple and case-sensitive types on <Case>' -ForEach @(
 		foreach ($case in @('OmittedTypesCold', 'OmittedTypesReuse', 'MultipleTypesCold', 'MultipleTypesReuse', 'CaseSensitiveCold', 'CaseSensitiveReuse')) {
@@ -131,7 +144,7 @@ Describe 'Explicit dependency boundaries' -Tag US2 {
 
 	It '<Scenario> imports from an unrelated directory with bootstrap before behavior' -ForEach @(@{ Scenario = 'Manifest' }, @{ Scenario = 'Sentinel' }, @{ Scenario = 'Reuse' }) {
 		$result = Invoke-LoaderWorker -Scenario $Scenario -Copy -Instrument
-		$result.PublicCommands | Should -HaveCount 3
+		$result.PublicCommands | Should -HaveCount 6
 	}
 
 	It '<Consumer> rejects <FaultKind> dependency <FaultPath>' -ForEach @(
@@ -164,7 +177,7 @@ Describe 'Explicit dependency boundaries' -Tag US2 {
 Describe 'Fresh-process loader harness' -Tag US3 {
 	It 'reports a cold no-fault worker completely' {
 		$result = Invoke-LoaderWorker
-		$result.PublicCommands | Should -HaveCount 3
+		$result.PublicCommands | Should -HaveCount 6
 	}
 }
 
@@ -193,11 +206,11 @@ Describe 'One shared behavior list and independent consumers' -Tag US1 {
 
 	It '<Scenario> executes the list twice without initialization output' -ForEach @(@{ Scenario = 'Direct' }, @{ Scenario = 'ModelFirst' }) {
 		$result = Invoke-LoaderWorker -Scenario $Scenario -Copy -Instrument
-		$result.Owners | Should -HaveCount 12
+		$result.Owners | Should -HaveCount 16
 	}
 
 	It 'extends both consumers by editing only a disposable shared list' {
 		$result = Invoke-LoaderWorker -Scenario Extension -Copy -Instrument
-		$result.Owners | Should -HaveCount 12
+		$result.Owners | Should -HaveCount 16
 	}
 }

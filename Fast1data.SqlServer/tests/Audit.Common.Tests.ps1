@@ -9,9 +9,17 @@ BeforeAll {
 }
 
 Describe 'Fast1data.SqlServer module' {
-	It 'retains exactly three public exports and keeps discovery helpers private' {
+	It 'retains exactly six public exports and keeps discovery helpers private' {
 		$exports = @(Get-Command -Module Fast1data.SqlServer | Select-Object -ExpandProperty Name | Sort-Object)
-		$exports -join ',' | Should -Be 'Invoke-Fast1Archiving,Invoke-Fast1Audit,Invoke-Fast1Migration'
+		$expectedExports = @(
+			'Invoke-Fast1Archiving'
+			'Invoke-Fast1Audit'
+			'Invoke-Fast1GenericSqlQuery'
+			'Invoke-Fast1GenericSqlQueryReader'
+			'Invoke-Fast1Migration'
+			'New-Fast1GenericSqlParam'
+		)
+		$exports -join ',' | Should -Be ($expectedExports -join ',')
 		Get-Command Get-SqlAuditFile,Get-SqlAuditFileEntry -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
 		InModuleScope Fast1data.SqlServer {
 			Get-Command Get-SqlAuditFileEntry | Should -Not -BeNullOrEmpty

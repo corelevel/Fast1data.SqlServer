@@ -71,7 +71,10 @@ RequiredModules = @()
 FunctionsToExport = @(
 	'Invoke-Fast1Audit',
 	'Invoke-Fast1Migration',
-	'Invoke-Fast1Archiving'
+	'Invoke-Fast1Archiving',
+	'Invoke-Fast1GenericSqlQuery',
+	'Invoke-Fast1GenericSqlQueryReader',
+	'New-Fast1GenericSqlParam'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -120,6 +123,9 @@ PrivateData = @{
 
 		# ReleaseNotes of this module
 		ReleaseNotes = '0.1.0: Removed the SqlServer PowerShell module prerequisite; bundled SqlClient 7.1.2 and ScriptDom 180.154.0.
+		Added public Invoke-Fast1GenericSqlQuery, streaming Invoke-Fast1GenericSqlQueryReader, and New-Fast1GenericSqlParam.
+		Nullable private parameter Type distinguishes missing types from valid BigInt/zero; native binary values are preserved.
+		Migration history streams through the row command while preserving exact persisted keys and ordered resource cleanup.
 		Migrations validate complete files with TSql160Parser and execute original batches on one owned command/session per file.
 		Private Invoke-Migration takes original ConnStr and owns execution resources; Set-Executed borrows SqlCmd for history.
 		One Import-RequiredLibrary bootstrap validates selected bundle identity and requested types for all managed DLLs.

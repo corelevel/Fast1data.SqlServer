@@ -41,7 +41,7 @@ try {
 		. $script.FullName
 	}
 
-	Export-ModuleMember -Function $publicScripts.BaseName
+	Export-ModuleMember -Function ($publicScripts.BaseName + @('Invoke-Fast1GenericSqlQuery', 'Invoke-Fast1GenericSqlQueryReader'))
 }
 catch {
 	throw [System.InvalidOperationException]::new(

@@ -115,6 +115,15 @@ All phase validation finishes before confirmation, execution, or history writes.
 A valid first script followed by an invalid later entry executes no scripts.
 Validation is a snapshot: it does not lock files or history against subsequent changes.
 
+The private history reader delegates to `Invoke-Fast1GenericSqlQueryReader` with a typed
+NVarChar(32) phase filter. It streams `script_name` and `checksum` without changing
+stored spelling, case, separators, or checksums; phase evaluation owns identity
+normalization. Empty history emits no rows. The inner query releases its reader
+then command before the history helper releases its owned connection, including
+failure and early pipeline termination. A later read failure can leave rows already
+delivered; cleanup preserves the primary error and safe cleanup details. Migration
+order, checksum checks, force/ignore, preview and idempotent retry rules are unchanged.
+
 If a script is listed in both `IgnoreScripts` and `ForceScripts`, evaluation
 stops with an error, including when that name is absent from configuration.
 Other unknown ignore/force names produce distinct warnings and add no work.

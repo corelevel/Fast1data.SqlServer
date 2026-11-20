@@ -44,7 +44,7 @@ Review found an additional recovery hole: BulkCopyDestinationPK (ArchivingModel.
 
 **Decision**: Guard each resource/constraint cleanup independently. Preserve initial ErrorRecord; append safe contexts at Exception.Data['Fast1Archiving.CleanupFailures']. First cleanup-only error becomes primary. Logging cannot mask the cause or block cleanup. Do not drop recovery tables on failure.
 
-**Rationale**: Group Dispose (ArchivingModel.psm1:124–128) and batch finalizers (:917–925,963–971,1013–1021) stop on the first exception and may mask processing. Shared Invoke-GenericSqlQuery builds parameters before try and has unguarded disposal. Correct narrowly required patterns while retaining helper signature and adding affected regressions. Release readers before checkpoint reuse and restore before connection release.
+**Rationale**: Group Dispose (ArchivingModel.psm1:124–128) and batch finalizers (:917–925,963–971,1013–1021) stop on the first exception and may mask processing. Shared Invoke-Fast1GenericSqlQuery builds parameters before try and has unguarded disposal. Correct narrowly required patterns while retaining helper signature and adding affected regressions. Release readers before checkpoint reuse and restore before connection release.
 
 **Alternatives considered**: Warning-only cleanup gives false success. Unconditional aggregate errors hide original identity. An outer Dispose guard cannot reach resources skipped inside a failing Dispose. A cleanup dependency expands scope unnecessarily.
 

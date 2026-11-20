@@ -5,6 +5,7 @@ Fast1data.SqlServer is a PowerShell module for SQL Server administration and dep
 - [Fast1 Audit](Fast1Audit.md) — resumable import of [SQL Server Audit](https://learn.microsoft.com/en-us/sql/relational-databases/security/auditing/sql-server-audit-database-engine) (`.sqlaudit`) files into a SQL Server database.
 - [Fast1 Migration](Fast1Migration.md) — ordered, checksum-protected execution of SQL Server migration scripts.
 - [Fast1 Archiving](Fast1Archiving.md) — resumable, batch-based archiving and purging between SQL Server databases.
+- Typed scalar, silent non-query, and streaming row commands for caller-owned SQL connections.
 
 ## Requirements
 
@@ -66,6 +67,65 @@ Use `Invoke-Fast1Archiving` to copy and optionally purge configured table data i
 
 See [Fast1Archiving.md](Fast1Archiving.md) for prerequisites, database setup, table-group configuration, limitations, and usage.
 
+### Generic SQL commands
+
+The root module exports exactly `Invoke-Fast1Audit`, `Invoke-Fast1Migration`,
+`Invoke-Fast1Archiving`, `Invoke-Fast1GenericSqlQuery`, `Invoke-Fast1GenericSqlQueryReader`, and
+`New-Fast1GenericSqlParam`. Both manifest and direct `.psm1` imports support this surface.
+No private class import or `using module` is needed by callers.
+
+Open the connection before querying and dispose it afterward. Query commands own
+their commands and readers and leave your connection open. SQL text and procedure
+names are executable administrator inputs. Existing command timeout defaults apply.
+
+```powershell
+Import-Module ./Fast1data.SqlServer/Fast1data.SqlServer.psd1
+# Supply the connection string locally or through your secret store.
+$connection = [Microsoft.Data.SqlClient.SqlConnection]::new($env:MY_SQL_CONNECTION_STRING)
+try {
+	$connection.Open()
+	$parameters = @{
+		Id = New-Fast1GenericSqlParam -Type BigInt -Value 42
+		Name = New-Fast1GenericSqlParam -Type NVarChar -Size 100 # Typed SQL NULL
+	}
+	Invoke-Fast1GenericSqlQueryReader -SqlConn $connection `
+		-Query 'SELECT @Id AS Id, @Name AS Name' -Parameters $parameters |
+		Export-Csv ./example.csv -NoTypeInformation
+
+	# First column of the first row; empty/DBNull retain provider scalar behavior.
+	$count = Invoke-Fast1GenericSqlQuery -SqlConn $connection -Query 'SELECT COUNT(*) FROM dbo.Example' -Scalar
+	# No affected-row count or other success output.
+	Invoke-Fast1GenericSqlQuery -SqlConn $connection `
+		-Query 'UPDATE dbo.Example SET Name = @Name WHERE Id = @Id' -Parameters $parameters
+}
+finally {
+	$connection.Dispose()
+}
+```
+
+Parameter keys omit `@`. The factory requires an explicit SQL type, accepts
+BigInt/enum zero, and preserves native values, including byte arrays. Omitted or
+explicit null Value represents typed SQL NULL. Size accepts 0 through Int32.MaxValue;
+Precision and Scale use byte ranges. Only positive metadata is forwarded; zero
+retains provider defaults, including decimal scale inference. MAX size -1 and
+output parameters are unsupported. The factory supports standard `-WhatIf` and
+`-Confirm`; `-WhatIf` emits no descriptor. Stored procedures use `-CommandType StoredProcedure`.
+
+`Invoke-Fast1GenericSqlQueryReader` emits a fresh ordered object for each row, retaining
+native values and mapping SQL NULL to PowerShell null. Give every column a nonblank,
+distinct SQL alias; names must be unique under ordinal case-insensitive comparison,
+even for empty results. Only the first result with columns is selected. An empty
+first tabular result emits nothing, even if a later result contains rows; commands
+without a tabular result also emit nothing.
+
+Rows arrive incrementally, but whole individual values can be materialized. A later
+failure terminates delivery while previously emitted rows remain available. Pipeline
+truncation, such as `Select-Object -First 1`, stops application reads and releases
+owned resources. Reader disposal may wait for pending results, and later SQL statements
+can still execute. Streaming does not promise cancellation, rollback, or atomic output.
+PowerShell can suppress cleanup exceptions while stopping an upstream pipeline;
+reader and command disposal are still attempted in order.
+
 ## Help
 
 PowerShell command help is available after importing the module:
@@ -74,6 +134,9 @@ PowerShell command help is available after importing the module:
 Get-Help Invoke-Fast1Audit -Full
 Get-Help Invoke-Fast1Migration -Full
 Get-Help Invoke-Fast1Archiving -Full
+Get-Help Invoke-Fast1GenericSqlQuery -Full
+Get-Help Invoke-Fast1GenericSqlQueryReader -Full
+Get-Help New-Fast1GenericSqlParam -Full
 ```
 
 ## Tests
@@ -94,6 +157,9 @@ Invoke-Pester -Path $testPaths -Output Detailed
 Migration command tests are in `Migration.Tests.ps1`, phase validation is in
 `Migration.Phase.Tests.ps1`, and live SQL cases are in
 `Migration.Integration.Tests.ps1`.
+Factory, row/schema/native-value tests live in `GenericSqlQuery.Tests.ps1`;
+streaming and failure ownership cases run through `SqlCleanup.Tests.ps1` and its
+controlled fixtures. Real provider acceptance is in `GenericSqlQuery.Integration.Tests.ps1`.
 
 ### Live integration tests
 
@@ -102,7 +168,7 @@ calling Pester. Child PowerShell processes inherit these environment variables.
 
 | Environment variable | Used by | Value |
 | --- | --- | --- |
-| `FAST1_TEST_MIGRATION_SQL_CONN_STR` | Migration | SQL Server connection string for a disposable test instance |
+| `FAST1_TEST_MIGRATION_SQL_CONN_STR` | Migration and generic SQL queries | SQL Server connection string for a disposable test instance |
 | `FAST1_TEST_ARCHIVING_SQL_CONN_STR` | Archiving | SQL Server connection string for a disposable test instance |
 | `FAST1_TEST_AUDIT_SQL_CONN_STR` | Audit on Windows and Linux | SQL Server connection string for a disposable test instance |
 | `FAST1_TEST_AUDIT_FOLDER` | Audit on Windows and Linux | Folder containing closed, immutable, nonempty `.sqlaudit` files |
@@ -121,7 +187,7 @@ Supply credentials locally or through your CI secret store. The SQL login needs
 permission to create/drop test databases and create/execute the suite's fixtures.
 The suites create uniquely named databases and attempt to drop them during cleanup.
 
-Migration skips when its connection variable is missing or blank. Archiving and
+Migration and generic SQL query integration skip when their connection variable is missing or blank. Archiving and
 the audit suite for the current operating system fail setup if required variables
 are missing. Audit suites skip on other operating systems. Windows audit discovery
 uses the current Windows identity; Linux requires `smbclient` and a backslash UNC

@@ -6,6 +6,10 @@ Gets migration scripts already recorded as executed.
 Reads script names and checksums from dbo.fast1_migration_history for the
 specified phase. Stored script names are returned exactly as persisted so forced
 updates can locate the original key; phase evaluation owns identity normalization.
+Streams Invoke-Fast1GenericSqlQueryReader directly with a typed NVarChar(32) phase filter.
+The row command releases reader then command before this function releases its
+owned connection, including failure and downstream truncation. A later failure
+can leave previously delivered rows; cleanup preserves primary operation errors.
 
 .PARAMETER ConnStr
 Specifies the Microsoft.Data.SqlClient connection string for the target
@@ -13,6 +17,19 @@ database.
 
 .PARAMETER Phase
 Specifies the migration phase whose execution history is returned.
+
+.INPUTS
+None. This private function does not accept pipeline input.
+
+.OUTPUTS
+System.Management.Automation.PSCustomObject. Zero or more rows with script_name
+then checksum, retaining exact persisted spelling, case, separators and checksums.
+
+.EXAMPLE
+Get-Executed -ConnStr $testConnectionString -Phase phase01
+
+Reads history on a connection owned by this private helper. Execution ordering,
+checksums, force/ignore, preview and idempotent retry behavior remain unchanged.
 #>
 function Get-Executed {
 	[CmdletBinding()]
@@ -25,8 +42,6 @@ function Get-Executed {
 	)
 
 	$sqlConn = $null
-	$sqlCmd = $null
-	$sqlReader = $null
 
 	$operationError = $null
 	try {
@@ -40,25 +55,16 @@ where phase = @phase
 '@
 
 		$sqlConn.Open()
-		$sqlCmd = [Microsoft.Data.SqlClient.SqlCommand]::new($query, $sqlConn)
-		$sqlCmd.CommandType = [System.Data.CommandType]::Text
-		$pPhase = $sqlCmd.Parameters.Add('@phase', [System.Data.SqlDbType]::NVarChar, 32)
-		$pPhase.Value = $Phase
-		$sqlReader = $sqlCmd.ExecuteReader()
-
-		while ($sqlReader.Read()) {
-			[PSCustomObject]@{
-				script_name = $sqlReader['script_name']
-				checksum = $sqlReader['checksum']
-			}
-		}
+		# Read-only history discovery still needs its descriptor during migration preview.
+		$parameters = @{ phase = New-Fast1GenericSqlParam -Type NVarChar -Size 32 -Value $Phase -WhatIf:$false -Confirm:$false }
+		Invoke-Fast1GenericSqlQueryReader -SqlConn $sqlConn -Query $query -CommandType Text -Parameters $parameters
 	}
 	catch {
 		$operationError = $_
 		throw
 	}
 	finally {
-		Close-GenericSqlResource -Resources ([ordered]@{ Reader = $sqlReader; Command = $sqlCmd; Connection = $sqlConn }) `
+		Close-GenericSqlResource -Resources ([ordered]@{ Connection = $sqlConn }) `
 			-PrimaryError $operationError
 	}
 }
