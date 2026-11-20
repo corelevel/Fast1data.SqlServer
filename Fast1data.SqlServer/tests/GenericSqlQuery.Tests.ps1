@@ -131,7 +131,10 @@ Describe 'First tabular SQL result in <Owner>' -ForEach @(@{ Owner = 'Fast1data.
 Describe 'Public typed SQL parameter factory' {
 	It 'requires an explicit valid type and exposes only the agreed metadata' {
 		$command = Get-Command New-Fast1GenericSqlParam -ErrorAction Stop
-		$command.Parameters.Type.Attributes.Mandatory | Should -Contain $true
+		$parameterAttributes = @($command.Parameters.Type.Attributes | Where-Object {
+			$_ -is [System.Management.Automation.ParameterAttribute]
+		})
+		$parameterAttributes.Mandatory | Should -Contain $true
 		$command.Parameters.Type.ParameterType | Should -Be ([System.Data.SqlDbType])
 		$command.Parameters.Size.ParameterType | Should -Be ([int])
 		$command.Parameters.Precision.ParameterType | Should -Be ([byte])

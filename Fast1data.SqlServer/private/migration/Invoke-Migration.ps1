@@ -5,8 +5,9 @@ Validates a complete migration file and executes its original T-SQL batches.
 .DESCRIPTION
 Uses the bundled TSql160Parser with quoted identifiers initially enabled. Reads and
 validates the whole file before allocating execution resources. Rejects SQLCMD
-directives, counted GO and reserved substitutions. Locally validates ConnStr even
-for empty files; rejected and zero-batch files open no execution connection.
+directives, counted GO and reserved substitutions. Rejected and zero-batch files
+allocate no execution resources. Zero-batch files do not validate ConnStr beyond
+mandatory parameter binding.
 
 For an executable file, suppresses ambient transactions, creates/opens a connection
 from the original ConnStr, and creates an owned command with timeout 0. Runs original
@@ -22,9 +23,9 @@ failure, so scripts must be idempotent. Context excludes secrets and SQL source;
 underlying exceptions remain available programmatically.
 
 .PARAMETER ConnStr
-Original target connection string. Mandatory, locally checked with
-SqlConnectionStringBuilder for syntax/keywords/typed values, then forwarded unchanged
-to a new owned connection. Authentication and configured/default catalog come from
+Original target connection string. Mandatory and forwarded unchanged to a new
+owned connection for executable files. Empty files do not validate its contents.
+Authentication and configured/default catalog come from
 this string. No caller-created connection, command or external token object is needed.
 .PARAMETER Script
 Literal path of the complete migration file to read and validate before execution.

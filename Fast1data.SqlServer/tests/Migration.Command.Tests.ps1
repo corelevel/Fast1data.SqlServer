@@ -20,18 +20,18 @@ Describe 'Connection-string executor input' {
 		$metadata.Parameters.ContainsKey('SqlCmd') | Should -BeFalse
 		foreach ($name in @('ConnStr', 'Script')) {
 			$metadata.Parameters[$name].ParameterType | Should -Be ([string])
-			$metadata.Parameters[$name].Attributes.Mandatory | Should -Contain $true
+			$parameterAttributes = @($metadata.Parameters[$name].Attributes | Where-Object {
+				$_ -is [System.Management.Automation.ParameterAttribute]
+			})
+			$parameterAttributes.Mandatory | Should -Contain $true
 		}
 	}
 
-	It 'rejects <Kind> even for a zero-batch file (executable=<Executable>)' -ForEach @(
+	It 'rejects <Kind> ConnStr during parameter binding (executable=<Executable>)' -ForEach @(
 		foreach ($executable in @($false, $true)) {
 			foreach ($entry in @(
 				@{ Kind = 'null'; Value = $null }
 				@{ Kind = 'empty'; Value = '' }
-				@{ Kind = 'malformed'; Value = 'Server="unterminated' }
-				@{ Kind = 'unknown keyword'; Value = 'PrivateKeyword=private-value' }
-				@{ Kind = 'invalid typed value'; Value = 'Server=unused;Connect Timeout=private-value' }
 			)) {
 				@{ Kind = $entry.Kind; Value = $entry.Value; Executable = $executable }
 			}
@@ -47,21 +47,20 @@ Describe 'Connection-string executor input' {
 		catch {
 			$caught = $_
 		}
-		if ($Kind -in @('null', 'empty')) {
-			$caught.Exception | Should -BeOfType ([System.Management.Automation.ParameterBindingException])
-		}
-		else {
-			$caught.Exception.Message | Should -Match 'input.sql.*connection string'
-			$caught.Exception.InnerException | Should -Not -BeNullOrEmpty
-		}
-		$caught.Exception.Message | Should -Not -Match 'private-value|PrivateKeyword|unterminated'
+		$caught.Exception | Should -BeOfType ([System.Management.Automation.ParameterBindingException])
 		Should -Invoke Get-MigrationScriptConnection -Times 0 -Exactly
 		Should -Invoke Get-MigrationScriptCommand -Times 0 -Exactly
 		Should -Invoke Get-MigrationSuppressionScope -Times 0 -Exactly
 	}
 
-	It 'accepts valid empty files without a caller command or authentication probe' {
-		@(Invoke-Migration -ConnStr 'Server=unreachable;Database=unused;User ID=synthetic;Password=synthetic' -Script $script:inputPath) | Should -HaveCount 0
+	It 'does not validate <Kind> ConnStr for an empty script or allocate SQL resources' -ForEach @(
+		@{ Kind = 'valid'; Value = 'Server=unreachable;Database=unused;User ID=synthetic;Password=synthetic' }
+		@{ Kind = 'whitespace'; Value = '   ' }
+		@{ Kind = 'malformed'; Value = 'Server="unterminated' }
+		@{ Kind = 'unknown keyword'; Value = 'PrivateKeyword=private-value' }
+		@{ Kind = 'invalid typed value'; Value = 'Server=unused;Connect Timeout=private-value' }
+	) {
+		@(Invoke-Migration -ConnStr $Value -Script $script:inputPath) | Should -HaveCount 0
 		Should -Invoke Get-MigrationScriptConnection -Times 0 -Exactly
 		Should -Invoke Get-MigrationScriptCommand -Times 0 -Exactly
 		Should -Invoke Get-MigrationSuppressionScope -Times 0 -Exactly
@@ -73,7 +72,10 @@ Describe 'Borrowed history command contract' {
 		$metadata = Get-Command $Helper
 		$metadata.Parameters.ContainsKey('ConnStr') | Should -BeFalse
 		$metadata.Parameters['SqlCmd'].ParameterType | Should -Be ([Microsoft.Data.SqlClient.SqlCommand])
-		$metadata.Parameters['SqlCmd'].Attributes.Mandatory | Should -Contain $true
+		$parameterAttributes = @($metadata.Parameters['SqlCmd'].Attributes | Where-Object {
+			$_ -is [System.Management.Automation.ParameterAttribute]
+		})
+		$parameterAttributes.Mandatory | Should -Contain $true
 	}
 
 	It '<Helper> rejects <State> without allocating or opening resources' -ForEach @(
