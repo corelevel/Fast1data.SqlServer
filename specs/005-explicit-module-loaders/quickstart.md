@@ -7,7 +7,7 @@ Run commands from the repository root in PowerShell; use fresh child processes a
 - PowerShell 7.6+ Core, supported x64 host, SqlServer module, and existing bundled runtime libraries.
 - Pester 6+ and PSScriptAnalyzer. Planning used Pester 6.2.0, analyzer 1.25.0, and Windows/PowerShell 7.6.9.
 - .NET 10 SDK/feed access only when rebuilding dependencies.
-- Live SQL: explicitly selected disposable test instance and permission to create/drop test databases and create/alter fixture objects. Review each integration suite's existing local fixture configuration; there is no common environment-variable configuration interface. Keep credentials local.
+- Live SQL: explicitly selected disposable test instance and permission to create/drop test databases and create/alter fixture objects. Set `FAST1_TEST_MIGRATION_SQL_CONN_STR`, `FAST1_TEST_ARCHIVING_SQL_CONN_STR`, or `FAST1_TEST_AUDIT_SQL_CONN_STR` for the selected suite. Audit also requires `FAST1_TEST_AUDIT_FOLDER`; Linux audit requires `FAST1_TEST_AUDIT_SMB_USER` and `FAST1_TEST_AUDIT_SMB_PASSWORD`. See [integration test configuration](../../README.md#live-integration-tests). Keep credentials local.
 - Audit integration: closed immutable nonempty audit files visible to SQL Server and discovery. Linux also needs smbclient and accessible UNC/share fixtures.
 - Archiving: configuration/source/destination fixture databases on the selected instance, preserving the existing configuration/source-instance and primary-key requirements.
 
@@ -135,7 +135,7 @@ Expected: one SHARED_HELPER_RESULT JSON record and exit zero. Use the existing n
 
 ## 5. Run required SQL checks
 
-Once local test fixtures are reviewed/configured, run each relevant integration suite in an independent process. Example:
+Once the required environment variables and audit fixtures are configured, run each relevant integration suite in an independent process. Child processes inherit the variables from the parent PowerShell session. For archiving, set `FAST1_TEST_ARCHIVING_SQL_CONN_STR`, then run:
 
 ```powershell
 pwsh -NoLogo -NoProfile -Command {

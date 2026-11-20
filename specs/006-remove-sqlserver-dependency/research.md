@@ -64,7 +64,7 @@ Original research combined repository inspection, delegated investigations, offi
 
 ## 6. Verification boundaries and governance
 
-**Decision**: Retain offline phase/preview tests and public resource-owner coverage, and verify real command identity/settings/session/history against an explicitly selected SQL Server. The migration integration suite now uses `FAST1_TEST_SQL_CONNECTION_STRING` and skips when absent; it creates/drops uniquely named disposable databases. Keep case-sensitive history coverage. Native host execution is required in addition to cross-publishing. Actual results and unavailable checks remain in `validation.md`.
+**Decision**: Retain offline phase/preview tests and public resource-owner coverage, and verify real command identity/settings/session/history against an explicitly selected SQL Server. The migration integration suite now uses `FAST1_TEST_MIGRATION_SQL_CONN_STR` and skips when absent; it creates/drops uniquely named disposable databases. Keep case-sensitive history coverage. Native host execution is required in addition to cross-publishing. Actual results and unavailable checks remain in `validation.md`.
 
 **Rationale**: Mocks do not establish provider/session behavior. Current loader tests assert the actual 23-file private inventory and parameter-aware generic bootstrap tracing, fresh-process faults, and assembly provenance. Retain these regressions. The default `out/publish.ps1` runs every integration suite; its existing `-StageOnly` option stages/analyzes without claiming release-suite completion. Exclude `*.Integration.*` filenames for the documented offline run. Do not expand existing analyzer suppressions to bypass new findings.
 

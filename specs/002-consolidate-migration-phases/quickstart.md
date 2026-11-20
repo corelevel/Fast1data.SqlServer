@@ -8,7 +8,7 @@ This guide validates the private evaluator, public command, and SQL history beha
 - Use a compatible Pester installation; record the version. Planning found Pester 6.2.0. The tests use temporary files and Pester mocking/module-scope facilities.
 - Command/integration tests require the existing SqlServer module and loadable Microsoft.Data.SqlClient. Follow [README source installation](../../README.md#install-from-source) if runtime assets need building; no build/dependency change is planned.
 - Install/use PSScriptAnalyzer for the constitution's mandatory changed-PowerShell gate. Find and use repository settings when available. Planning found no settings file.
-- Real SQL checks use the connection settings in `Migration.Integration.Tests.ps1`. Review them before running; the login must be able to create and drop disposable test databases.
+- Real SQL checks read the connection string from `$env:FAST1_TEST_MIGRATION_SQL_CONN_STR`. Set it before running; the login must be able to create and drop disposable test databases. See [integration test configuration](../../README.md#live-integration-tests).
 
 Record environment versions without printing connection strings:
 
@@ -91,11 +91,11 @@ The commands disable the unused TestRegistry facility when supported and retain 
 
 ## Real SQL execution and history
 
-`Migration.Integration.Tests.ps1` contains the live SQL cases and their connection settings. Its setup creates a uniquely named disposable database and installs the migration schema; teardown drops that database. The case-sensitive legacy-key test creates and drops an additional database with case-sensitive collation.
+`Migration.Integration.Tests.ps1` contains the live SQL cases and reads its connection string from `FAST1_TEST_MIGRATION_SQL_CONN_STR`. Missing or blank configuration skips the suite. Its setup creates a uniquely named disposable database and installs the migration schema; teardown drops that database. The case-sensitive legacy-key test creates and drops an additional database with case-sensitive collation.
 
 Grant the test login database creation/drop permissions and the permissions needed to install the schema, create fixtures, and execute migration SQL. See [Fast1Migration.md](../../Fast1Migration.md#database-setup).
 
-Run the Integration fixtures against the connection declared in the test file:
+Set `FAST1_TEST_MIGRATION_SQL_CONN_STR` in the PowerShell session, then run the Integration fixtures:
 
 ```powershell
 Import-Module Pester -MinimumVersion 5.0 -Force

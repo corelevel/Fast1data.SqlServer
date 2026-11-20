@@ -44,11 +44,11 @@ BeforeAll {
 	}
 }
 
-Describe 'Migration SQL integration (select FAST1_TEST_SQL_CONNECTION_STRING to run)' -Tag 'Integration' -Skip:([string]::IsNullOrWhiteSpace($env:FAST1_TEST_SQL_CONNECTION_STRING)) {
+Describe 'Migration SQL integration (select FAST1_TEST_MIGRATION_SQL_CONN_STR to run)' -Tag 'Integration' -Skip:([string]::IsNullOrWhiteSpace($env:FAST1_TEST_MIGRATION_SQL_CONN_STR)) {
 	BeforeAll {
 		$script:testDatabaseCreated = $false
 		# The SQL login must be allowed to create/drop a database.
-		$connectionString = $env:FAST1_TEST_SQL_CONNECTION_STRING
+		$connectionString = $env:FAST1_TEST_MIGRATION_SQL_CONN_STR
 		$builder = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($connectionString)
 		$builder['Initial Catalog'] = 'master'
 		$builder['Pooling'] = $false

@@ -12,7 +12,7 @@ Task IDs before the "Current implementation run" section refer to the previous t
 - Host: Windows 10.0.26300, x64; PowerShell Core 7.6.10; runtime .NET 10.0.15; selected .NET SDK 11.0.100.
 - Available validation tools: Pester 6.2.0; PSScriptAnalyzer 1.25.0. No project analyzer settings found.
 - SqlServer 22.4.5.1 is discoverable on this host. Cold acceptance will require isolated module paths so this installation cannot satisfy imports.
-- `FAST1_TEST_SQL_CONNECTION_STRING` is absent. No SQL integration suite has been run; no implicit database target is authorized by this record.
+- `FAST1_TEST_MIGRATION_SQL_CONN_STR` is absent. No SQL integration suite has been run; no implicit database target is authorized by this record.
 - Requirements checklist: 16 total, 16 checked, 0 unchecked; PASS. Checklist markers were not changed.
 - No `.specify/extensions.yml` exists; no pre-implementation hooks are registered.
 - Git ignore rules already cover generated build outputs, module dependency bundles, staged distribution, and universal temporary/editor artifacts. `.vscode/` remains available for VS Code Tasks. No Docker, Node, Terraform, Helm, ESLint, or Prettier setup was detected.
@@ -103,7 +103,7 @@ Cross-publishing does not establish Linux/macOS native execution or live SQL com
   30 expected filesystem skips, 0 failed**; these nested counts are separate
   from the 279 top-level cases and must not be added as distinct top-level tests.
 - Migration integration suite: **20 skipped, 0 executed, 0 failed** because
-  `FAST1_TEST_SQL_CONNECTION_STRING` is absent. Its discovery/skip behavior is
+  `FAST1_TEST_MIGRATION_SQL_CONN_STR` is absent. Its discovery/skip behavior is
   verified; no live SQL result is claimed. Added real SQL cases cover session/temp
   objects, batch-scoped definitions, explicit quoting, no earlier effects on later
   parse/preflight failure, partial commits/retry, empty files, USE restoration,
@@ -355,7 +355,7 @@ All three named managed libraries remain present in all three source RID bundles
   `C:\Dev\Fast1data.SqlServer\out\Fast1data.SqlServer`. Staged hashes match source
   for all nine named-library/RID combinations; retired loaders are absent.
 - Migration integration opt-in: **34 skipped, zero executed, zero failed** because
-  FAST1_TEST_SQL_CONNECTION_STRING is absent. The suite now includes pooled isolation,
+  FAST1_TEST_MIGRATION_SQL_CONN_STR is absent. The suite now includes pooled isolation,
   current-database selection, password redaction/SqlCredential, ambient rollback
   independence, explicit transaction completion, failed forced history, and real
   provider execution with narrow completion/restoration/disposal failure injection.
@@ -408,7 +408,7 @@ their historical scope.
 Four tasks remain unchecked:
 
 - **T033**: actual SQL command/history/transaction/failure/retry acceptance requires
-  FAST1_TEST_SQL_CONNECTION_STRING. All affected offline suites pass.
+  FAST1_TEST_MIGRATION_SQL_CONN_STR. All affected offline suites pass.
 - **T038**: full default release-suite acceptance and public live workflow require
   the separate reviewed migration/audit/archiving resources. StageOnly and the
   separate affected staged suites are not complete release validation.
@@ -465,7 +465,7 @@ Baseline: Windows x64; PowerShell 7.6.10 Core; .NET 10.0.15; dotnet SDK 11.0.100
 Constitution 1.1.0 and module 0.1.0 already approved; no additional adoption gate.
 Preserve existing edits and net10.0 / SqlClient 7.1.2 / ScriptDom 180.154.0 / Pkcs 11.0.0 references.
 Current IDs refer to [tasks.md](tasks.md); its "Previous task ID mapping" covers carried-forward obligations from the previous sequence. Historical clone/restoration evidence does not establish FR-016.
-FAST1_TEST_SQL_CONNECTION_STRING is absent. No SQL target selected or contacted. No native Linux/macOS host is available. Live/authentication/full-release/native checks remain unrun.
+FAST1_TEST_MIGRATION_SQL_CONN_STR is absent. No SQL target selected or contacted. No native Linux/macOS host is available. Live/authentication/full-release/native checks remain unrun.
 
 Initial working tree:
 
@@ -516,7 +516,7 @@ Ignore setup: Git repository; existing .gitignore covers build/bin, build/obj, b
 - T013–T022: retained original parser slices, order, lexical/preprocessing rejection, full-file parsing and all-span guards. Replaced clone/binding seams with connection/command construction seams. Execution owns command at timeout 0, connection and ambient suppression; batches and final transaction check share command/session. Disposal is command, connection, scope and every attempt completes before success. Lifecycle tests cover suppression/construction/open/command/batch/postflight failures, ambient restoration, and all 16 batch/command/connection/scope-failure combinations with safe first-error retention. Offline observations do not prove provider session/authentication behavior. Invalid span handling is code-reviewed; a real ScriptDom-generated out-of-range span was not induced.
 - T023–T028: history writer retained without further production edits; typed metadata, command/connection lifetime/settings, stale parameter replacement, forced lookup and cause preservation verified. Public orchestration retains phase evaluation/confirmation, success-history-next ordering and failure/retry guards. Get-Executed and history schema unchanged.
 - Targeted green checkpoint after stale test cleanup: **142 passed, zero failed/skipped**, across command/execution/preflight/public/cleanup suites. An earlier broad intermediate run had 249 passes, 6 failures and one skip: five obsolete borrowed/empty-command assertions and one empty collection assertion under StrictMode; corrected without changing successful production behavior.
-- Adapted all live executor cases to ConnStr; retained public/history success/failure/retry, case-sensitive legacy keys, timestamps and forced updates. Added configured/default catalog despite changed history database, original SQL-password input despite history redaction, pooled original-string options, command disposal in real-provider cleanup injection, and retry after cleanup failure. Removed external SqlCredential cloning and executor assigned-transaction rejection assertions, which no longer apply. **34 SQL cases skipped, zero executed**, because explicit FAST1_TEST_SQL_CONNECTION_STRING is absent; no target was contacted. SQL-auth, integrated/other connection-string authentication, pooling/ambient, transaction rollback/retry and durable effects are unverified, so T033 remains open.
+- Adapted all live executor cases to ConnStr; retained public/history success/failure/retry, case-sensitive legacy keys, timestamps and forced updates. Added configured/default catalog despite changed history database, original SQL-password input despite history redaction, pooled original-string options, command disposal in real-provider cleanup injection, and retry after cleanup failure. Removed external SqlCredential cloning and executor assigned-transaction rejection assertions, which no longer apply. **34 SQL cases skipped, zero executed**, because explicit FAST1_TEST_MIGRATION_SQL_CONN_STR is absent; no target was contacted. SQL-auth, integrated/other connection-string authentication, pooling/ambient, transaction rollback/retry and durable effects are unverified, so T033 remains open.
 - T030–T031: private inventory remains 23 files; ownership fixture names Get-MigrationScriptCommand in place of removed Invoke-MigrationCommandBinding. Removed obsolete clone fixture after all consumers migrated. Generic loader/bootstrap implementation retained.
 - T034–T036: executor/public help, manifest 0.1.0 release notes, README, migration guide and quickstart now describe original ConnStr, owned timeout 0 command/connection/scope, separate borrowed history transactions, no timeout switching, no login for zero-batch files, ambient suppression, complete explicit transactions, cleanup barriers and idempotent retry. Current task IDs refer to the current checklist; previous IDs are distinguished by the mapping in tasks.md.
 - Initial changed-file analysis: **21 PowerShell files, zero parse/format violations, 11 existing PSAvoidUsingWriteHost warnings in out/publish.ps1, no other warnings/errors**. No settings file exists. Follow-up analysis of final test edits remains pending before T037 closure. No new suppression/filter was introduced.

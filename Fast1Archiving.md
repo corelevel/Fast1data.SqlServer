@@ -152,6 +152,26 @@ Invoke-Fast1Archiving `
 An additional executable example is available in [`example/archiving/archive-StackOverflow2013.ps1`](example/archiving/archive-StackOverflow2013.ps1).
 Review its connection strings and configuration before running it.
 
+## Tests
+
+Controlled tests in `Fast1data.SqlServer/tests/Archiving.Execution.Tests.ps1` need
+no live SQL Server. The live suite reads its connection string from
+`$env:FAST1_TEST_ARCHIVING_SQL_CONN_STR`; missing or blank values fail setup.
+Run from the repository root:
+
+```powershell
+$env:FAST1_TEST_ARCHIVING_SQL_CONN_STR = 'Server=YOUR_TEST_SERVER;Initial Catalog=master;Integrated Security=True;Encrypt=True'
+Invoke-Pester -Path ./Fast1data.SqlServer/tests/Archiving.Integration.Tests.ps1 -Output Detailed
+```
+
+Use the authentication and encryption options required by your test environment.
+The login must be able to create/drop databases, deploy the archiving schema, and
+perform source/destination operations and fixture constraint changes. The suite
+creates three uniquely named configuration/source/destination databases on the
+selected instance and attempts to drop them during cleanup. Exclude this file by
+filename when running offline tests; its global setup accesses SQL Server even
+when the Integration tag is excluded.
+
 ## Failure and recovery
 
 One invocation owns initialization, preparation, copying, purging, progress writes and cleanup. Active tables retain their supplied traversal; preparation and archiving finish before purge runs in `PurgeOrder`. Unknown groups fail; empty groups and disabled tables release their resources normally. The command has no new parameters or success object, and existing installations need no persistence or stored-procedure upgrade.

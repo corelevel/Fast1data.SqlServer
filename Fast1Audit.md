@@ -141,36 +141,42 @@ Successful discovery stops at an intentionally invalid SQL connection string;
 these tests do not verify imported database records. They skip on other operating
 systems. Do not run environment-changing tests concurrently in one PowerShell process.
 
-The live suite is
-[`Audit.Integration.Linux.Tests.ps1`](Fast1data.SqlServer/tests/Audit.Integration.Linux.Tests.ps1).
-It checks initial imports, checkpoint reuse without duplicate records, and
-checkpoint advancement when all records are ignored. It runs automatically when
-selected on Linux and skips on other operating systems.
+## Live integration tests
 
-Its `BeforeAll` block stores the environment settings, including SQL and SMB
-usernames and passwords, directly in the script, following `Migration.Integration.Tests.ps1`.
-Edit the configuration block once if your environment changes:
+The live suites are
+[`Audit.Integration.Linux.Tests.ps1`](Fast1data.SqlServer/tests/Audit.Integration.Linux.Tests.ps1)
+and [`Audit.Integration.Windows.Tests.ps1`](Fast1data.SqlServer/tests/Audit.Integration.Windows.Tests.ps1).
+They check initial imports, checkpoint reuse without duplicate records, and
+checkpoint advancement when all records are ignored. They run automatically when
+selected on their corresponding operating system and skip on other operating systems.
 
-| Setting | Configured value |
-| --- | --- |
-| SQL server (`Data Source`) | `pester-srv` |
-| SQL login (`User ID` and `Password`) | Test account credentials in the connection string |
-| Audit folder (`$script:folder`) | `\\pester-srv\audit\void` |
-| SMB username (`$smbUserName`) | `.\pester` |
-| SMB password (`$smbPassword`) | Test account password in the configuration block |
+Set the required environment variables in the PowerShell session before running
+Pester:
 
-There are no credential prompts, container parameters, or enable switches.
-The suite reads expected record counts and audit GUIDs directly from
+| Environment variable | Value | Required on |
+| --- | --- | --- |
+| `FAST1_TEST_AUDIT_SQL_CONN_STR` | SQL Server connection string for a disposable test instance | Windows and Linux |
+| `FAST1_TEST_AUDIT_FOLDER` | Folder containing closed audit files | Windows and Linux |
+| `FAST1_TEST_AUDIT_SMB_USER` | SMB user name | Linux |
+| `FAST1_TEST_AUDIT_SMB_PASSWORD` | SMB user password | Linux |
+
+Windows discovery uses the current Windows identity, independently of the SQL
+login. Linux uses the SMB credentials and requires a backslash UNC folder.
+For remote Windows SQL Server instances, use a UNC path; a local path must refer
+to the same files on both hosts. Missing or blank required configuration fails
+setup. Supply credentials locally or through your CI secret store.
+
+Each suite reads expected record counts and audit GUIDs directly from
 `sys.fn_get_audit_file` before running the importer. It compares the imported
 records against that source baseline.
 
 Prepare these prerequisites:
 
-- Install `smbclient` in PATH and build the module's bundled SQL client as described in the [README](README.md).
+- On Linux, install `smbclient` in PATH. Build the module's bundled SQL client as described in the [README](README.md).
 - Supply real, closed `.sqlaudit` files in the configured folder. Keep its contents unchanged during the run; do not use an active audit output directory. Prefer multiple files for one GUID and at least two distinct audit GUIDs. Empty files with audit-shaped names are insufficient.
-- The SQL login needs permission to create/drop a database and read audit data through `sys.fn_get_audit_file`. The SQL Server service must independently have read access to the same UNC path. The SMB account needs permission to list that folder.
+- The SQL login needs permission to create/drop a database, deploy the audit schema, and read audit data through `sys.fn_get_audit_file`. The SQL Server service must independently have read access to the audit folder. The Linux SMB account or current Windows user needs permission to list that folder.
 
-The suite creates a uniquely named `fast1_audit_test_*` database, installs the
+Each suite creates a uniquely named `fast1_audit_test_*` database, installs the
 repository's audit schema, and drops that database in `AfterAll`, including after
 assertion failures. It does not use an existing `pester_audit` database. An
 interrupted PowerShell process may leave its test database behind. The share is
@@ -179,8 +185,19 @@ read-only to the tests. Missing prerequisites or connection failures fail the ru
 Run from the repository root in PowerShell:
 
 ```powershell
+$env:FAST1_TEST_AUDIT_SQL_CONN_STR = 'Server=YOUR_TEST_SERVER;Initial Catalog=master;Integrated Security=True;Encrypt=True'
+$env:FAST1_TEST_AUDIT_FOLDER = '\\YOUR_TEST_SERVER\audit\closed'
+
+# Linux only; supply the password through your local or CI secret store.
+$env:FAST1_TEST_AUDIT_SMB_USER = 'DOMAIN\audit-reader'
+$env:FAST1_TEST_AUDIT_SMB_PASSWORD = '<SMB password>'
+
 Invoke-Pester -Path ./Fast1data.SqlServer/tests/Audit.Integration.Linux.Tests.ps1 -Output Detailed
 ```
+
+Use the SQL authentication and encryption options required by your test
+environment. On Windows, run `Audit.Integration.Windows.Tests.ps1` instead;
+the SMB variables are not required.
 
 To run all audit suites without accessing live services, exclude the integration tag:
 

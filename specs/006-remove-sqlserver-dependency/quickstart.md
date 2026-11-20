@@ -10,7 +10,7 @@ This guide defines implementation acceptance; commands are not evidence they hav
 - Pester 6+ and PSScriptAnalyzer; use the project analyzer settings if present. Neither tool is installed by this guide.
 - A clean fresh process/environment where the SqlServer PowerShell module is absent from discoverable module paths. No SqlServer installation is needed for the new feature.
 - Access to NuGet for dependency restore; supported native x64 Windows/Linux/macOS hosts for runtime acceptance.
-- For live migration validation, explicitly select a disposable SQL Server test environment through the suite's existing `FAST1_TEST_SQL_CONNECTION_STRING` opt-in. Supply it from the test environment's secret store. Do not use production credentials or paste secrets into logs/artifacts.
+- For live migration validation, explicitly select a disposable SQL Server test environment through the suite's existing `FAST1_TEST_MIGRATION_SQL_CONN_STR` opt-in. Supply it from the test environment's secret store. Do not use production credentials or paste secrets into logs/artifacts.
 - The integration login needs create/drop-database permission and schema/fixture/migration/history permissions in uniquely named test databases. Retain the suite's database cleanup and case-sensitive database checks. Inspect all integration suites before running the release script: they have separate resource prerequisites.
 
 ## 1. Build every supported dependency bundle
@@ -167,6 +167,11 @@ T008–T012 must verify missing/empty/whitespace and locally malformed syntax, u
 
 ## 4. Select and run live SQL migration validation
 
+Set `$env:FAST1_TEST_MIGRATION_SQL_CONN_STR` in the PowerShell session to select
+the migration SQL test instance. The other integration suites use separate variables;
+see the [integration test configuration table](../../README.md#live-integration-tests)
+for all six settings and the audit prerequisites.
+
 The migration suite requires explicit environment opt-in. Missing configuration skips
 the suite with the required variable in its title; a skipped suite is not passing
 integration evidence. The current tests target the ConnStr interface;
@@ -178,8 +183,8 @@ clone/restoration tests and counts do not establish FR-016 acceptance. Deployed
 connection-string authentication modes require their provisioned test environments.
 
 ```powershell
-if ([string]::IsNullOrWhiteSpace($env:FAST1_TEST_SQL_CONNECTION_STRING)) {
-	throw 'Select a disposable SQL test target through FAST1_TEST_SQL_CONNECTION_STRING.'
+if ([string]::IsNullOrWhiteSpace($env:FAST1_TEST_MIGRATION_SQL_CONN_STR)) {
+	throw 'Select a disposable SQL test target through FAST1_TEST_MIGRATION_SQL_CONN_STR.'
 }
 Invoke-Pester -Path ./Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1 -Output Detailed
 ```

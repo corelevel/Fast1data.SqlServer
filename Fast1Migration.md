@@ -171,9 +171,21 @@ non-idempotent scripts safe.
 Isolated command tests are in `tests/Migration.Tests.ps1`; phase validation tests
 are in `tests/Migration.Phase.Tests.ps1`. Neither suite connects to SQL Server.
 
-Live SQL tests are in `tests/Migration.Integration.Tests.ps1`. Review the connection
-settings in its integration `BeforeAll` block before running. The suite creates
-uniquely named disposable databases, installs the migration schema, and drops the
+### Live integration tests
+
+Live SQL tests are in `Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1`.
+Set `$env:FAST1_TEST_MIGRATION_SQL_CONN_STR` in the PowerShell session to select
+the SQL Server test instance. Missing or blank configuration skips the suite.
+Run from the repository root:
+
+```powershell
+$env:FAST1_TEST_MIGRATION_SQL_CONN_STR = 'Server=YOUR_TEST_SERVER;Initial Catalog=master;Integrated Security=True;Encrypt=True'
+Invoke-Pester -Path ./Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1 -Output Detailed
+```
+
+Use the authentication and encryption options required by your test environment.
+The suite creates uniquely named disposable databases, installs the migration
+schema, and drops the
 databases during cleanup. The SQL login needs database creation/drop, schema and
 fixture creation, and migration execution/history permissions. See the
 [validation commands](specs/002-consolidate-migration-phases/quickstart.md).

@@ -3,19 +3,23 @@
 Describe 'Live audit import from Linux' -Tag 'Linux', 'Integration' -Skip:(-not $IsLinux) {
 	BeforeAll {
 		$script:testDatabaseCreated = $false
-		# Live test configuration: edit these values once for your test environment.
-		$connectionString = @(
-			'Data Source=pester-srv'
-			'Initial Catalog=master'
-			'User ID=pester'
-			'Password=pester'
-			'Encrypt=False'
-			'TrustServerCertificate=True'
-			'Application Name=Fast1data.SqlServer.Audit.Tests'
-		) -join ';'
-		$script:folder = '\\pester-srv\audit\void'
-		$smbUserName = '.\pester'
-		$smbPassword = 'pester'
+		$connectionString = $env:FAST1_TEST_AUDIT_SQL_CONN_STR
+		$script:folder = $env:FAST1_TEST_AUDIT_FOLDER
+		$smbUserName = $env:FAST1_TEST_AUDIT_SMB_USER
+		$smbPassword = $env:FAST1_TEST_AUDIT_SMB_PASSWORD
+
+		if ([string]::IsNullOrWhiteSpace($connectionString)) {
+			throw 'Set FAST1_TEST_AUDIT_SQL_CONN_STR to select a disposable SQL test target.'
+		}
+		if ([string]::IsNullOrWhiteSpace($script:folder)) {
+			throw 'Set FAST1_TEST_AUDIT_FOLDER to the folder containing closed audit files.'
+		}
+		if ([string]::IsNullOrWhiteSpace($smbUserName)) {
+			throw 'Set FAST1_TEST_AUDIT_SMB_USER to the SMB user name.'
+		}
+		if ([string]::IsNullOrEmpty($smbPassword)) {
+			throw 'Set FAST1_TEST_AUDIT_SMB_PASSWORD to the SMB user password.'
+		}
 
 		$securePassword = [securestring]::new()
 		foreach ($character in $smbPassword.ToCharArray()) {

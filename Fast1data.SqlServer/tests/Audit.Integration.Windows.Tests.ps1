@@ -5,17 +5,15 @@
 Describe 'Live audit import from Windows' -Tag 'Windows', 'Integration' -Skip:(-not $IsWindows) {
 	BeforeAll {
 		$script:testDatabaseCreated = $false
-		# Live test configuration: edit these values once for your test environment.
-		$connectionString = @(
-			'Data Source=pester-srv'
-			'Initial Catalog=master'
-			'User ID=pester'
-			'Password=pester'
-			'Encrypt=False'
-			'TrustServerCertificate=True'
-			'Application Name=Fast1data.SqlServer.Audit.Tests'
-		) -join ';'
-		$script:folder = '\\pester-srv\audit\void'
+		$connectionString = $env:FAST1_TEST_AUDIT_SQL_CONN_STR
+		$script:folder = $env:FAST1_TEST_AUDIT_FOLDER
+
+		if ([string]::IsNullOrWhiteSpace($connectionString)) {
+			throw 'Set FAST1_TEST_AUDIT_SQL_CONN_STR to select a disposable SQL test target.'
+		}
+		if ([string]::IsNullOrWhiteSpace($script:folder)) {
+			throw 'Set FAST1_TEST_AUDIT_FOLDER to the folder containing closed audit files.'
+		}
 
 		# Windows discovery uses the current identity, independently of the SQL login.
 		if (-not (Test-Path -LiteralPath $script:folder -PathType Container -ErrorAction Stop)) {

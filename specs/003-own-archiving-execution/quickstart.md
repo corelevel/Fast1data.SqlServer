@@ -6,13 +6,13 @@ The controlled suite performs no SQL setup or real connection opens. The integra
 
 PowerShell 7.6+ Core on supported x64 hosts, verified compatible Pester, PSScriptAnalyzer, SqlServer and bundled SqlClient assets. If assets are absent, use existing build/build.ps1 with .NET 10 SDK. No dependency upgrade.
 
-Select the test server and credentials in the test file. The login must be allowed to create and drop databases, deploy the archiving schema, and perform the source, destination, constraint and failure-injection operations exercised by the tests. All three test databases use the same instance. Production execution compares actual configuration/source server identities and accepts aliases of the same instance. Use stable configuration, PKs and one process per group.
+Select the test server and authentication through `$env:FAST1_TEST_ARCHIVING_SQL_CONN_STR` before running Pester. Missing or blank configuration fails setup. See [integration test configuration](../../README.md#live-integration-tests). The login must be allowed to create and drop databases, deploy the archiving schema, and perform the source, destination, constraint and failure-injection operations exercised by the tests. All three test databases use the same instance. Production execution compares actual configuration/source server identities and accepts aliases of the same instance. Use stable configuration, PKs and one process per group.
 
-`Archiving.Integration.Tests.ps1` defines one connection string containing Data Source, User ID and Password in its `BeforeAll` block. The checked-in settings use `pester-srv`, login `pester` and password `pester`. Setup generates unique configuration/source/destination database names for each run, creates the databases, and deploys `schema/archiving/tables.sql` then `sprocs.sql` into the configuration database. Each test registers unique fixture identities; per-test teardown removes injections and fixture objects. Suite teardown attempts to drop every successfully created database, including after partial setup failure, and reports cleanup failure after attempting the remaining databases. Database connections have pooling disabled so teardown can release the test databases.
+`Archiving.Integration.Tests.ps1` reads the connection string from `FAST1_TEST_ARCHIVING_SQL_CONN_STR` in its `BeforeAll` block and uses `master` for database creation/cleanup. Setup generates unique configuration/source/destination database names for each run, creates the databases, and deploys `schema/archiving/tables.sql` then `sprocs.sql` into the configuration database. Each test registers unique fixture identities; per-test teardown removes injections and fixture objects. Suite teardown attempts to drop every successfully created database, including after partial setup failure, and reports cleanup failure after attempting the remaining databases.
 
 ## Commands
 
-From repository root, after configuring the server and credentials in the test file:
+From repository root, after setting `FAST1_TEST_ARCHIVING_SQL_CONN_STR` in the PowerShell session:
 
 ```powershell
 Import-Module ./Fast1data.SqlServer/Fast1data.SqlServer.psd1 -Force

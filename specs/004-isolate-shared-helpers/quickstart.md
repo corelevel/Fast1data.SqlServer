@@ -9,7 +9,7 @@ Run from the repository root in PowerShell. The import matrix and its fixtures l
 - .NET 10 SDK and dependency-feed access only if rebuilding runtime assets.
 - For live suites, an explicitly selected disposable SQL Server instance, permission to create/drop test databases and create/alter fixture objects, and reviewed fixture configuration. Do not run integration suites against production.
 
-Migration integration creates a unique database; archiving creates unique configuration/source/destination databases on the selected instance. Audit integration needs closed, immutable, nonempty audit files visible both to SQL Server and the selected discovery path, and permission to read them. Linux audit needs `smbclient` plus UNC/share access. Review each integration file's existing local connection/fixture settings before execution; these suites do not currently accept a common environment-variable configuration interface. Supply secrets locally and do not commit or print them.
+Migration integration creates a unique database; archiving creates unique configuration/source/destination databases on the selected instance. Audit integration needs closed, immutable, nonempty audit files visible both to SQL Server and the selected discovery path, and permission to read them. Linux audit needs `smbclient` plus UNC/share access. Configure the selected suites through the [integration test environment variables](../../README.md#live-integration-tests): `FAST1_TEST_MIGRATION_SQL_CONN_STR`, `FAST1_TEST_ARCHIVING_SQL_CONN_STR`, or `FAST1_TEST_AUDIT_SQL_CONN_STR` with `FAST1_TEST_AUDIT_FOLDER`. Linux audit also requires `FAST1_TEST_AUDIT_SMB_USER` and `FAST1_TEST_AUDIT_SMB_PASSWORD`. Supply secrets locally and do not commit or print them.
 
 No database change is required for consumers. Retain existing audit single-directory and archiving single-group execution constraints and existing recovery guidance.
 
@@ -80,7 +80,7 @@ Retain detailed `Archiving.Execution`, `SqlCleanup`, `Migration`, `Migration.Pha
 
 ## 4. Run required SQL checks
 
-Once the explicitly selected test environment and local fixtures are configured, run the relevant integration files in fresh processes. For archiving, for example:
+Once the required environment variables and audit fixtures are configured, run the relevant integration files in fresh processes. Child processes inherit the variables from the parent PowerShell session. For archiving, set `FAST1_TEST_ARCHIVING_SQL_CONN_STR`, then run:
 
 ```powershell
 pwsh -NoLogo -NoProfile -Command {
