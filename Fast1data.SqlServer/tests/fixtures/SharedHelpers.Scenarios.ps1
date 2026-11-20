@@ -200,6 +200,9 @@ Describe 'Internal ownership and unchanged distribution contract' {
 				[object]::ReferenceEquals($command.Module, $entry.Module) | Should -BeTrue -Because "$name must retain its defining module"
 				[object]::ReferenceEquals($command.Module.SessionState, $entry.Module.SessionState) | Should -BeTrue
 				$command.ScriptBlock.File.StartsWith($DistributionRoot + [System.IO.Path]::DirectorySeparatorChar) | Should -BeTrue
+				if ($name -in @('Invoke-Fast1GenericSqlQuery', 'Invoke-Fast1GenericSqlQueryReader')) {
+					$command.ScriptBlock.File | Should -BeExactly ([System.IO.Path]::GetFullPath((Join-Path $DistributionRoot "public/$name.ps1")))
+				}
 			}
 		}
 		[object]::ReferenceEquals($OwnerBefore, (& $rootModule { (Get-Command Write-LogMessage).Module })) | Should -BeTrue

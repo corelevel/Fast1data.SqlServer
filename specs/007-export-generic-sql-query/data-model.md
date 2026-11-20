@@ -2,7 +2,19 @@
 
 **Feature**: [spec.md](spec.md) | **Public contract**: [contracts/public-commands.md](contracts/public-commands.md)
 
-This feature adds in-memory command/row objects. It does not change persisted schemas or configuration.
+The original feature adds in-memory command/row objects. The public-file relocation changes no fields, persisted schemas, configuration, or lifecycle semantics. It changes the source ownership described below.
+
+## Command source and consumer scope
+
+| Command | Canonical source under `Fast1data.SqlServer/` | Defining consumer scopes |
+| --- | --- | --- |
+| `Invoke-Fast1GenericSqlQuery` | `public/Invoke-Fast1GenericSqlQuery.ps1` | Root module and archiving model, independently dot-sourced |
+| `Invoke-Fast1GenericSqlQueryReader` | `public/Invoke-Fast1GenericSqlQueryReader.ps1` | Root module and archiving model, independently dot-sourced |
+| `New-Fast1GenericSqlParam` | `public/New-Fast1GenericSqlParam.ps1` | Root module only, unchanged |
+
+Each filename stem matches its top-level public function name and contains its help. Neither query definition remains in the private shared directory. Two runtime function instances from one source file are expected; their defining Module and SessionState remain distinct. The factory and both consumers retain their existing descriptor class imports, with no second descriptor type.
+
+Private `GenericSqlQuery.ps1` retains only the binder and command factory. Each consumer loads private support before its query definitions. Root loads public files through its existing discovery loop; the model selects only the two query public files explicitly and exports neither. See [contracts/command-loading.md](contracts/command-loading.md) for initialization and failure contracts.
 
 ## Typed parameter descriptor
 

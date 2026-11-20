@@ -4,15 +4,17 @@
 
 **Input**: `specs/007-export-generic-sql-query/spec.md`
 
-Setup returns the feature identifier as `BRANCH`; the actual Git branch is `dev`. Planning selected feature 007 without switching branches. The maintainer subsequently confirmed implementation; see spec.md for the satisfied gate and the 2026-11-20 API revision.
+Setup returns the feature identifier as `BRANCH`; the actual Git branch is `dev`. Planning selects feature 007 without switching branches. This revision plans FR-001 through FR-006 of the public-file relocation amendment. The preceding command implementation and validation remain historical; relocation has not been implemented or tested by this planning run.
 
 ## Summary
 
-Expose the existing scalar/silent non-query command, add `Invoke-Fast1GenericSqlQueryReader` for incremental row output, and add `New-Fast1GenericSqlParam` so callers need no private class import. Keep query implementations in the independently loaded shared behavior file and explicitly export only the requested functions from the root module and manifest. Add the factory under `public/`.
+Move the definitions and comment help for `Invoke-Fast1GenericSqlQuery` and `Invoke-Fast1GenericSqlQueryReader` into `public/Invoke-Fast1GenericSqlQuery.ps1` and `public/Invoke-Fast1GenericSqlQueryReader.ps1`. Keep the factory in its existing matching public file. Every new exported command has one canonical source definition with a filename stem matching its function name.
+
+Retain only `Add-GenericSqlParameter` and `Get-GenericSqlCommand` in `private/shared/GenericSqlQuery.ps1`. Keep the three-file shared loader unchanged. Root's existing public-file loop loads the relocated definitions; export its public basenames without special appended query names. `ArchivingModel.psm1` explicitly dot-sources the two canonical public files after loading private support, defining its own local functions without depending on root import. Preserve the manifest's six explicit exports and nested modules' empty exports.
 
 The revised API uses the singular command name Reader while continuing to emit independent row objects. The factory supports standard WhatIf/Confirm with low confirmation impact; WhatIf emits no descriptor. Internal history discovery explicitly disables factory preview/confirmation so outer migration preview remains read-only and can inspect history. No analyzer exception is used.
 
-Reuse one private parameter-binding helper for both query commands, distinguish an omitted SQL type from `BigInt` using a nullable descriptor type, and retain existing execution defaults. The row command owns its reader and command, validates first-result column metadata before reading, emits ordered objects with native values and SQL-null conversion, and leaves the supplied connection open. Refactor `Get-Executed` to delegate row retrieval while retaining its owned connection and exact stored history keys.
+Preserve the existing private binder, nullable descriptor type, execution bodies, and history delegation. The row command continues to own its reader and command, validate first-result metadata, emit ordered native values, and leave the borrowed connection open. No additional descriptor or history refactor is part of relocation.
 
 ## Technical Context
 
@@ -26,29 +28,29 @@ Reuse one private parameter-binding helper for both query commands, distinguish 
 
 **Target Platform**: Existing x64 Windows, Linux, and macOS bundles (`win-x64`, `linux-x64`, `osx-x64`).
 
-**Project Type**: PowerShell administration module; public function surface grows from three commands to six.
+**Project Type**: PowerShell administration module; public surface remains exactly six commands.
 
 **Performance Goals**: Emit each row before reading the next, with application memory proportional to column metadata plus the current row, independent of total row count. Entire individual values, including binary arrays, may be materialized. No throughput or latency target is claimed.
 
 **Constraints**: Already-open borrowed connection; existing provider-default command timeout; no new timeout, transaction, connection-string, or execution-mode parameters. Output only the first tabular result, including an empty first result. Validate names even when empty. Reader then command cleanup on success, error, and pipeline truncation. Preserve primary errors and previously delivered rows. Never expose a live reader. Follow tab-indented multiline PowerShell blocks.
 
-**Scale/Scope**: Three public commands, one shared binding path, one private history consumer, explicit exports, help/README/migration guidance, and affected query/cleanup/import/migration verification. Existing audit, archiving, migration order/checksums/force/preview, runtime assets, and dependency versions retain their contracts.
+**Scale/Scope**: Relocate two public definitions/help blocks, preserve the third public file, simplify root exports, and extend the archiving model's explicit dependency loading. Update affected layout/loader/ownership tests and documentation. No new dependency, descriptor type, schema, configuration, SQL behavior, or runtime asset change.
 
 ## Constitution Check
 
-Constitution 1.1.0: pre-research PASS and post-design PASS. These are design gates; implementation acceptance checks remain pending.
+Constitution 1.1.0: pre-research PASS and post-design PASS for the relocation amendment. These are design gates; implementation acceptance checks remain pending.
 
 | Gate | Pre-research commitment | Post-design evidence |
 |---|---|---|
 | I. Data integrity and resumability | Do not alter persisted state or completion tracking | History reads preserve stored keys/checksums exactly; no schema or recording changes. |
-| II. Deterministic migrations | Preserve identity normalization, order, checksums, force/ignore, and preview | Only `Get-Executed` retrieval is delegated; phase and command regression suites remain required. |
+| II. Deterministic migrations | Preserve identity normalization, order, checksums, force/ignore, and preview | Existing `Get-Executed` delegation remains intact; verify relocated command resolution with history and migration regression suites. |
 | III. Explicit database operations | Keep parameters, caller resource ownership, and terminating failures | Shared typed binding, borrowed open connections, no credential-bearing examples/log context; original errors retained with safe cleanup details. SQL remains executable administrator input. |
-| IV. Portable PowerShell contracts | Explicit exports, compatible runtime/dependencies, complete help | Root plus manifest expose exactly six commands; nested modules remain private. Source/staged and native-host import validation required. |
+| IV. Portable PowerShell contracts | Matching public filenames, explicit exports, compatible runtime/dependencies, complete help | Canonical public files are loaded independently into root/model scopes. Root plus manifest expose exactly six commands; nested modules remain private. Source/staged and native-host validation required. |
 | V. Verification and visibility | Cover provider-specific behavior beyond mocks | Offline streaming/cleanup tests plus real result-set, null/type, stored-procedure, and migration-history checks are defined in `quickstart.md`. Unrun checks must be recorded. |
-| Runtime and governance | No unsupported dependency/schema/baseline change | Existing bundles/loaders reused. Additive public surface and private nullable field change documented; update current 0.1.0 release notes without inventing a new release approval. |
-| Development workflow | Analyze all modified PowerShell; resolve new findings | Implementation includes analyzer runs with project configuration if present. This planning run changes Markdown and feature-selection state only. |
+| Runtime and governance | No unsupported dependency/schema/baseline change | Existing bundles, descriptor identity, six-command surface, and current version retained. Source organization changes need no schema upgrade or constitution amendment. |
+| Development workflow | Analyze all modified PowerShell; resolve new findings | Implementation includes analyzer runs with project configuration if present. This planning run changes Markdown only; no runtime checks are claimed. |
 
-No constitution exception or amendment is required. The spec's pre-implementation confirmation is separate from these design gates.
+No constitution exception or unresolved design gate remains. Existing baseline migration-input failures and unavailable native hosts are recorded separately from the amendment's required acceptance.
 
 ## Project Structure
 
@@ -61,30 +63,37 @@ specs/007-export-generic-sql-query/
 ├── research.md
 ├── data-model.md
 ├── quickstart.md
+├── tasks.md                         # Existing completed work; amendment tasks pending
 └── contracts/
     ├── public-commands.md
-    └── migration-history.md
+    ├── migration-history.md
+    └── command-loading.md
 ```
 
-`tasks.md` belongs to the subsequent task-generation workflow and is not created here.
+The existing `tasks.md` records the preceding implementation and still contains the superseded shared-definition design. `$speckit-tasks` must reconcile it and append pending relocation work; this planning invocation does not rewrite or complete implementation tasks.
 
 ### Source Code (repository root)
 
 ```text
 Fast1data.SqlServer/
-├── Fast1data.SqlServer.psd1                  # Explicit exports and release notes
-├── Fast1data.SqlServer.psm1                  # Export loaded shared query functions
-├── public/New-Fast1GenericSqlParam.ps1            # New public descriptor factory
+├── Fast1data.SqlServer.psd1                  # Existing six explicit exports retained
+├── Fast1data.SqlServer.psm1                  # Public discovery and basename exports
+├── public/
+│   ├── Invoke-Fast1GenericSqlQuery.ps1       # Canonical executor definition and help
+│   ├── Invoke-Fast1GenericSqlQueryReader.ps1 # Canonical row definition and help
+│   └── New-Fast1GenericSqlParam.ps1          # Existing factory retained
 ├── private/
 │   ├── shared/
 │   │   ├── Load.ps1                         # Existing shared list retained
-│   │   ├── GenericSqlParam.psm1              # Nullable Type; no exported commands
-│   │   ├── GenericSqlQuery.ps1               # Query modes, rows, private binder
+│   │   ├── GenericSqlParam.psm1              # Existing type identity retained
+│   │   ├── GenericSqlQuery.ps1               # Private binder and command factory only
 │   │   └── GenericSqlCleanup.ps1             # Reused cleanup policy
-│   └── migration/Get-Executed.ps1            # Delegate rows; own connection
+│   ├── archiving/ArchivingModel.psm1        # Explicitly load both public query files
+│   └── migration/Get-Executed.ps1           # Existing delegation and ownership retained
 └── tests/
-    ├── GenericSqlQuery.Tests.ps1             # Planned focused contract coverage
-    ├── GenericSqlQuery.Integration.Tests.ps1 # Planned live provider coverage
+    ├── GenericSqlQuery.Tests.ps1             # Layout plus existing query contracts
+    ├── GenericSqlQuery.Integration.Tests.ps1 # Existing real provider coverage
+    ├── Archiving.Execution.Tests.ps1        # Model-local query regression
     ├── SqlCleanup.Tests.ps1
     ├── Migration*.Tests.ps1
     ├── ModuleLoaders.Tests.ps1
@@ -95,23 +104,23 @@ Fast1Migration.md                            # History-read behavior
 out/publish.ps1                              # Existing StageOnly validation path
 ```
 
-**Structure Decision**: Keep both query functions in `private/shared/GenericSqlQuery.ps1`, already loaded independently into root and archiving model scopes. Extract parameter validation/binding into one private helper in that file. Root exports the two query functions in addition to commands discovered under `public/`; the manifest enumerates all six. The factory belongs to root `public/` and returns the existing descriptor class. Do not introduce forwarding wrappers, a new nested behavior module, or a second class identity.
+**Structure Decision**: Public files own public definitions; private shared files own their support functions. Root discovers all public files once. The archiving model loads only the two public query files explicitly in its existing dependency `try` block, immediately after shared support and before operational helpers/classes. Both scopes independently define functions from the same source files. Keep `GenericSqlQuery.ps1` as the private support filename to avoid an unrelated inventory rename. Do not introduce forwarding wrappers, copied definitions, a nested behavior module, or a second class identity. See [contracts/command-loading.md](contracts/command-loading.md).
 
 ## Phase 0: Research Outcome
 
-[research.md](research.md) resolves result-set selection, native-value preservation, nullable type handling, shared export boundaries, cleanup, and validation strategy using repository inspection, delegated read-only research, primary provider documentation, and small PowerShell behavior probes. No technical clarification remains.
+[research.md](research.md) resolves the relocation's loading boundary and validation impact through two delegated read-only repository investigations. Earlier research decisions for result sets, native values, descriptor types, and cleanup remain applicable; only their source-location decision is replaced. No new provider API or external dependency is introduced, and no technical clarification remains.
 
-The existing fixed export snapshot and shared-helper ownership tests deliberately assert three commands. Implementation must revise them to six while preserving the exact metadata of the original three; recalculate affected child-process expected totals only when test counts change. Keep checking that nested modules export nothing and source/staged functions belong to the selected distribution.
+The existing export snapshot already asserts six commands and must remain unchanged unless a real mismatch is found. Keep eight independently defined functions per consumer (16 ownership observations), but strengthen query ownership checks to require the exact public source paths. The private inventory remains 23 files and the shared loader remains three entries. Account separately for the model's two explicit public dependencies so private coverage counts do not become 25. Recalculate child-process case totals only after adding cases; never loosen skip or ownership checks.
 
 ## Phase 1: Design
 
-1. Change only descriptor `Type` to nullable `SqlDbType`; omitted type is null and explicit zero is valid. Factory requires `-Type` and copies `Value`, `Size`, `Precision`, and `Scale` without requiring callers to resolve the private class. Preserve omitted/null value as SQL NULL at binding time.
-2. Share command parameter validation/binding across existing query modes and the row command. Retain named keys without an `@` prefix, native values, positive metadata forwarding, and silent helper behavior. The new factory accepts nonnegative Size; zero/omitted metadata retain provider defaults. MAX size and explicit zero-scale control are not added. Use direct value assignment with separate null handling to preserve binary arrays. Existing scalar/non-query execution and timeout behavior remain unchanged.
-3. Execute a reader without `CloseConnection`; skip non-tabular results only until a result with columns is found. Validate names once with an ordinal case-insensitive set before `Read()`. Build a fresh ordered object per row by direct ordinal `GetValue()` assignment, replacing only `DBNull` with null. Never collect all rows or advance beyond the first tabular result, even if it has no rows.
-4. Wrap owned reader/command in the existing operation-error/finally pattern. Release reader before command and never the borrowed connection. Stream directly through `Get-Executed`, which builds the phase descriptor via the public factory and retains only connection cleanup. A later read failure leaves prior rows delivered; disposal may wait for pending server results and does not promise cancellation of later SQL statements.
-5. Update public help, README examples and help listing, migration history guidance, manifest release notes, export snapshot, scope inventories, fresh-process totals where affected, and relevant failure assertions together. Explain SQL aliases, first-result semantics, SQL NULL, streaming/partial output, metadata limits, and connection lifetime.
-6. Complete the validation guide during implementation, recording source/staged/native and live SQL outcomes separately. This plan does not execute production tests or establish feature acceptance.
+1. Move both query function/help blocks intact to matching public files. Leave private support functions in the existing shared file and retain the factory's literal class import. Do not add class imports to the shared behavior or moved query scripts; existing consumer imports provide their descriptor identity.
+2. Retain root bootstrap and public discovery ordering. Replace the special appended query export names with `$publicScripts.BaseName`. Preserve the manifest's six names, the factory behavior, and root's existing initialization error handling.
+3. Add literal `../../public/Invoke-Fast1GenericSqlQuery.ps1` and `../../public/Invoke-Fast1GenericSqlQueryReader.ps1` dot-sources to the model's existing dependency block after shared loading. Resolve paths from `$PSScriptRoot`. Preserve empty model exports and its error-preference restoration; missing, parse-invalid, and runtime-failing query files must terminate initialization. Root's mandatory model load precedes public discovery, so those failures must also reject root initialization; prove this with both-consumer fault tests. Standalone model checks bootstrap SqlClient with the existing designated loader before model import, preserving its current prerequisites.
+4. Add AST layout checks for exact public filenames, matching top-level function/help, and no public definitions in private shared files. Extend designated-loader selection with the two public dependencies while retaining complete 23-file private coverage and the unchanged three-entry shared list. Add both-consumer fault cases and exact public `ScriptBlock.File` assertions. Preserve all six-command metadata snapshots and existing defining-session-state checks.
+5. Verify model-first/root-first and all five loading patterns by six operation orders, plus archiving execution, query, cleanup, migration, and live provider regressions. Run analyzer on all changed PowerShell and stage with the existing `StageOnly` path; repeat affected staged suites and supported host imports. Record source/staged/live/native results separately.
+6. Update README loader/source-location guidance and any affected references, retaining user examples and contracts. Regenerate amendment tasks through `$speckit-tasks` before implementation. This plan completes design only and does not claim test or relocation acceptance.
 
 ## Complexity Tracking
 
-None. One private binding helper removes duplication between the two query commands; no new framework, dependency, or persistence model is introduced.
+No constitution violations require justification. The same two public files are dot-sourced into two existing scopes; no new framework, dependency, duplicate implementation, or persistence model is introduced.

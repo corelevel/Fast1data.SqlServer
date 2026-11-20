@@ -15,6 +15,12 @@ Both the root module export list and manifest must expose exactly:
 
 Existing public command metadata remains unchanged. Construction, binding, cleanup, logging, migration internals, and class modules remain private. Direct .psm1 imports and manifest imports must agree. Public factory usage requires only normal root import.
 
+## Canonical public files
+
+The definition and complete comment help for each new exported command reside in `Fast1data.SqlServer/public/<FunctionName>.ps1`, using exact function spelling: `Invoke-Fast1GenericSqlQuery.ps1`, `Invoke-Fast1GenericSqlQueryReader.ps1`, and `New-Fast1GenericSqlParam.ps1`. No duplicate or forwarding definition remains under `private/shared`.
+
+This is a source layout change; the command signatures and behavior below remain unchanged. Both source and packaged imports must resolve each query's `ScriptBlock.File` to its matching public file under the selected distribution. Root and model keep independent defining scopes. See [command-loading.md](command-loading.md) for loading order, exports, and dependency failures.
+
 ## Invoke-Fast1GenericSqlQuery
 
 ```text
@@ -61,7 +67,7 @@ No connection is allocated and no SQL runs when creating a descriptor. Callers d
 
 Parameters is an optional hashtable keyed by name without `@`. Every value must be a descriptor of the existing class. Bind explicitly with SqlDbType, never inferred AddWithValue. Reject missing Type by null comparison, not truthiness; BigInt zero is valid. Convert null to DBNull.Value with direct value assignment and preserve native non-null values.
 
-The internal shared binding function emits no success output. Both root and archiving model use their locally defined shared implementation; nested modules export no new commands.
+The internal shared binding function emits no success output and remains in `private/shared/GenericSqlQuery.ps1` alongside the private command factory. Both root and archiving model use their locally defined support functions and independently loaded public query definitions; nested modules export no commands.
 
 ## Resource and error policy
 
@@ -80,4 +86,4 @@ PowerShell can suppress a cleanup exception thrown while a downstream command is
 
 ## Help and validation
 
-Provide complete comment help and runnable README examples for connection ownership, typed nulls, parameters, scalar/non-query behavior, aliases, first-result streaming, partial errors, and metadata limits. Update manifest release notes for the additive public surface; runtime/dependency versions stay unchanged. See [../quickstart.md](../quickstart.md) for source, staged, offline, and live validation.
+Retain complete comment help and runnable README examples for connection ownership, typed nulls, parameters, scalar/non-query behavior, aliases, first-result streaming, partial errors, and metadata limits. Move help together with its query definition. Update affected source-location and loader guidance; preserve the existing six-command release contract and runtime/dependency versions. See [../quickstart.md](../quickstart.md) for source, staged, offline, and live validation.

@@ -2,6 +2,10 @@
 
 **Feature**: [../spec.md](../spec.md) | **Public row contract**: [public-commands.md](public-commands.md)
 
+## Relocation compatibility
+
+This contract is unchanged by public-file relocation. Root resolves the reader from `public/Invoke-Fast1GenericSqlQueryReader.ps1` and the factory from its existing matching public file after normal module initialization. `Get-Executed` remains private and retains the existing query, parameter metadata, direct streaming, preview behavior, and connection ownership. Verify delegation and nested cleanup after relocation; no new history schema or migration logic is required. See [command-loading.md](command-loading.md).
+
 ## Signature and SQL
 
 Retain private `Get-Executed -ConnStr <string> -Phase <string>`. Both arguments remain mandatory. Preserve the existing SQL:

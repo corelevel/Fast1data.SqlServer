@@ -283,7 +283,13 @@ try {
 					if (-not $command.ScriptBlock.File.StartsWith($DistributionRoot + [System.IO.Path]::DirectorySeparatorChar)) {
 						throw "Wrong distribution for $name."
 					}
-					@{ Function = $name; Owner = $module.Name }
+					if ($name -in @('Invoke-Fast1GenericSqlQuery', 'Invoke-Fast1GenericSqlQueryReader')) {
+						$expectedPath = [System.IO.Path]::GetFullPath((Join-Path $DistributionRoot "public/$name.ps1"))
+						if ($command.ScriptBlock.File -cne $expectedPath) {
+							throw "Wrong public source for $name in $($module.Name): $($command.ScriptBlock.File)"
+						}
+					}
+					@{ Function = $name; Owner = $module.Name; SourceFile = $command.ScriptBlock.File }
 				}
 				if ($Scenario -eq 'Extension' -and (& $module { Get-LoaderExtension }) -ne 'extension') {
 					throw 'Shared-list extension did not reach both consumers.'

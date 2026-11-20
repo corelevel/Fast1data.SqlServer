@@ -3,6 +3,55 @@ BeforeAll {
 	Import-Module (Join-Path $script:distributionRoot 'Fast1data.SqlServer.psd1')
 }
 
+Describe 'Canonical public SQL layout' {
+	It 'defines <Name> and complete help in its matching public file' -ForEach @(
+		@{ Name = 'Invoke-Fast1GenericSqlQuery' }
+		@{ Name = 'Invoke-Fast1GenericSqlQueryReader' }
+		@{ Name = 'New-Fast1GenericSqlParam' }
+	) {
+		$path = Join-Path $script:distributionRoot "public/$Name.ps1"
+		Test-Path -LiteralPath $path -PathType Leaf | Should -BeTrue
+		(Get-Item -LiteralPath $path).BaseName | Should -BeExactly $Name
+		$tokens = $null
+		$parseErrors = $null
+		$ast = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$parseErrors)
+		$parseErrors | Should -BeNullOrEmpty
+		$functions = @($ast.EndBlock.Statements | Where-Object { $_ -is [System.Management.Automation.Language.FunctionDefinitionAst] })
+		$functions | Should -HaveCount 1
+		$functions[0].Name | Should -BeExactly $Name
+		$help = $functions[0].GetHelpContent()
+		$help.Synopsis | Should -Not -BeNullOrEmpty
+		$help.Description | Should -Not -BeNullOrEmpty
+		$help.Inputs | Should -Not -BeNullOrEmpty
+		$help.Outputs | Should -Not -BeNullOrEmpty
+		$help.Examples.Count | Should -BeGreaterOrEqual 2
+		foreach ($parameter in $functions[0].Body.ParamBlock.Parameters) {
+			$help.Parameters.ContainsKey($parameter.Name.VariablePath.UserPath.ToUpperInvariant()) | Should -BeTrue
+		}
+		foreach ($file in Get-ChildItem -LiteralPath (Join-Path $script:distributionRoot 'private/shared') -Recurse -File -Include '*.ps1', '*.psm1') {
+			$privateAst = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$parseErrors)
+			$parseErrors | Should -BeNullOrEmpty
+			$duplicates = @($privateAst.FindAll({
+				param ($Node)
+				$Node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $Node.Name -eq $Name
+			}, $true))
+			$duplicates | Should -HaveCount 0 -Because "$Name belongs only in its public file"
+		}
+		if ($Name -ne 'New-Fast1GenericSqlParam') {
+			@($ast.UsingStatements) | Should -HaveCount 0
+		}
+	}
+
+	It 'retains only parameter binding and command construction in private query support' {
+		$tokens = $null
+		$parseErrors = $null
+		$ast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $script:distributionRoot 'private/shared/GenericSqlQuery.ps1'), [ref]$tokens, [ref]$parseErrors)
+		$parseErrors | Should -BeNullOrEmpty
+		$functions = @($ast.FindAll({ param ($Node) $Node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $true))
+		($functions.Name -join ',') | Should -BeExactly 'Add-GenericSqlParameter,Get-GenericSqlCommand'
+	}
+}
+
 Describe 'First tabular SQL result in <Owner>' -ForEach @(@{ Owner = 'Fast1data.SqlServer' }, @{ Owner = 'ArchivingModel' }) {
 	BeforeAll {
 		. (Join-Path $PSScriptRoot 'fixtures/Import-SharedHelperDependency.ps1') -DistributionRoot (Split-Path -Parent $PSScriptRoot)

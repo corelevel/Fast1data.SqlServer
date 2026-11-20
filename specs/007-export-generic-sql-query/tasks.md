@@ -1,40 +1,39 @@
 ---
-description: "Implementation tasks for exporting generic SQL commands and streaming migration history"
+description: "Completed generic SQL commands and public-file relocation tasks"
 ---
 
 # Tasks: Export Generic SQL Commands
 
 **Input**: Design documents from `specs/007-export-generic-sql-query/`
 
-**Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/public-commands.md`, `contracts/migration-history.md`, `quickstart.md`, and `.specify/memory/constitution.md`.
+**Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/public-commands.md`, `contracts/migration-history.md`, `contracts/command-loading.md`, `quickstart.md`, and `.specify/memory/constitution.md`.
 
 **Tests**: Included because the specification explicitly requires query, parameter, cleanup, module-loading, and migration regression verification. Add the relevant acceptance tests before implementation and confirm that new behavior fails for the expected reason. Preserve existing coverage.
 
-**Organization**: The specification contains agreed decisions and acceptance checks rather than numbered, prioritized user stories. The following story labels and priorities are task-planning groupings of that contract, not new specification requirements:
+**Current scope (2026-11-20)**: Append the public-file relocation amendment without reopening the preceding implementation. T001-T034 remain checked historical records; their old source-location/export instructions are superseded by FR-001 through FR-006. Execute only the unchecked T035-T056 below. Historical US labels apply only to the historical phases; current labels map directly to the revised specification:
 
 | Story | Priority | Contract covered |
 |---|---|---|
-| US1 | P1 | Public scalar/silent non-query execution and public typed parameter construction |
-| US2 | P1 | Incremental first-tabular-result row output with safe ownership and exports |
-| US3 | P2 | Migration-history retrieval through the row command with exact persisted keys |
+| US1 | P1 | Locate each public command by name: canonical public definitions and help |
+| US2 | P1 | Continue using existing command contracts: imports, exports, scopes, SQL behavior, migration and archiving |
 
-**Implementation gate**: Generating this file does not satisfy the specification's final confirmation gate. T001 must be satisfied before production implementation begins.
+**Authorization and evidence**: T001 records the prior confirmation; it is not a new approval gate. T035–T056 were executed by the implementation invocation; relocation evidence is recorded separately in quickstart.md. The six historical migration-input failures were reassessed and did not reproduce. Current Windows SQL acceptance and audit reruns passed; native Linux/macOS checks remain unverified. The full-suite rerun and the original setup failures are recorded in quickstart.md; no passing all-platform release is claimed.
 
 ## Format: `[ID] [P?] [Story] Description`
 
-- Every task uses an unchecked checkbox, sequential ID, and exact repository-relative file paths.
+- New amendment tasks use unchecked checkboxes, sequential IDs continuing after T034, and exact repository-relative file paths. Completed historical tasks retain their checked status.
 - `[P]` identifies tasks that can run concurrently within the stated phase after its prerequisites; their edited files do not overlap.
-- `[US1]`, `[US2]`, and `[US3]` apply only to story phases.
+- Current `[US1]` and `[US2]` labels apply only to amendment story phases. Historical `[US3]` is retained solely as preceding implementation history.
 
 ## Path Conventions
 
 - Source, manifest, and tests live under `Fast1data.SqlServer/`.
-- Shared behavior remains in `Fast1data.SqlServer/private/shared/GenericSqlQuery.ps1`; the existing root and model loaders keep independently defined shared functions.
+- Private binder/command construction remain in `Fast1data.SqlServer/private/shared/GenericSqlQuery.ps1`; query definitions/help move to `Fast1data.SqlServer/public/Invoke-Fast1GenericSqlQuery.ps1` and `Fast1data.SqlServer/public/Invoke-Fast1GenericSqlQueryReader.ps1`, independently loaded into root and model scopes.
 - The factory lives in `Fast1data.SqlServer/public/New-Fast1GenericSqlParam.ps1`.
 - Feature acceptance evidence is recorded in `specs/007-export-generic-sql-query/quickstart.md`; root guidance lives in `README.md` and `Fast1Migration.md`.
 - No new dependencies, runtime baseline, schema, or configuration format are needed.
 
-## Phase 1: Setup (Shared Infrastructure)
+## Historical Phase 1: Setup (Completed)
 
 **Purpose**: Establish authorization and a reproducible implementation baseline.
 
@@ -43,7 +42,7 @@ description: "Implementation tasks for exporting generic SQL commands and stream
 
 ---
 
-## Phase 2: Foundational (Blocking Prerequisites)
+## Historical Phase 2: Foundational (Completed)
 
 **Purpose**: Establish reusable controlled resources and one compatible parameter-binding path.
 
@@ -58,7 +57,7 @@ description: "Implementation tasks for exporting generic SQL commands and stream
 
 ---
 
-## Phase 3: User Story 1 - Public scalar execution and typed parameters (Priority: P1) MVP
+## Historical Phase 3: Former US1 - Public scalar execution and typed parameters (Completed)
 
 **Goal**: A caller using only a root module import can create typed parameters and execute scalar or silent non-query SQL without knowing the private class path.
 
@@ -81,7 +80,7 @@ description: "Implementation tasks for exporting generic SQL commands and stream
 
 ---
 
-## Phase 4: User Story 2 - Stream the first tabular result (Priority: P1)
+## Historical Phase 4: Former US2 - Stream the first tabular result (Completed)
 
 **Goal**: Emit independent ordered row objects incrementally, preserve native values, and reliably release owned readers/commands while leaving the caller's connection open.
 
@@ -106,7 +105,7 @@ description: "Implementation tasks for exporting generic SQL commands and stream
 
 ---
 
-## Phase 5: User Story 3 - Delegate migration-history reads (Priority: P2)
+## Historical Phase 5: Former US3 - Delegate migration-history reads (Completed)
 
 **Goal**: Reuse the streaming public row command internally while preserving private history contracts, exact persisted keys, and outer connection ownership.
 
@@ -128,7 +127,7 @@ description: "Implementation tasks for exporting generic SQL commands and stream
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Historical Phase 6: Polish & Cross-Cutting Concerns (Completed)
 
 **Purpose**: Complete documentation and constitution-required source/package/platform acceptance.
 
@@ -141,83 +140,156 @@ description: "Implementation tasks for exporting generic SQL commands and stream
 
 ---
 
+## Amendment Phase 1: Setup (Shared Infrastructure)
+
+**Purpose**: Establish a current baseline and a bounded acceptance map before changing source files.
+
+- [X] T035 Record a fresh relocation baseline in `specs/007-export-generic-sql-query/quickstart.md`: run its section 2 source suites before edits; record runtime, Pester/analyzer/settings and bundled-asset availability, observed counts/skips, the actual six migration-input failures if still present, and availability of the opt-in SQL environment without printing its value. Preserve the preceding evidence as history.
+- [X] T036 Map FR-001 through FR-006 and SC-001 through SC-003 to amendment checks in `specs/007-export-generic-sql-query/quickstart.md` using `specs/007-export-generic-sql-query/contracts/command-loading.md`; record the current 23-private-file inventory, three shared entries, 16 ownership observations, six-command snapshot and 249-case worker inventory as baselines to verify, not totals to loosen.
+
+---
+
+## Amendment Phase 2: Foundational (Blocking Prerequisites)
+
+**Purpose**: Prepare the existing fresh-process harness for the new required public dependencies.
+
+- [X] T037 Verify and extend only as needed `Fast1data.SqlServer/tests/fixtures/Invoke-ModuleLoaderScenario.ps1` so disposable-copy fault injection accepts either public query path with Missing, Corrupt (parse-invalid) and RuntimeError faults for Root and Model consumers; bootstrap standalone model SqlClient through the existing designated loader, capture prior/restored error preference, actionable path/stage and original inner errors, and failed initialization without exposing public commands. Keep fault targets within the disposable distribution and retain selected-assembly checks; add no production seam.
+
+**Checkpoint**: Fault/ownership observations can express the amendment contract. All subsequent story work depends on this phase. No new package, descriptor class, schema, runtime baseline or generic loading framework is needed.
+
+---
+
+## Amendment Phase 3: User Story 1 - Locate each public command by name (Priority: P1) MVP
+
+**Goal**: Each new public command has one canonical matching public file containing its definition and complete help; private support stays private.
+
+**Independent Test**: Run focused AST layout checks for all three public files and recursively inspect `private/shared`. Require exact spelling, one matching top-level function per file, discoverable complete comment help and zero duplicate/forwarding public definitions. This is the smallest reviewable layout increment; release still requires US2 compatibility and package acceptance.
+
+### Tests for User Story 1
+
+- [X] T038 [US1] Add AST layout acceptance cases to `Fast1data.SqlServer/tests/GenericSqlQuery.Tests.ps1` for `public/Invoke-Fast1GenericSqlQuery.ps1`, `public/Invoke-Fast1GenericSqlQueryReader.ps1` and `public/New-Fast1GenericSqlParam.ps1` under the selected distribution; require exact filename/function spelling, a matching top-level definition with synopsis/description/parameter/output/example help, no duplicate or forwarding definition anywhere in `private/shared`, and only Add-GenericSqlParameter/Get-GenericSqlCommand in the private query support file. Confirm the missing public query files fail before relocation.
+
+### Implementation for User Story 1
+
+- [X] T039 [US1] Move the complete existing executor and reader function/help blocks intact from `Fast1data.SqlServer/private/shared/GenericSqlQuery.ps1` into `Fast1data.SqlServer/public/Invoke-Fast1GenericSqlQuery.ps1` and `Fast1data.SqlServer/public/Invoke-Fast1GenericSqlQueryReader.ps1`; retain only Add-GenericSqlParameter/Get-GenericSqlCommand in private support, preserve `Fast1data.SqlServer/public/New-Fast1GenericSqlParam.ps1` and its literal class import, and add no wrappers, duplicate definitions, class imports or execution-body changes.
+- [X] T040 [US1] Run the focused layout cases in `Fast1data.SqlServer/tests/GenericSqlQuery.Tests.ps1` and record exact public paths, help presence, private-only support and zero duplicates in `specs/007-export-generic-sql-query/quickstart.md`; compare the moved function bodies/help to the baseline and record compatibility checks as pending until US2.
+
+**Checkpoint**: FR-001/FR-002 and SC-001 have direct layout evidence. The root/model integration follows immediately before broader runtime acceptance.
+
+---
+
+## Amendment Phase 4: User Story 2 - Continue using the existing command contracts (Priority: P1)
+
+**Goal**: Preserve the six-command API and independent root/model operation through source and packaged imports, including query, cleanup, history and archiving behavior.
+
+**Independent Test**: Fresh manifest/direct imports and standalone model-first/root-first loads use only the selected distribution, export exactly six root commands and no nested commands, and resolve both query functions to exact public source paths in independent session states. Existing offline/live query, cleanup, migration and archiving checks retain their behavior; repeat affected checks against the staged distribution in T054.
+
+### Tests for User Story 2
+
+- [X] T041 [P] [US2] Extend `Fast1data.SqlServer/tests/ModuleLoaders.Tests.ps1` to assert both literal model public dot-sources after shared support, root public-loop/basename exports, unchanged three-entry shared loader, complete 23-file private coverage and two separately counted public dependencies; add all 12 public-query fault combinations (two files × two consumers × Missing/Corrupt/RuntimeError) using T037. Require terminating initialization, restored preference, original error/path context and no successful root exports; confirm the new model dependency assertions fail before loader implementation.
+- [X] T042 [P] [US2] Strengthen ownership checks in `Fast1data.SqlServer/tests/fixtures/Invoke-ModuleLoaderScenario.ps1` and `Fast1data.SqlServer/tests/fixtures/SharedHelpers.Scenarios.ps1` to compare each query's ScriptBlock.File with its exact matching public path under DistributionRoot, retaining distinct root/model Module and SessionState owners, eight functions per consumer (16 observations), root-only factory, existing descriptor identity and empty nested exports; retain the unchanged `Fast1data.SqlServer/tests/fixtures/SharedHelpers.PublicContract.json` six-command metadata snapshot. Exercise standalone model-first/root-first and unrelated-working-directory imports; confirm missing model-local public provenance fails before implementation.
+
+### Implementation and Regression Verification for User Story 2
+
+- [X] T043 [US2] Simplify `Fast1data.SqlServer/Fast1data.SqlServer.psm1` to export only $publicScripts.BaseName after its existing discovery loop, removing appended query names; preserve bootstrap/load ordering and initialization error handling, load each public file only through that loop, and retain exactly the six explicit FunctionsToExport entries and current version/runtime declarations in `Fast1data.SqlServer/Fast1data.SqlServer.psd1`.
+- [X] T044 [US2] Add literal $PSScriptRoot-anchored dot-sources for `../../public/Invoke-Fast1GenericSqlQuery.ps1` and `../../public/Invoke-Fast1GenericSqlQueryReader.ps1` in `Fast1data.SqlServer/private/archiving/ArchivingModel.psm1` inside its existing dependency try immediately after shared support; preserve error wrapping/preference restoration, existing class imports and empty exports. Leave `Fast1data.SqlServer/private/shared/Load.ps1` unchanged; do not enumerate other public files, load the factory into the model or require root import. Pass T041/T042 for both consumers.
+- [X] T045 [US2] Run existing factory/binder regressions in `Fast1data.SqlServer/tests/GenericSqlQuery.Tests.ps1` and `Fast1data.SqlServer/tests/SqlCleanup.Tests.ps1`, preserving the data-model rules verbatim: Type "Required by factory; null rejected by both executors; BigInt/zero accepted.", Value "Null binds to DBNull.Value; other values retain native representation, including byte arrays.", Size "New factory accepts 0 through Int32.MaxValue; only positive values are forwarded.", Precision "Positive values forwarded; zero leaves provider default.", and Scale "Positive values forwarded; zero leaves provider default, including inference." Retain int Size, byte Precision/Scale, zero metadata defaults, nullable private Type, normal one-descriptor output and WhatIf no-output behavior; add coverage only for a demonstrated gap and record outcomes in `specs/007-export-generic-sql-query/quickstart.md`.
+- [X] T046 [US2] Run existing query/streaming/cleanup regressions in `Fast1data.SqlServer/tests/GenericSqlQuery.Tests.ps1` and `Fast1data.SqlServer/tests/SqlCleanup.Tests.ps1` for both scopes, preserving SqlConn "Borrowed, already open; never opened, closed, or disposed by query commands.", Query "Mandatory SQL text or procedure name; executable administrator input.", CommandType "Text by default; existing StoredProcedure usage retained.", Parameters "Optional typed descriptors.", Scalar "First-column/first-row provider result; absent means silent non-query.", and schema "Names must be nonblank and unique with ordinal case-insensitive comparison." Verify empty first-result selection, ordinal native/null/binary row values, incremental delivery/partial failure, downstream truncation, reader-then-command disposal and safe primary/cleanup error retention; record results in `specs/007-export-generic-sql-query/quickstart.md`.
+- [X] T047 [US2] Run history/nested-cleanup and independent archiving execution checks in `Fast1data.SqlServer/tests/Migration.Tests.ps1`, `Fast1data.SqlServer/tests/SqlCleanup.Tests.ps1` and `Fast1data.SqlServer/tests/Archiving.Execution.Tests.ps1`; preserve `Fast1data.SqlServer/private/migration/Get-Executed.ps1` exact SELECT/filter, open delegated connection and NVarChar/Size 32 descriptor with -WhatIf:$false -Confirm:$false. Enforce phase "Bound filter, not an output property.", script_name "Preserve exact stored spelling/case/separators.", checksum "Return unchanged after script_name.", and reader-command-connection cleanup order; keep phase nvarchar(32), schema and execution semantics unchanged and record outcomes in `specs/007-export-generic-sql-query/quickstart.md`.
+- [X] T048 [US2] Reconcile the hardcoded total in `Fast1data.SqlServer/tests/fixtures/Invoke-SharedHelperScenario.ps1` only with actually discovered cases added to its included suites (baseline 249), retaining unexpected-skip rejection and the approved Windows-only filesystem skip; run `Fast1data.SqlServer/tests/ModuleLoaders.Tests.ps1` and all five loading patterns × six operation orders in `Fast1data.SqlServer/tests/SharedHelpers.Import.Tests.ps1`. Record fresh-process manifest/direct/model imports, exact selected-root provenance, unchanged metadata and all 16 owners in `specs/007-export-generic-sql-query/quickstart.md`.
+- [X] T049 [US2] Run the full ten-suite source command from section 2 of `specs/007-export-generic-sql-query/quickstart.md`, including `Fast1data.SqlServer/tests/Archiving.Execution.Tests.ps1` and all migration phase/command/execution/preflight suites; compare failures to T035, resolve amendment regressions, and record actual counts/skips and remaining baseline failures separately. Do not treat the historical six-case failure record as a successful current run.
+- [X] T050 [US2] Run `Fast1data.SqlServer/tests/GenericSqlQuery.Integration.Tests.ps1`, `Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1` and section 3's public SQL smoke from `specs/007-export-generic-sql-query/quickstart.md` against the explicitly configured test SQL environment when available; retain existing uniquely named disposable fixtures and guarded teardown. Verify real result/schema/null/binary/StoredProcedure behavior, early-stop connection reuse, exact persisted history keys/collation, force/retry/preview and cleanup, recording actual results or unavailable SQL as unverified without exposing credentials.
+
+**Checkpoint**: Source compatibility is measured against the baseline; source success alone does not complete packaged/native acceptance.
+
+---
+
+## Amendment Phase 5: Polish & Cross-Cutting Concerns
+
+**Purpose**: Finish consistent guidance, changed-file analysis and separate package/native evidence.
+
+- [X] T051 Update affected source-location/loader guidance in `README.md` and any affected references in `Fast1Migration.md` to identify the canonical public query files and independently loaded model scope; retain runnable six-command examples, connection ownership, idempotent migration guidance and existing dependency/runtime/release versions. Correct only superseded location guidance; do not rewrite historical evidence.
+- [X] T052 Run Invoke-ScriptAnalyzer on every new/modified .ps1/.psm1/.psd1, including `Fast1data.SqlServer/public/Invoke-Fast1GenericSqlQuery.ps1`, `Fast1data.SqlServer/public/Invoke-Fast1GenericSqlQueryReader.ps1`, `Fast1data.SqlServer/private/shared/GenericSqlQuery.ps1`, root/model modules and affected tests/fixtures; recheck project settings, use them if present, enforce tab-indented multiline blocks and resolve new warnings/errors without suppression. Record covered paths/results or analyzer unavailability in `specs/007-export-generic-sql-query/quickstart.md`; rerun for any later PowerShell edit.
+- [X] T053 Run `out/publish.ps1 -StageOnly` after source regressions and changed-file analysis, inspect package-wide analyzer output and exit status, and verify all three canonical public files/help plus existing RID assets are copied into `out/Fast1data.SqlServer/`; preserve packaging behavior and runtime/dependency versions, and record staging evidence separately in `specs/007-export-generic-sql-query/quickstart.md`. Carry unrelated baseline failures forward explicitly; amendment-caused failures must be fixed before accepting staging.
+- [X] T054 Run section B's six staged affected suites from `specs/007-export-generic-sql-query/quickstart.md` against `out/Fast1data.SqlServer/tests/GenericSqlQuery.Tests.ps1`, `out/Fast1data.SqlServer/tests/SqlCleanup.Tests.ps1`, `out/Fast1data.SqlServer/tests/Archiving.Execution.Tests.ps1`, `out/Fast1data.SqlServer/tests/Migration.Tests.ps1`, `out/Fast1data.SqlServer/tests/ModuleLoaders.Tests.ps1` and `out/Fast1data.SqlServer/tests/SharedHelpers.Import.Tests.ps1`; repeat fresh-process manifest/direct/model-first imports and complete Get-Help checks for the three new commands, requiring exact staged public provenance, six exports, unchanged metadata and empty nested exports. Record staged counts/failures/skips independently; StageOnly does not run these checks.
+- [X] T055 Verify source/staged fresh imports and available SQL smoke on supported native win-x64, linux-x64 and osx-x64 hosts using sections 1/3 and amendment A-C of `specs/007-export-generic-sql-query/quickstart.md`; record host/runtime, selected distribution and actual outcomes separately, labeling unavailable hosts and live environments unverified. Bundled-file/hash inspection alone is not native execution.
+- [X] T056 Complete an amendment acceptance section in `specs/007-export-generic-sql-query/quickstart.md` against FR-001 through FR-006, SC-001 through SC-003 and all three files in `specs/007-export-generic-sql-query/contracts/`; keep preceding evidence intact, distinguish source/staged/live/native results, record remaining failures and unavailable environments, and update relocation status in `specs/007-export-generic-sql-query/spec.md` only to the extent established by those checks. Material unresolved ownership or migration-integrity failures block release; an overall red suite or unrun acceptance must not be reported as a passing release.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
 
+The checked T001-T034 are historical prerequisites, not work to rerun. Current execution is:
+
 ```text
-Phase 1: Setup + existing confirmation gate
+Setup T035-T036
     |
     v
-Phase 2: Fixtures + nullable descriptor + shared binder
+Foundation T037
     |
     v
-US1 (P1): Public query + parameter factory [MVP; five exports]
+US1 (P1): T038 -> T039 -> T040 [layout MVP]
     |
     v
-US2 (P1): Streaming rows [final six exports]
+US2 (P1): T041 + T042 [parallel test authoring]
     |
     v
-US3 (P2): Migration-history delegation
+T043 -> T044 -> T045 -> T046 -> T047 -> T048 -> T049 -> T050
     |
     v
-Phase 6: Documentation + analyzer + source/staged/native/live acceptance
+Polish T051 -> analyzer T052 -> stage T053 -> staged T054
+    |
+    v
+Native acceptance T055 -> evidence/status T056
 ```
 
-- **Setup**: T001 is the existing production-implementation gate; T002 establishes the baseline before changing behavior.
-- **Foundation**: T003 enables controlled-resource tests; T004 precedes T005/T006; T005 enables genuine missing-Type validation in T006. All stories depend on T006.
-- **US1**: T007-T009 are independent test-authoring tasks after foundation. T010 precedes the public export change T011. T012 completes help before T013 validates the increment. Adjust test-worker expected counts only when the test inventory changes.
-- **US2**: Depends on US1's public factory and export pattern. T014-T017 can be authored together. T018 uses the shared binder; T019 completes its resource lifecycle; T020 exposes the implemented function; T021 completes help; T022 validates the increment. T017's worker execution waits for implementation and final observed counts, even though its test edits can be parallelized.
-- **US3**: Depends on US1's factory and US2's row command. T023-T025 can be authored together, then T026 implements delegation; T027/T028 document and verify the increment.
-- **Polish**: T029/T030 can run together after story completion. T031-T034 proceed in order; analyzer coverage must include any later PowerShell edits.
-
-### Within Each User Story
-
-- Write acceptance tests first and confirm expected missing-behavior failures; do not treat missing environments as a failing feature test or a passing check.
-- Complete implementation and ownership behavior before the story checkpoint.
-- Story tests can be run independently after their prerequisite increments; shared implementation files mean the stories themselves are sequenced.
-- Do not normalize migration keys in Get-Executed, change phase evaluation, add public options, alter provider defaults, or broaden nested-module exports.
+- Setup captures the unchanged implementation and acceptance map; foundation prepares observations before either story.
+- US1 depends on foundation. T038 must fail for absent public files before T039; run only focused layout acceptance at T040, since model integration remains in US2.
+- US2 implementation depends on US1's canonical files. T041/T042 can be authored together after T040 and must expose absent model dependencies/provenance before T043/T044.
+- T043/T044 finish both consumer loading paths before behavior checks. Tests must retain all six metadata entries rather than regenerate a snapshot to conceal changes.
+- T045-T050 are acceptance runs of existing behavior, with additions only for demonstrated gaps. They reuse test files and the evidence record, so these execution tasks are intentionally serialized. Any production fix requires rerunning affected checks.
+- T048 observes final child inventories before the full source run. A new ModuleLoaders case does not automatically increase the shared worker inventory; count only cases in included suites.
+- T050 may record unavailable SQL without inventing a pass. T055 likewise records unavailable native hosts; neither limitation silently satisfies release acceptance.
+- T052 analyzes every changed PowerShell file before staging; subsequent edits require affected tests, renewed analysis and restaging before T054/T055 results are accepted.
+- Polish follows source story verification. US2's full independent acceptance includes the staged checks; T056 reconciles actual evidence without erasing earlier limitations.
 
 ### Parallel Opportunities
 
-- US1: T007, T008, and T009 edit separate test files.
-- US2: T014, T015, T016, and T017 edit separate test/fixture groups.
-- US3: T023, T024, and T025 edit separate test suites.
-- Polish: T029 and T030 edit separate documentation/manifest files.
-- Serialize production changes to `Fast1data.SqlServer/private/shared/GenericSqlQuery.ps1`, root/manifest exports, and shared snapshots across phases; no cross-story production parallelism is assumed.
+- **US1**: Its own test/move/check tasks are sequential because they share files and each consumes the previous result. After foundation, T038's layout-test authoring can run alongside US2 T042's independent provenance-fixture authoring; execution of T042's acceptance still waits for US1 and T044. This early authoring option adds no story implementation dependency.
+- **US2**: T041 and T042 are marked [P] because their edited files are disjoint after foundation. Their tests run before consumer implementation.
+- Root/model loader changes are sequenced for a reviewable compatibility checkpoint; do not run tests against partially edited distributions.
+- Test suites that import the same modules, child matrices and writes to quickstart.md are serialized. Live SQL and staging/native work follow their prerequisites.
+- No new parallel-agent execution is requested by this task list; these examples describe implementation scheduling.
 
 ---
 
 ## Parallel Example: User Story 1
 
-After Phase 2, author these tests concurrently, then run them before T010/T011:
+After T037, optional cross-story test authoring uses different files:
 
 ```text
-T007: Factory/public-caller tests in Fast1data.SqlServer/tests/GenericSqlQuery.Tests.ps1
-T008: Existing execution/ownership tests in Fast1data.SqlServer/tests/SqlCleanup.Tests.ps1
-T009: Five-export compatibility tests and public snapshot in loader/shared-helper fixtures
+US1 T038: AST layout cases in Fast1data.SqlServer/tests/GenericSqlQuery.Tests.ps1
+US2 T042: Exact query provenance in Fast1data.SqlServer/tests/fixtures/Invoke-ModuleLoaderScenario.ps1
+           and Fast1data.SqlServer/tests/fixtures/SharedHelpers.Scenarios.ps1
 ```
+
+T039 waits for the expected T038 failures; T040 follows relocation. T042's runtime acceptance remains pending until T044. There is no safe parallel pair within US1 itself.
 
 ## Parallel Example: User Story 2
 
-After US1, author these independent test groups before implementing the row command:
+After T040, or after finishing any early T042 authoring:
 
 ```text
-T014: Row/schema/native-value tests in Fast1data.SqlServer/tests/GenericSqlQuery.Tests.ps1
-T015: Streaming/failure/disposal tests in Fast1data.SqlServer/tests/SqlCleanup.Tests.ps1
-T016: Provider tests in Fast1data.SqlServer/tests/GenericSqlQuery.Integration.Tests.ps1
-T017: Six-export/scope/class-identity tests in module-loader/shared-helper fixtures
+T041: Inventory, literal loading and 12 public dependency fault cases
+      in Fast1data.SqlServer/tests/ModuleLoaders.Tests.ps1
+T042: Provenance, defining session-state and owner checks
+      in Fast1data.SqlServer/tests/fixtures/Invoke-ModuleLoaderScenario.ps1
+      and Fast1data.SqlServer/tests/fixtures/SharedHelpers.Scenarios.ps1
 ```
 
-## Parallel Example: User Story 3
-
-After US2, author these independent history test groups before T026:
-
-```text
-T023: Delegation and exact output in Fast1data.SqlServer/tests/Migration.Tests.ps1
-T024: Nested ownership/errors in Fast1data.SqlServer/tests/SqlCleanup.Tests.ps1
-T025: Persisted behavior in Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1
-```
+Run the added cases for expected failures before T043/T044, then retain all existing export, assembly, ownership and unexpected-skip assertions.
 
 ---
 
@@ -225,21 +297,31 @@ T025: Persisted behavior in Fast1data.SqlServer/tests/Migration.Integration.Test
 
 ### MVP First (User Story 1)
 
-1. Satisfy the existing confirmation gate and record the baseline.
-2. Complete nullable descriptor/shared binding prerequisites.
-3. Complete US1 tests, factory, public scalar/non-query export, help, and independent verification.
-4. Validate the five-command increment; the full feature still requires the streaming command and migration integration.
+1. Complete T035-T037 against the existing implementation; reuse infrastructure and completed behavior.
+2. Write the layout acceptance tests, relocate both definitions/help intact and validate the canonical paths through T040.
+3. Review that layout increment as the MVP. Complete US2 before claiming working source/package compatibility or releasing it.
 
 ### Incremental Delivery
 
-1. Deliver US1 as the smallest independently useful public API increment.
-2. Deliver US2 and validate streaming, partial errors, disposal, and the final six-command surface through controlled and real-provider checks.
-3. Deliver US3 while retaining exact persisted keys and migration regression coverage.
-4. Complete documentation, changed-file analysis, source/staged checks, and available native/live acceptance; record every unverified environment explicitly.
+1. Preserve T001-T034 as historical evidence; never follow their superseded shared-definition/export instructions.
+2. Deliver current US1's exact matching public files and zero duplicate definitions.
+3. Deliver current US2's root/model loading and strict source provenance, then rerun existing parameter/query/cleanup/history/archiving/import behavior.
+4. Update guidance, analyze changed PowerShell, stage, and independently validate packaged and available native/live behavior.
+5. Record each actual outcome separately and leave unmet checks visible. Do not reopen unrelated baseline failures or broaden scope without evidence that relocation introduced a regression.
 
-### Notes
+## Validation and Coverage Map
 
-- This checklist defines implementation work; no production implementation or feature acceptance is claimed by task generation.
-- New test fixtures remain test-only. Reuse existing cleanup and loader architecture instead of adding dependencies or public helpers.
-- Live suites require the explicitly selected test SQL environment and disposable fixture databases; never commit or print credentials.
-- Native Windows/Linux/macOS verification requires those hosts. Missing hosts or skipped SQL suites remain unverified and must be visible in the acceptance record.
+| Requirement | Current tasks |
+| --- | --- |
+| FR-001 / SC-001: matching public files, definitions and help | T038-T040, T054 |
+| FR-002: private-only support, one canonical public definition | T038-T039, T041-T042 |
+| FR-003 / SC-002: six exports for source/staged manifest/direct imports | T041-T044, T048-T049, T053-T055 |
+| FR-004: unchanged API/help/defaults/values/errors/ownership | T039, T042, T045-T046, T050, T054 |
+| FR-005: history and independent archiving resolution | T041-T042, T044, T047-T050, T054 |
+| FR-006 / SC-003: documentation and complete regression evidence | T035-T036, T048-T056 |
+| Constitution IV/V and analyzer workflow | T035, T048-T056 |
+
+**Generation summary (before implementation)**: 56 tasks total: 34 completed historical tasks and 22 pending amendment tasks. Pending story tasks: US1 = 3 (T038-T040), US2 = 10 (T041-T050). Pending shared work = 9 (setup 2, foundation 1, polish 6). Two tasks carry [P]; US1 additionally has the explicitly bounded cross-story test-authoring opportunity above. No implementation or runtime acceptance is claimed by generation.
+
+
+**Execution summary (2026-11-20)**: All 56 tasks are marked [X], including T035–T056 for relocation. Available Windows source/staged offline checks and analyzer/package validation are complete. Current Windows SQL acceptance and the audit reruns passed; native Linux/macOS checks remain unverified as recorded in quickstart.md. The full source/staged results and resolved audit setup failures are retained there; this is not a full cross-platform release approval.

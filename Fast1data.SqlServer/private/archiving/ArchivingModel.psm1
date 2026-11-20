@@ -6,6 +6,8 @@ $previousErrorActionPreference = $ErrorActionPreference
 try {
 	$ErrorActionPreference = 'Stop'
 	. "$PSScriptRoot/../shared/Load.ps1"
+	. "$PSScriptRoot/../../public/Invoke-Fast1GenericSqlQuery.ps1"
+	. "$PSScriptRoot/../../public/Invoke-Fast1GenericSqlQueryReader.ps1"
 	. "$PSScriptRoot/Get-DelayIntervalInSecond.ps1"
 	. "$PSScriptRoot/Compare-Column.ps1"
 }

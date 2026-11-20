@@ -66,7 +66,7 @@ try {
 		Errors = @($result.Failed | ForEach-Object { $_.ErrorRecord | ForEach-Object { $_.ToString() } })
 	}
 	'SHARED_HELPER_RESULT:' + ($observation | ConvertTo-Json -Depth 8 -Compress)
-	if ($result.TotalCount -ne 249 -or $result.FailedCount -gt 0 -or $unexpectedSkips.Count -gt 0 -or $result.Result -ne 'Passed') {
+	if ($result.TotalCount -ne 253 -or $result.FailedCount -gt 0 -or $unexpectedSkips.Count -gt 0 -or $result.Result -ne 'Passed') {
 		exit 1
 	}
 }

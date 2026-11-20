@@ -122,6 +122,39 @@ Describe 'Explicit dependency boundaries' -Tag US2 {
 		}
 	}
 
+	It 'loads the two canonical public queries after model support and exports root public basenames' {
+		. (Join-Path $script:distributionRoot 'private/shared/Get-RuntimeIdentifier.ps1')
+		. (Join-Path $script:distributionRoot 'private/shared/Import-RequiredLibrary.ps1')
+		Import-RequiredLibrary -DllName Microsoft.Data.SqlClient.dll -RequiredTypeName Microsoft.Data.SqlClient.SqlConnection
+		$tokens = $null
+		$parseErrors = $null
+		$modelPath = Join-Path $script:distributionRoot 'private/archiving/ArchivingModel.psm1'
+		$ast = [System.Management.Automation.Language.Parser]::ParseFile($modelPath, [ref]$tokens, [ref]$parseErrors)
+		$parseErrors | Should -BeNullOrEmpty
+		$dependencyTry = $ast.EndBlock.Statements | Where-Object { $_ -is [System.Management.Automation.Language.TryStatementAst] } | Select-Object -First 1
+		$loads = @($dependencyTry.Body.FindAll({
+			param ($Node)
+			$Node -is [System.Management.Automation.Language.CommandAst] -and $Node.InvocationOperator -eq 'Dot'
+		}, $true))
+		$loads | Should -HaveCount 5
+		$expected = @('../shared/Load.ps1', '../../public/Invoke-Fast1GenericSqlQuery.ps1', '../../public/Invoke-Fast1GenericSqlQueryReader.ps1', 'Get-DelayIntervalInSecond.ps1', 'Compare-Column.ps1')
+		$publicDependencies = @()
+		for ($i = 0; $i -lt $expected.Count; $i++) {
+			$loads[$i].CommandElements[0].Extent.Text | Should -BeExactly ('"$PSScriptRoot/' + $expected[$i] + '"')
+			if ($expected[$i].StartsWith('../../public/')) {
+				$publicDependencies += [System.IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $modelPath) $expected[$i]))
+			}
+		}
+		$publicDependencies | Should -HaveCount 2
+		foreach ($path in $publicDependencies) {
+			Test-Path -LiteralPath $path -PathType Leaf | Should -BeTrue
+		}
+		$rootCode = Get-Content -LiteralPath (Join-Path $script:distributionRoot 'Fast1data.SqlServer.psm1') -Raw
+		$rootCode | Should -Match 'Export-ModuleMember -Function \$publicScripts\.BaseName\s*\r?\n'
+		$rootCode | Should -Not -Match 'Invoke-Fast1GenericSqlQuery'
+		$rootCode | Should -Match '(?s)foreach \(\$script in \$publicScripts\) \{\s*\. \$script\.FullName\s*\}'
+	}
+
 	It 'keeps declaration staging inert and dependency assembly out of ordinary behavior' {
 		$tokens = $null
 		$parseErrors = $null
@@ -163,10 +196,18 @@ Describe 'Explicit dependency boundaries' -Tag US2 {
 		foreach ($consumer in @('Root', 'Model')) {
 			@{ FaultPath = 'private/shared/GenericSqlQuery.ps1'; FaultKind = 'RuntimeError'; Consumer = $consumer }
 		}
+		foreach ($path in @('public/Invoke-Fast1GenericSqlQuery.ps1', 'public/Invoke-Fast1GenericSqlQueryReader.ps1')) {
+			foreach ($consumer in @('Root', 'Model')) {
+				foreach ($kind in @('Missing', 'Corrupt', 'RuntimeError')) {
+					@{ FaultPath = $path; FaultKind = $kind; Consumer = $consumer }
+				}
+			}
+		}
 	) {
 		$result = Invoke-LoaderWorker -Scenario Fault -Copy -FaultPath $FaultPath -FaultKind $FaultKind -Consumer $Consumer
 		$result.OriginalError | Should -Not -BeNullOrEmpty
 		$result.PublicCommands | Should -HaveCount 0
+		($result.PreferencesAfter -join ',') | Should -Be ($result.PreferencesBefore -join ',')
 		if ($FaultPath -eq 'ScriptDom') {
 			$result.OriginalError | Should -Match 'ScriptDom.*runtime|runtime.*ScriptDom'
 			$result.OriginalError | Should -Match 'Rebuild'
@@ -199,7 +240,7 @@ Describe 'One shared behavior list and independent consumers' -Tag US1 {
 			$code = Get-Content -LiteralPath (Join-Path $script:distributionRoot $relative) -Raw
 			$code | Should -Match '\.\s+"\$PSScriptRoot/.*shared/Load\.ps1"'
 			foreach ($file in $expected) {
-				$code | Should -Not -Match ([regex]::Escape($file))
+				$code | Should -Not -Match ('[\\/]' + [regex]::Escape($file) + '["'']')
 			}
 		}
 	}

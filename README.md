@@ -201,7 +201,13 @@ for suite-specific commands and prerequisites.
 
 `Fast1data.SqlServer/private/shared/Load.ps1` is the only shared behavior list.
 Root and `private/archiving/ArchivingModel.psm1` dot-source it independently, giving
-each module its own private functions. Root explicitly selects audit,
+each module its own private support functions. The query definitions and complete
+help live in `public/Invoke-Fast1GenericSqlQuery.ps1` and
+`public/Invoke-Fast1GenericSqlQueryReader.ps1`; the factory remains in
+`public/New-Fast1GenericSqlParam.ps1`. Root loads public files through its discovery
+loop and exports their basenames. The model explicitly dot-sources only the two
+query files immediately after shared support, retaining its own defining scope
+and empty exports. Root explicitly selects audit,
 migration (including checksum and relative-path helpers), and the archiving
 adapter; the model selects comparison/delay helpers and retains its local
 functions and classes. Ordinary function files contain behavior; their loaders
@@ -226,7 +232,7 @@ execution or cleanup/history failure; follow the [migration retry guidance](Fast
 Direct model-first imports require explicit SqlClient bootstrap before parsing
 model classes. After repairing a missing or corrupt required dependency, retry in
 a fresh PowerShell process because class definitions persist within a process.
-The three public commands, runtime requirements, configuration, and persisted
+The six public commands, runtime requirements, configuration, and persisted
 data contracts are unchanged. See the [loader validation guide](specs/005-explicit-module-loaders/quickstart.md)
 for cold imports, fault isolation, and source/package checks.
 
