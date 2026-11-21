@@ -1,0 +1,1858 @@
+{
+  "Feature": "008-drop-osx-x64",
+  "ExecutionDates": [
+    "2026-11-20",
+    "2026-11-21"
+  ],
+  "Branch": "dev",
+  "BaseCommit": "76cb9a6cfe2dcb8b1dee4066ad5c908ac4f57b82",
+  "Host": {
+    "OS": "Microsoft Windows 10.0.26300",
+    "ProcessArchitecture": "X64",
+    "PSScriptAnalyzer": "1.25.0",
+    "OSArchitecture": "X64",
+    "PowerShell": "7.6.10",
+    "Pester": "6.2.0",
+    "DotNetSDK": "11.0.100"
+  },
+  "Baseline": {
+    "TotalCount": 131,
+    "PassedCount": 131,
+    "FailedCount": 0,
+    "SkippedCount": 0,
+    "Result": "Passed"
+  },
+  "ControlledPackaging": {
+    "TotalCount": 16,
+    "PassedCount": 16,
+    "FailedCount": 0,
+    "SkippedCount": 0,
+    "Result": "Passed"
+  },
+  "SimulatedRuntime": {
+    "TotalCount": 94,
+    "PassedCount": 94,
+    "FailedCount": 0,
+    "SkippedCount": 0,
+    "Result": "Passed"
+  },
+  "RealPackaging": {
+    "Source": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+    "Checkout": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0",
+    "Events": [
+      {
+        "Arguments": [],
+        "Script": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\build\\build.ps1",
+        "Log": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-evidence\\clean-build.log",
+        "ExitCode": 0,
+        "Step": "clean-build"
+      },
+      {
+        "Arguments": [
+          "-StageOnly"
+        ],
+        "Script": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\publish.ps1",
+        "Log": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-evidence\\clean-stage.log",
+        "ExitCode": 0,
+        "Step": "clean-stage"
+      },
+      {
+        "Step": "clean",
+        "HashesMatch": true,
+        "Stage": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "ExactRids": [
+          "linux-x64",
+          "win-x64"
+        ],
+        "FileCount": 108,
+        "Source": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer"
+      },
+      {
+        "Arguments": [],
+        "Script": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\build\\build.ps1",
+        "Log": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-evidence\\reused-build.log",
+        "ExitCode": 0,
+        "Step": "reused-build"
+      },
+      {
+        "Arguments": [
+          "-StageOnly"
+        ],
+        "Script": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\publish.ps1",
+        "Log": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-evidence\\reused-stage.log",
+        "ExitCode": 0,
+        "Step": "reused-stage"
+      },
+      {
+        "Step": "reused",
+        "HashesMatch": true,
+        "Stage": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "ExactRids": [
+          "linux-x64",
+          "win-x64"
+        ],
+        "FileCount": 108,
+        "Source": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer"
+      },
+      {
+        "Arguments": [
+          "-StageOnly"
+        ],
+        "Script": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\publish.ps1",
+        "Log": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-evidence\\standalone-stage.log",
+        "ExitCode": 0,
+        "Step": "standalone-stage"
+      },
+      {
+        "SourceObsoleteRetained": true,
+        "Step": "standalone",
+        "StageExactRids": true
+      },
+      {
+        "Arguments": [],
+        "Script": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\build\\build.ps1",
+        "Log": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-evidence\\final-build.log",
+        "ExitCode": 0,
+        "Step": "final-build"
+      },
+      {
+        "Arguments": [
+          "-StageOnly"
+        ],
+        "Script": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\publish.ps1",
+        "Log": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-evidence\\final-stage.log",
+        "ExitCode": 0,
+        "Step": "final-stage"
+      },
+      {
+        "Step": "final",
+        "HashesMatch": true,
+        "Stage": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "ExactRids": [
+          "linux-x64",
+          "win-x64"
+        ],
+        "FileCount": 108,
+        "Source": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer"
+      }
+    ],
+    "Stage": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer"
+  },
+  "PostFixtureStage": {
+    "Result": "Passed",
+    "MatchedBundleFiles": 108,
+    "Log": ".tmp/008-evidence/post-fixture-stage.log",
+    "Analyzer": "Passed"
+  },
+  "AssetInventory": {
+    "Path": "validation-assets.json",
+    "SHA256": "418A719EFB83927542114B6CAD601696A857D8BEEE05BC34ED47E0B482F5B6BD"
+  },
+  "WindowsSource": {
+    "Focused": {
+      "Distribution": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+      "SuiteSet": "Focused",
+      "Paths": [
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Packaging.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\RuntimeSupport.Tests.ps1"
+      ],
+      "HostOS": "Microsoft Windows 10.0.26300",
+      "OSArchitecture": "X64",
+      "ProcessArchitecture": "X64",
+      "PowerShell": "7.6.10",
+      "TotalCount": 110,
+      "PassedCount": 110,
+      "FailedCount": 0,
+      "SkippedCount": 0,
+      "Result": "Passed",
+      "Failures": []
+    },
+    "Loaders": {
+      "Distribution": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+      "SuiteSet": "Loaders",
+      "Paths": [
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\ModuleLoaders.Tests.ps1"
+      ],
+      "HostOS": "Microsoft Windows 10.0.26300",
+      "OSArchitecture": "X64",
+      "ProcessArchitecture": "X64",
+      "PowerShell": "7.6.10",
+      "TotalCount": 101,
+      "PassedCount": 101,
+      "FailedCount": 0,
+      "SkippedCount": 0,
+      "Result": "Passed",
+      "Failures": []
+    },
+    "Offline": {
+      "Distribution": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+      "SuiteSet": "Offline",
+      "Paths": [
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Archiving.Execution.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Audit.Common.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Audit.Linux.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Audit.Windows.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\GenericSqlQuery.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Migration.Command.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Migration.Execution.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Migration.Phase.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Migration.Preflight.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Migration.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\SqlCleanup.Tests.ps1"
+      ],
+      "HostOS": "Microsoft Windows 10.0.26300",
+      "OSArchitecture": "X64",
+      "ProcessArchitecture": "X64",
+      "PowerShell": "7.6.10",
+      "TotalCount": 323,
+      "PassedCount": 301,
+      "FailedCount": 0,
+      "SkippedCount": 22,
+      "Result": "Passed",
+      "Failures": []
+    },
+    "Shared": {
+      "Distribution": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+      "SuiteSet": "Shared",
+      "Paths": [
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\SharedHelpers.Import.Tests.ps1"
+      ],
+      "HostOS": "Microsoft Windows 10.0.26300",
+      "OSArchitecture": "X64",
+      "ProcessArchitecture": "X64",
+      "PowerShell": "7.6.10",
+      "TotalCount": 30,
+      "PassedCount": 30,
+      "FailedCount": 0,
+      "SkippedCount": 0,
+      "Result": "Passed",
+      "Failures": []
+    },
+    "Matrix": [
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "ARM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "AMR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "RAM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "RMA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "MAR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "MRA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "ARM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "AMR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "RAM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "RMA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "MAR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "MRA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "ARM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "AMR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "RAM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "RMA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "MAR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "MRA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "ARM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "AMR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "RAM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "RMA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "MAR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "MRA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "ARM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "AMR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "RAM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "RMA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "MAR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "MRA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      }
+    ],
+    "Workers": [
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Scenario": "Manifest",
+        "Consumer": "Root",
+        "Complete": true,
+        "Errors": [],
+        "PreferencesBefore": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "PreferencesAfter": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "ImportErrors": [],
+        "DeclarationErrors": [],
+        "OriginalError": "",
+        "Trace": [],
+        "PublicCommands": [
+          "Invoke-Fast1Audit",
+          "Invoke-Fast1Migration",
+          "Invoke-Fast1Archiving",
+          "Invoke-Fast1GenericSqlQuery",
+          "Invoke-Fast1GenericSqlQueryReader",
+          "New-Fast1GenericSqlParam"
+        ],
+        "Owners": [
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1",
+            "Function": "Write-LogMessage",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Function": "Get-GenericSqlCommand",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1",
+            "Function": "Invoke-Fast1GenericSqlQuery",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1",
+            "Function": "Invoke-Fast1GenericSqlQueryReader",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Function": "Add-GenericSqlParameter",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Close-GenericSqlResource",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Add-GenericSqlCleanupFailure",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Get-GenericSqlCleanupFailure",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1",
+            "Function": "Write-LogMessage",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Function": "Get-GenericSqlCommand",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1",
+            "Function": "Invoke-Fast1GenericSqlQuery",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1",
+            "Function": "Invoke-Fast1GenericSqlQueryReader",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Function": "Add-GenericSqlParameter",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Close-GenericSqlResource",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Add-GenericSqlCleanupFailure",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Get-GenericSqlCleanupFailure",
+            "Owner": "ArchivingModel"
+          }
+        ],
+        "Assembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.Data.SqlClient.dll",
+        "ParserAssembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Scenario": "Direct",
+        "Consumer": "Root",
+        "Complete": true,
+        "Errors": [],
+        "PreferencesBefore": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "PreferencesAfter": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "ImportErrors": [],
+        "DeclarationErrors": [],
+        "OriginalError": "",
+        "Trace": [],
+        "PublicCommands": [
+          "Invoke-Fast1Audit",
+          "Invoke-Fast1Migration",
+          "Invoke-Fast1Archiving",
+          "Invoke-Fast1GenericSqlQuery",
+          "Invoke-Fast1GenericSqlQueryReader",
+          "New-Fast1GenericSqlParam"
+        ],
+        "Owners": [
+          {
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1",
+            "Function": "Write-LogMessage"
+          },
+          {
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Function": "Get-GenericSqlCommand"
+          },
+          {
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1",
+            "Function": "Invoke-Fast1GenericSqlQuery"
+          },
+          {
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1",
+            "Function": "Invoke-Fast1GenericSqlQueryReader"
+          },
+          {
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Function": "Add-GenericSqlParameter"
+          },
+          {
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Close-GenericSqlResource"
+          },
+          {
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Add-GenericSqlCleanupFailure"
+          },
+          {
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Get-GenericSqlCleanupFailure"
+          },
+          {
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1",
+            "Function": "Write-LogMessage"
+          },
+          {
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Function": "Get-GenericSqlCommand"
+          },
+          {
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1",
+            "Function": "Invoke-Fast1GenericSqlQuery"
+          },
+          {
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1",
+            "Function": "Invoke-Fast1GenericSqlQueryReader"
+          },
+          {
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Function": "Add-GenericSqlParameter"
+          },
+          {
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Close-GenericSqlResource"
+          },
+          {
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Add-GenericSqlCleanupFailure"
+          },
+          {
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Function": "Get-GenericSqlCleanupFailure"
+          }
+        ],
+        "Assembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.Data.SqlClient.dll",
+        "ParserAssembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "Scenario": "ModelFirst",
+        "Consumer": "Root",
+        "Complete": true,
+        "Errors": [],
+        "PreferencesBefore": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "PreferencesAfter": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "ImportErrors": [],
+        "DeclarationErrors": [],
+        "OriginalError": "",
+        "Trace": [
+          {
+            "Stage": "bootstrap"
+          }
+        ],
+        "PublicCommands": [
+          "Invoke-Fast1Audit",
+          "Invoke-Fast1Migration",
+          "Invoke-Fast1Archiving",
+          "Invoke-Fast1GenericSqlQuery",
+          "Invoke-Fast1GenericSqlQueryReader",
+          "New-Fast1GenericSqlParam"
+        ],
+        "Owners": [
+          {
+            "Function": "Write-LogMessage",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Get-GenericSqlCommand",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQuery",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQueryReader",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Add-GenericSqlParameter",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Close-GenericSqlResource",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Add-GenericSqlCleanupFailure",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Get-GenericSqlCleanupFailure",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Write-LogMessage",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Get-GenericSqlCommand",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQuery",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQueryReader",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Add-GenericSqlParameter",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Close-GenericSqlResource",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Add-GenericSqlCleanupFailure",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Get-GenericSqlCleanupFailure",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "ArchivingModel"
+          }
+        ],
+        "Assembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.Data.SqlClient.dll",
+        "ParserAssembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
+      }
+    ],
+    "SQL": {
+      "TotalCount": 75,
+      "PassedCount": 75,
+      "FailedCount": 0,
+      "SkippedCount": 0,
+      "Result": "Passed",
+      "InitialSandboxRun": {
+        "Distribution": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "SuiteSet": "Integration",
+        "Paths": [
+          "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Migration.Integration.Tests.ps1",
+          "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\GenericSqlQuery.Integration.Tests.ps1",
+          "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Archiving.Integration.Tests.ps1",
+          "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Audit.Integration.Windows.Tests.ps1"
+        ],
+        "HostOS": "Microsoft Windows 10.0.26300",
+        "OSArchitecture": "X64",
+        "ProcessArchitecture": "X64",
+        "PowerShell": "7.6.10",
+        "TotalCount": 75,
+        "PassedCount": 71,
+        "FailedCount": 4,
+        "SkippedCount": 0,
+        "Result": "Failed",
+        "Failures": [
+          {
+            "Name": "Live audit import from Windows.imports the expected records and audit GUIDs from real audit files using Windows discovery",
+            "Error": []
+          },
+          {
+            "Name": "Live audit import from Windows.resumes from saved checkpoints without duplicating records on a second import",
+            "Error": []
+          },
+          {
+            "Name": "Live audit import from Windows.advances checkpoints for ignored records and does not reread them on the next import",
+            "Error": []
+          },
+          {
+            "Name": "Live audit import from Windows.resumes durable offsets after a lost response and closes the failed invocation connection",
+            "Error": []
+          }
+        ]
+      },
+      "AuditRetryOutsideSandbox": {
+        "Distribution": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer",
+        "SuiteSet": "Audit",
+        "Paths": [
+          "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\Fast1data.SqlServer\\tests\\Audit.Integration.Windows.Tests.ps1"
+        ],
+        "HostOS": "Microsoft Windows 10.0.26300",
+        "OSArchitecture": "X64",
+        "ProcessArchitecture": "X64",
+        "PowerShell": "7.6.10",
+        "TotalCount": 4,
+        "PassedCount": 4,
+        "FailedCount": 0,
+        "SkippedCount": 0,
+        "Result": "Passed",
+        "Failures": []
+      },
+      "Explanation": "Sandbox blocked the configured audit share. The other 71 cases passed initially; all four audit cases passed outside the sandbox."
+    }
+  },
+  "WindowsStage": {
+    "Focused": {
+      "Distribution": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+      "SuiteSet": "Focused",
+      "Paths": [
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Packaging.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\RuntimeSupport.Tests.ps1"
+      ],
+      "HostOS": "Microsoft Windows 10.0.26300",
+      "OSArchitecture": "X64",
+      "ProcessArchitecture": "X64",
+      "PowerShell": "7.6.10",
+      "TotalCount": 110,
+      "PassedCount": 94,
+      "FailedCount": 0,
+      "SkippedCount": 16,
+      "Result": "Passed",
+      "Failures": []
+    },
+    "Loaders": {
+      "Distribution": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+      "SuiteSet": "Loaders",
+      "Paths": [
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\ModuleLoaders.Tests.ps1"
+      ],
+      "HostOS": "Microsoft Windows 10.0.26300",
+      "OSArchitecture": "X64",
+      "ProcessArchitecture": "X64",
+      "PowerShell": "7.6.10",
+      "TotalCount": 101,
+      "PassedCount": 101,
+      "FailedCount": 0,
+      "SkippedCount": 0,
+      "Result": "Passed",
+      "Failures": []
+    },
+    "Offline": {
+      "Distribution": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+      "SuiteSet": "Offline",
+      "Paths": [
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Archiving.Execution.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Audit.Common.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Audit.Linux.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Audit.Windows.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\GenericSqlQuery.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Migration.Command.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Migration.Execution.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Migration.Phase.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Migration.Preflight.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Migration.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\SqlCleanup.Tests.ps1"
+      ],
+      "HostOS": "Microsoft Windows 10.0.26300",
+      "OSArchitecture": "X64",
+      "ProcessArchitecture": "X64",
+      "PowerShell": "7.6.10",
+      "TotalCount": 323,
+      "PassedCount": 301,
+      "FailedCount": 0,
+      "SkippedCount": 22,
+      "Result": "Passed",
+      "Failures": []
+    },
+    "Shared": {
+      "Distribution": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+      "SuiteSet": "Shared",
+      "Paths": [
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\SharedHelpers.Import.Tests.ps1"
+      ],
+      "HostOS": "Microsoft Windows 10.0.26300",
+      "OSArchitecture": "X64",
+      "ProcessArchitecture": "X64",
+      "PowerShell": "7.6.10",
+      "TotalCount": 30,
+      "PassedCount": 30,
+      "FailedCount": 0,
+      "SkippedCount": 0,
+      "Result": "Passed",
+      "Failures": []
+    },
+    "Matrix": [
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "ARM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "AMR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "RAM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "RMA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "MAR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L1",
+        "Order": "MRA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "ARM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "AMR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "RAM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "RMA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "MAR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L2",
+        "Order": "MRA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "ARM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "AMR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "RAM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "RMA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "MAR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L3",
+        "Order": "MRA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "ARM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "AMR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "RAM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "RMA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "MAR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L4",
+        "Order": "MRA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "ARM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "AMR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "RAM",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "RMA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "MAR",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Loading": "L5",
+        "Order": "MRA",
+        "Total": 253,
+        "Passed": 252,
+        "Failed": 0,
+        "Skipped": 1,
+        "UnexpectedSkipped": 0,
+        "Errors": []
+      }
+    ],
+    "Workers": [
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Scenario": "Manifest",
+        "Consumer": "Root",
+        "Complete": true,
+        "Errors": [],
+        "PreferencesBefore": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "PreferencesAfter": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "ImportErrors": [],
+        "DeclarationErrors": [],
+        "OriginalError": "",
+        "Trace": [],
+        "PublicCommands": [
+          "Invoke-Fast1Audit",
+          "Invoke-Fast1Migration",
+          "Invoke-Fast1Archiving",
+          "Invoke-Fast1GenericSqlQuery",
+          "Invoke-Fast1GenericSqlQueryReader",
+          "New-Fast1GenericSqlParam"
+        ],
+        "Owners": [
+          {
+            "Function": "Write-LogMessage",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1"
+          },
+          {
+            "Function": "Get-GenericSqlCommand",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQuery",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQueryReader",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1"
+          },
+          {
+            "Function": "Add-GenericSqlParameter",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Close-GenericSqlResource",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          },
+          {
+            "Function": "Add-GenericSqlCleanupFailure",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          },
+          {
+            "Function": "Get-GenericSqlCleanupFailure",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          },
+          {
+            "Function": "Write-LogMessage",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1"
+          },
+          {
+            "Function": "Get-GenericSqlCommand",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQuery",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQueryReader",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1"
+          },
+          {
+            "Function": "Add-GenericSqlParameter",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Close-GenericSqlResource",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          },
+          {
+            "Function": "Add-GenericSqlCleanupFailure",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          },
+          {
+            "Function": "Get-GenericSqlCleanupFailure",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          }
+        ],
+        "Assembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.Data.SqlClient.dll",
+        "ParserAssembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Scenario": "Direct",
+        "Consumer": "Root",
+        "Complete": true,
+        "Errors": [],
+        "PreferencesBefore": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "PreferencesAfter": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "ImportErrors": [],
+        "DeclarationErrors": [],
+        "OriginalError": "",
+        "Trace": [],
+        "PublicCommands": [
+          "Invoke-Fast1Audit",
+          "Invoke-Fast1Migration",
+          "Invoke-Fast1Archiving",
+          "Invoke-Fast1GenericSqlQuery",
+          "Invoke-Fast1GenericSqlQueryReader",
+          "New-Fast1GenericSqlParam"
+        ],
+        "Owners": [
+          {
+            "Function": "Write-LogMessage",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Get-GenericSqlCommand",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQuery",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQueryReader",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Add-GenericSqlParameter",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Close-GenericSqlResource",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Add-GenericSqlCleanupFailure",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Get-GenericSqlCleanupFailure",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "Fast1data.SqlServer"
+          },
+          {
+            "Function": "Write-LogMessage",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Get-GenericSqlCommand",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQuery",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQueryReader",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Add-GenericSqlParameter",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Close-GenericSqlResource",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Add-GenericSqlCleanupFailure",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "ArchivingModel"
+          },
+          {
+            "Function": "Get-GenericSqlCleanupFailure",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1",
+            "Owner": "ArchivingModel"
+          }
+        ],
+        "Assembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.Data.SqlClient.dll",
+        "ParserAssembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
+      },
+      {
+        "Root": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+        "Scenario": "ModelFirst",
+        "Consumer": "Root",
+        "Complete": true,
+        "Errors": [],
+        "PreferencesBefore": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "PreferencesAfter": [
+          "Continue",
+          "SilentlyContinue",
+          "Continue"
+        ],
+        "ImportErrors": [],
+        "DeclarationErrors": [],
+        "OriginalError": "",
+        "Trace": [
+          {
+            "Stage": "bootstrap"
+          }
+        ],
+        "PublicCommands": [
+          "Invoke-Fast1Audit",
+          "Invoke-Fast1Migration",
+          "Invoke-Fast1Archiving",
+          "Invoke-Fast1GenericSqlQuery",
+          "Invoke-Fast1GenericSqlQueryReader",
+          "New-Fast1GenericSqlParam"
+        ],
+        "Owners": [
+          {
+            "Function": "Write-LogMessage",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1"
+          },
+          {
+            "Function": "Get-GenericSqlCommand",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQuery",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQueryReader",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1"
+          },
+          {
+            "Function": "Add-GenericSqlParameter",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Close-GenericSqlResource",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          },
+          {
+            "Function": "Add-GenericSqlCleanupFailure",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          },
+          {
+            "Function": "Get-GenericSqlCleanupFailure",
+            "Owner": "Fast1data.SqlServer",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          },
+          {
+            "Function": "Write-LogMessage",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\Write-LogMessage.ps1"
+          },
+          {
+            "Function": "Get-GenericSqlCommand",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQuery",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Invoke-Fast1GenericSqlQueryReader",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\public\\Invoke-Fast1GenericSqlQueryReader.ps1"
+          },
+          {
+            "Function": "Add-GenericSqlParameter",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlQuery.ps1"
+          },
+          {
+            "Function": "Close-GenericSqlResource",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          },
+          {
+            "Function": "Add-GenericSqlCleanupFailure",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          },
+          {
+            "Function": "Get-GenericSqlCleanupFailure",
+            "Owner": "ArchivingModel",
+            "SourceFile": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\private\\shared\\GenericSqlCleanup.ps1"
+          }
+        ],
+        "Assembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.Data.SqlClient.dll",
+        "ParserAssembly": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\lib\\win-x64\\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
+      }
+    ],
+    "SQL": {
+      "Distribution": "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer",
+      "SuiteSet": "Integration",
+      "Paths": [
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Migration.Integration.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\GenericSqlQuery.Integration.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Archiving.Integration.Tests.ps1",
+        "C:\\Dev\\Fast1data.SqlServer\\.tmp\\008-real-28131dd3a32c43be8e8f611f980ecdb0\\out\\Fast1data.SqlServer\\tests\\Audit.Integration.Windows.Tests.ps1"
+      ],
+      "HostOS": "Microsoft Windows 10.0.26300",
+      "OSArchitecture": "X64",
+      "ProcessArchitecture": "X64",
+      "PowerShell": "7.6.10",
+      "TotalCount": 75,
+      "PassedCount": 75,
+      "FailedCount": 0,
+      "SkippedCount": 0,
+      "Result": "Passed",
+      "Failures": []
+    }
+  },
+  "ExpectedSkips": {
+    "OfflineReason": "21 Linux audit cases and one case-sensitive filesystem case",
+    "SharedPerMatrix": 30,
+    "OfflinePerDistribution": 22,
+    "StageSourceOnlyPackaging": 16,
+    "SharedReason": "One existing case-sensitive filesystem case per tuple",
+    "UnexpectedSharedSkips": 0
+  },
+  "Analyzer": {
+    "Paths": [
+      "build/build.ps1",
+      "out/publish.ps1",
+      "Fast1data.SqlServer/private/shared/Get-RuntimeIdentifier.ps1",
+      "Fast1data.SqlServer/Fast1data.SqlServer.psd1",
+      "Fast1data.SqlServer/tests/Packaging.Tests.ps1",
+      "Fast1data.SqlServer/tests/RuntimeSupport.Tests.ps1",
+      "Fast1data.SqlServer/tests/ModuleLoaders.Tests.ps1",
+      "Fast1data.SqlServer/tests/fixtures/Invoke-PackagingScenario.ps1",
+      "Fast1data.SqlServer/tests/fixtures/Invoke-RuntimeSupportScenario.ps1",
+      "Fast1data.SqlServer/tests/fixtures/Invoke-ModuleLoaderScenario.ps1",
+      "Fast1data.SqlServer/tests/fixtures/SharedHelpers.Scenarios.ps1"
+    ],
+    "Findings": [
+      {
+        "ScriptName": "publish.ps1",
+        "Line": 124,
+        "RuleName": "PSAvoidUsingWriteHost",
+        "Message": "File 'publish.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information."
+      },
+      {
+        "ScriptName": "publish.ps1",
+        "Line": 125,
+        "RuleName": "PSAvoidUsingWriteHost",
+        "Message": "File 'publish.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information."
+      },
+      {
+        "ScriptName": "publish.ps1",
+        "Line": 166,
+        "RuleName": "PSAvoidUsingWriteHost",
+        "Message": "File 'publish.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information."
+      },
+      {
+        "ScriptName": "publish.ps1",
+        "Line": 167,
+        "RuleName": "PSAvoidUsingWriteHost",
+        "Message": "File 'publish.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information."
+      },
+      {
+        "ScriptName": "publish.ps1",
+        "Line": 182,
+        "RuleName": "PSAvoidUsingWriteHost",
+        "Message": "File 'publish.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information."
+      },
+      {
+        "ScriptName": "publish.ps1",
+        "Line": 183,
+        "RuleName": "PSAvoidUsingWriteHost",
+        "Message": "File 'publish.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information."
+      },
+      {
+        "ScriptName": "publish.ps1",
+        "Line": 184,
+        "RuleName": "PSAvoidUsingWriteHost",
+        "Message": "File 'publish.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information."
+      },
+      {
+        "ScriptName": "publish.ps1",
+        "Line": 185,
+        "RuleName": "PSAvoidUsingWriteHost",
+        "Message": "File 'publish.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information."
+      },
+      {
+        "ScriptName": "publish.ps1",
+        "Line": 186,
+        "RuleName": "PSAvoidUsingWriteHost",
+        "Message": "File 'publish.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information."
+      },
+      {
+        "ScriptName": "publish.ps1",
+        "Line": 187,
+        "RuleName": "PSAvoidUsingWriteHost",
+        "Message": "File 'publish.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information."
+      },
+      {
+        "ScriptName": "publish.ps1",
+        "Line": 188,
+        "RuleName": "PSAvoidUsingWriteHost",
+        "Message": "File 'publish.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information."
+      }
+    ],
+    "ExistingOnly": true
+  },
+  "PreservedPublicSnapshotSHA256": "107952ED7D1DA2E57ACA511D04BB96E1C2C50366D59711671C4D38C9B81163B3",
+  "NativeLinux": {
+    "RequiredOpenTasks": [
+      "T021",
+      "T023"
+    ],
+    "Status": "Unrun",
+    "Reason": "User confirmed no native Linux host available"
+  },
+  "NativeMacOS": {
+    "SupplementalOnly": true,
+    "SimulatedImportCases": 16,
+    "Status": "Unrun",
+    "Reason": "No native host configured"
+  },
+  "ReleaseReady": false,
+  "Published": false
+}

@@ -11,29 +11,28 @@ function Get-RuntimeIdentifier {
 	[OutputType([string])]
 	param()
 
-	$architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
-
-	switch ($true) {
+	$supportedPlatforms = 'Supported platforms are x64 Windows (win-x64) and x64 Linux (linux-x64).'
+	$operatingSystem = switch ($true) {
 		$IsWindows {
-			switch ($architecture) {
-				([System.Runtime.InteropServices.Architecture]::X64) { return 'win-x64' }
-				default { throw "Unsupported Windows architecture: $architecture" }
-			}
+			'Windows'
 		}
 		$IsLinux {
-			switch ($architecture) {
-				([System.Runtime.InteropServices.Architecture]::X64) { return 'linux-x64' }
-				default { throw "Unsupported Linux architecture: $architecture" }
-			}
-		}
-		$IsMacOS {
-			switch ($architecture) {
-				([System.Runtime.InteropServices.Architecture]::X64) { return 'osx-x64' }
-				default { throw "Unsupported macOS architecture: $architecture" }
-			}
+			'Linux'
 		}
 		default {
-			throw 'Unsupported operating system'
+			throw "Unsupported operating system. $supportedPlatforms"
 		}
 	}
+	$architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+	if ($architecture -ne [System.Runtime.InteropServices.Architecture]::X64) {
+		throw "Unsupported $operatingSystem OS architecture: $architecture. $supportedPlatforms"
+	}
+	$processArchitecture = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture
+	if ($processArchitecture -ne [System.Runtime.InteropServices.Architecture]::X64) {
+		throw "Unsupported $operatingSystem process architecture: $processArchitecture. $supportedPlatforms"
+	}
+	if ($operatingSystem -eq 'Windows') {
+		return 'win-x64'
+	}
+	return 'linux-x64'
 }

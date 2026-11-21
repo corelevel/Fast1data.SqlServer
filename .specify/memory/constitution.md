@@ -34,8 +34,7 @@ secrets MUST NOT appear in committed examples or operational logs.
 
 ### IV. Portable PowerShell Contracts
 
-The module MUST maintain its documented PowerShell 7.6-or-later Core baseline and x64 Windows,
-Linux, and macOS support until an explicit compatibility change is approved. Public commands
+The module MUST maintain its documented PowerShell 7.6-or-later Core baseline and x64 Windows and Linux support until an explicit compatibility change is approved. Public commands
 MUST be explicitly exported through the manifest. Changes to parameters, configuration formats,
 SQL schemas, dependencies, or runtime requirements MUST update affected manifest entries, help,
 and documentation. Paths MUST respect documented portable migration conventions. New
@@ -113,4 +112,25 @@ signatures, script syntax, and loader/build contracts change. Rebuild all suppor
 bundles and update manifest/help/guides; reject unsupported SQLCMD syntax before execution
 and retain idempotent retry requirements. Existing migration history requires no upgrade.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-28: maintainer must confirm adoption date | **Last Amended**: 2026-11-19
+### Amendment 2.0.0 — 2026-11-20
+
+Maintainer authorized removal of macOS support in feature `008-drop-osx-x64`, keeping
+exactly x64 Windows (`win-x64`) and x64 Linux (`linux-x64`). This narrows Principle IV
+to the maintained platforms and is an incompatible principle redefinition, adopting
+constitution 2.0.0. The independent module release decision is 0.2.0.
+
+Affected contracts are dependency build targets, bounded obsolete-bundle cleanup,
+staging allowlists and exact runtime sets, early runtime rejection, and current
+manifest metadata, release notes and installation/help guidance. Both reported OS
+and process architectures must be X64. The PowerShell 7.6+ Core baseline, bundled
+dependency versions, six public commands and their signatures remain unchanged.
+
+macOS users must move orchestration to a retained host before upgrading, preserving
+database state, migration history/checksums and portable paths, audit checkpoints,
+archiving state and configuration. Arrange equivalent external file/share access,
+permissions and credentials. No database-format migration is required, and existing
+installations and historical releases are not deleted. Validate real builds/staging,
+early unsupported-platform rejection and native retained-host command acceptance;
+record unavailable environments as open release gates.
+
+**Version**: 2.0.0 | **Ratified**: 2026-10-28: maintainer must confirm adoption date | **Last Amended**: 2026-11-20

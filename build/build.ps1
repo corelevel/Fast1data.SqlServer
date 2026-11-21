@@ -5,9 +5,18 @@ $targetFramework = ([xml](Get-Content -LiteralPath "$PSScriptRoot\SqlClientLoade
 
 $rids = @(
 	'win-x64',
-	'linux-x64',
-	'osx-x64'
+	'linux-x64'
 )
+
+$libraryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../Fast1data.SqlServer/lib'))
+$obsoleteDestination = [System.IO.Path]::GetFullPath((Join-Path $libraryRoot 'osx-x64'))
+if ([System.IO.Directory]::GetParent($obsoleteDestination).FullName -ne $libraryRoot -or
+	[System.IO.Path]::GetFileName($obsoleteDestination) -cne 'osx-x64') {
+	throw "Refusing to clean unexpected obsolete dependency path: $obsoleteDestination"
+}
+if (Test-Path -LiteralPath $obsoleteDestination) {
+	Remove-Item -LiteralPath $obsoleteDestination -Recurse -Force
+}
 
 foreach ($rid in $rids) {
 	dotnet publish `
@@ -23,7 +32,6 @@ foreach ($rid in $rids) {
 	$source = Join-Path $PSScriptRoot "bin/Release/$targetFramework/$rid/publish"
 	$dest = Join-Path $PSScriptRoot "../Fast1data.SqlServer/lib/$rid"
 	$dest = [System.IO.Path]::GetFullPath($dest)
-	$libraryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../Fast1data.SqlServer/lib'))
 	if ([System.IO.Directory]::GetParent($dest).FullName -ne $libraryRoot -or
 		[System.IO.Path]::GetFileName($dest) -cne $rid) {
 		throw "Refusing to clean unexpected dependency path: $dest"
@@ -43,4 +51,9 @@ foreach ($rid in $rids) {
 			throw "Missing copied dependency '$assembly' for '$rid'. Rebuild dependencies."
 		}
 	}
+}
+
+$actualRids = @(Get-ChildItem -LiteralPath $libraryRoot -Directory | Select-Object -ExpandProperty Name)
+if ($actualRids.Count -ne $rids.Count -or @($actualRids | Where-Object { $_ -cnotin $rids }).Count -gt 0) {
+	throw "Unexpected source runtime directories: $($actualRids -join ', '). Expected exactly: $($rids -join ', ')."
 }

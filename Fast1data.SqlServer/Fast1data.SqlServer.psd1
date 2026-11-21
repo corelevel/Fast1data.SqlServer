@@ -11,7 +11,7 @@
 RootModule = 'Fast1data.SqlServer.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.1.0'
+ModuleVersion = '0.2.0'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -109,7 +109,6 @@ PrivateData = @{
 			'PSEdition_Core'
 			'Windows'
 			'Linux'
-			'macOS'
 		)
 
 		# A URL to the license for this module.
@@ -122,7 +121,14 @@ PrivateData = @{
 		# IconUri = ''
 
 		# ReleaseNotes of this module
-		ReleaseNotes = '0.1.0: Removed the SqlServer PowerShell module prerequisite; bundled SqlClient 7.1.2 and ScriptDom 180.154.0.
+		ReleaseNotes = '0.2.0: macOS support is removed immediately. Supported runtimes are x64 Windows (win-x64) and x64 Linux (linux-x64) only.
+		ARM64, x86 and all other platforms are unsupported; both OS and PowerShell process must report X64.
+		Move macOS orchestration to x64 Windows or Linux, retaining database state, migration history/checksums and portable paths,
+		audit checkpoints, archiving state and configuration. Arrange equivalent file/share access, permissions and credentials.
+		No database-format migration is required. PowerShell 7.6+ Core and dependency versions remain unchanged.
+		See README upgrade guidance before upgrading.
+
+		0.1.0: Removed the SqlServer PowerShell module prerequisite; bundled SqlClient 7.1.2 and ScriptDom 180.154.0.
 		Added public Invoke-Fast1GenericSqlQuery, streaming Invoke-Fast1GenericSqlQueryReader, and New-Fast1GenericSqlParam.
 		Nullable private parameter Type distinguishes missing types from valid BigInt/zero; native binary values are preserved.
 		Migration history streams through the row command while preserving exact persisted keys and ordered resource cleanup.

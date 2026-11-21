@@ -84,6 +84,25 @@ Describe 'Parameterized bundled managed library initialization' {
 	) {
 		$result = Invoke-LoaderWorker -Scenario Library -Copy -LibraryCase $Case
 		$result.LibraryError | Should -Match 'Microsoft.SqlServer.TransactSql.ScriptDom.dll.*runtime.*build/build.ps1'
+		$result.LibraryError | Should -Match 'fresh process'
+		$expectedCause = switch -Regex ($Case) {
+			'Missing$' {
+				'missing'
+			}
+			'Corrupt$' {
+				'format|valid|PE image|metadata'
+			}
+			'^WrongIdentity$' {
+				'name does not match'
+			}
+			'^Preload' {
+				'incompatible.*already loaded'
+			}
+			'Type$' {
+				'requested type.*unavailable'
+			}
+		}
+		$result.LibraryCause | Should -Match $expectedCause
 	}
 
 	It 'rejects a noncontained or invalid filename <DllName>' -ForEach @(

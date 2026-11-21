@@ -1,0 +1,542 @@
+[
+  {
+    "Path": "linux-x64/cs/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 139672,
+    "SHA256": "B6DD6D3FAB53D5DEEA43D73A82CD06B95BAE3CFBE8723CDF4F347578B7EA0A56"
+  },
+  {
+    "Path": "linux-x64/cs/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 33072,
+    "SHA256": "6E0167C3EAB6627A9739A0664879186E39FAF4AF7D744E2CD383BB2AF3D61E24"
+  },
+  {
+    "Path": "linux-x64/de/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 144792,
+    "SHA256": "BC6B39F38C1B9826C03C4B8442D2375C37D80735717BFEFB295A38EB2C7146B3"
+  },
+  {
+    "Path": "linux-x64/de/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 35128,
+    "SHA256": "241F786A307CD37003D5E158E830D18031F0C068C6E55D36E3160EC7C60DE656"
+  },
+  {
+    "Path": "linux-x64/es/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 141720,
+    "SHA256": "39334A280C50D93ADD362D72BF5918FEE95A96DBCCBBD8050E9CB118E084C9C9"
+  },
+  {
+    "Path": "linux-x64/es/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34632,
+    "SHA256": "FF8E3C98E5E91CFBC70481169E1E69924EF7C6BDAE84C6BEE1021FA0D3B9C097"
+  },
+  {
+    "Path": "linux-x64/fr/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 147392,
+    "SHA256": "03DF8C51B3C0183B3E4D85001D821384B3FF5022E14C348645A5F55BD16614DC"
+  },
+  {
+    "Path": "linux-x64/fr/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 35144,
+    "SHA256": "C5FF393D073C0660CBC19BF551BBBB91BA1C5BCFB62BD0988A04550D0982ECF3"
+  },
+  {
+    "Path": "linux-x64/it/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 142232,
+    "SHA256": "3349BD32DDD9BE9236C8463D39EEB71B706DECF4E996C9B4E938E3B2DD82812C"
+  },
+  {
+    "Path": "linux-x64/it/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34632,
+    "SHA256": "097369E613EFC4C4A60F3F040E60731A653CC8CED71F2F11CCDA7336566907DE"
+  },
+  {
+    "Path": "linux-x64/ja/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 156568,
+    "SHA256": "70C057A982DB701369D0F7DB6A21C2AE252F0606866B0B859861256F8A684320"
+  },
+  {
+    "Path": "linux-x64/ja/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 36680,
+    "SHA256": "451F64EAD21D516F11591C614BF62CAA22B38E82FB9BEF48AF0A86169EEDAE90"
+  },
+  {
+    "Path": "linux-x64/ko/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 144272,
+    "SHA256": "042B66940A42784EBD1F670638C9211954731FD02C3B89960D7EDC17E7738487"
+  },
+  {
+    "Path": "linux-x64/ko/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34120,
+    "SHA256": "F7E327D73D826A2A2F8B8DD3200348F9764838359438D597A4C021D5B4FBB9DD"
+  },
+  {
+    "Path": "linux-x64/Microsoft.Bcl.Cryptography.dll",
+    "Length": 16168,
+    "SHA256": "E7C1072A8E23A72529CB98B6918F8CA849338FF6A956B04DF5C2720F5F58189B"
+  },
+  {
+    "Path": "linux-x64/Microsoft.Data.SqlClient.dll",
+    "Length": 1676184,
+    "SHA256": "8DC77DB19AE7F65EFC609E8989D4F4B720638529E1AF089B15469A52F019322D"
+  },
+  {
+    "Path": "linux-x64/Microsoft.Data.SqlClient.Extensions.Abstractions.dll",
+    "Length": 23488,
+    "SHA256": "335BDF70C3C90EEEAC9A34F703F1F5318FEB53C8BD33E22551E3B12A2AD7DF3E"
+  },
+  {
+    "Path": "linux-x64/Microsoft.Data.SqlClient.Internal.Logging.dll",
+    "Length": 53696,
+    "SHA256": "C3B9046D0C2481A4A35DCB9FC93669A0AF9D70586BDD0A00F04249680351C134"
+  },
+  {
+    "Path": "linux-x64/Microsoft.Extensions.Caching.Abstractions.dll",
+    "Length": 36136,
+    "SHA256": "63466921440BDBBFD72807373C83775A7A8C4CB74EA46EB12B7C333F40E9B56C"
+  },
+  {
+    "Path": "linux-x64/Microsoft.Extensions.Caching.Memory.dll",
+    "Length": 48464,
+    "SHA256": "2E7315065FD68E8FD5EDB160357C33691958B5CEBCD7D6E0DA53E28934C530F2"
+  },
+  {
+    "Path": "linux-x64/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+    "Length": 66312,
+    "SHA256": "7C97C4463FE0FC11D1F22F4D160B2BD2288981ADF1DE2717A6FF3FB993DDF294"
+  },
+  {
+    "Path": "linux-x64/Microsoft.Extensions.Logging.Abstractions.dll",
+    "Length": 67344,
+    "SHA256": "A76A735B63E6EF3B0BF41FF92423CBD16103B8952E8306140A9BD650346034DC"
+  },
+  {
+    "Path": "linux-x64/Microsoft.Extensions.Options.dll",
+    "Length": 65832,
+    "SHA256": "BFA1C470A5326ABD4F51DAC1A3634ADD6D7A084752005B37BB5F4E24EA9FC5DB"
+  },
+  {
+    "Path": "linux-x64/Microsoft.Extensions.Primitives.dll",
+    "Length": 44880,
+    "SHA256": "FD3AF3078083BB227526B8F91FC980DCB497002C9927DEE9FDC97034CD6FE782"
+  },
+  {
+    "Path": "linux-x64/Microsoft.IdentityModel.Abstractions.dll",
+    "Length": 19528,
+    "SHA256": "613FD94FF39CE6FF90666E062E93D5D5EA7FDEAE93AAAB2BF2CB6F5C87CEA39D"
+  },
+  {
+    "Path": "linux-x64/Microsoft.IdentityModel.JsonWebTokens.dll",
+    "Length": 173088,
+    "SHA256": "D1AF130B42EAA6E8B5B45B0A48D286E7A282F2B67F5809AEB828AAA909D94891"
+  },
+  {
+    "Path": "linux-x64/Microsoft.IdentityModel.Logging.dll",
+    "Length": 38432,
+    "SHA256": "B2B89896DA6F307FE4C7FBA033F4F629CE43B92CC6D28C7DAA024A4E5CD68DBD"
+  },
+  {
+    "Path": "linux-x64/Microsoft.IdentityModel.Protocols.dll",
+    "Length": 53280,
+    "SHA256": "647F131D0FD0A66802A80ADC9CC38FE02AA2CAF78D6F58796E758829541B16DE"
+  },
+  {
+    "Path": "linux-x64/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+    "Length": 137248,
+    "SHA256": "F19F659E8533AD2B0D4650779231EFD0E25247DF72C127B57CFDBF186BE8D256"
+  },
+  {
+    "Path": "linux-x64/Microsoft.IdentityModel.Tokens.dll",
+    "Length": 391200,
+    "SHA256": "21C943EC715D8771C3A711AD78FC109ADCEAC0E002F67A76F3BCA33D195D0F5F"
+  },
+  {
+    "Path": "linux-x64/Microsoft.SqlServer.Server.dll",
+    "Length": 23976,
+    "SHA256": "A9DCA1B42BC875F966B78B2C0880E62B838F0ED6567166D7F1F07AE4B76EC4BF"
+  },
+  {
+    "Path": "linux-x64/Microsoft.SqlServer.TransactSql.ScriptDom.dll",
+    "Length": 6964024,
+    "SHA256": "2722A9C67E525BCC2EF6FE6166025E49C5AD8006B9BFC92C81952A1618733036"
+  },
+  {
+    "Path": "linux-x64/pl/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 144792,
+    "SHA256": "88FD0A578F7D574832887A669753A7674965F99D3D9133C40D33390256C3DDE5"
+  },
+  {
+    "Path": "linux-x64/pl/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34584,
+    "SHA256": "3DF39D87D2866B357B1CBA74E79CE838C156A0935B636DD3FE0B423AE4EEBC37"
+  },
+  {
+    "Path": "linux-x64/pt-BR/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 138648,
+    "SHA256": "1E20C81756EDF95C2B491CA2C5197A6284542A9F099FEC794080438A005E0BD6"
+  },
+  {
+    "Path": "linux-x64/pt-BR/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34584,
+    "SHA256": "7220922F83F2315C9D627EDA978DBC1D7DF920D1AA372E48EE1204E3CF20C7FD"
+  },
+  {
+    "Path": "linux-x64/ru/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 186776,
+    "SHA256": "CE676C909F1A2579406F7B8E3FA4C8EC1A2666D51522618F81B13CC3AF0388EB"
+  },
+  {
+    "Path": "linux-x64/ru/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 41760,
+    "SHA256": "05CE2B73B64887CA500D41FD8A921B989D569F2DE1AFA39E50324ADE4BCC557E"
+  },
+  {
+    "Path": "linux-x64/SqlClientLoader.deps.json",
+    "Length": 25359,
+    "SHA256": "14F467BA650472CFD26456380EB9F592DD46A81A233AE3A0B4D0FD69F3016B83"
+  },
+  {
+    "Path": "linux-x64/SqlClientLoader.dll",
+    "Length": 3072,
+    "SHA256": "731EE152D46ED918D5B752F156043E98B990E39521FD20D9E1BE2870548D3995"
+  },
+  {
+    "Path": "linux-x64/SqlClientLoader.pdb",
+    "Length": 12112,
+    "SHA256": "A6FD76364151C4F15F94CF274902D4B658A1D8197C96E4FE1D4B29EE95CBDCCD"
+  },
+  {
+    "Path": "linux-x64/System.Configuration.ConfigurationManager.dll",
+    "Length": 442704,
+    "SHA256": "B68EC58A433A2AC99BB3BF46088A063452064C12EE136972703BD773EA7DF084"
+  },
+  {
+    "Path": "linux-x64/System.Diagnostics.EventLog.dll",
+    "Length": 53032,
+    "SHA256": "67FB726E646481CF1FB06EF07EA6BE10AEC10AC2D81086B2CFF741BFBDE9BA78"
+  },
+  {
+    "Path": "linux-x64/System.IdentityModel.Tokens.Jwt.dll",
+    "Length": 92232,
+    "SHA256": "D6026966EB5304C2E3BDB3BC091A94D204DCB27696A61CDC89D1ABF5259E24CA"
+  },
+  {
+    "Path": "linux-x64/System.Security.Cryptography.Pkcs.dll",
+    "Length": 266024,
+    "SHA256": "6FD9AC565A32464C11B0EE1C3C0BC3D9ABFFCCA27C31E22DEAC0B6F38B97BE62"
+  },
+  {
+    "Path": "linux-x64/System.Security.Cryptography.ProtectedData.dll",
+    "Length": 38184,
+    "SHA256": "3CC4239147E43D645AA1E79B1924F6BEAD8E6BA2593183B352FD812C70E78790"
+  },
+  {
+    "Path": "linux-x64/System.Threading.RateLimiting.dll",
+    "Length": 69408,
+    "SHA256": "E818CF973F40EF47C86BF750BCDFE51EBDCAE5180236B3411540A5E8612810B9"
+  },
+  {
+    "Path": "linux-x64/tr/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 135616,
+    "SHA256": "38B87E81E8EEF3E59F388B0F139D499387BB9395F0F1CE0AB55E848A774EC526"
+  },
+  {
+    "Path": "linux-x64/tr/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34072,
+    "SHA256": "3DB4C262513F26E1087FADA55CA3A005232BC6718D59FBA04C20B868C4B1242A"
+  },
+  {
+    "Path": "linux-x64/zh-Hans/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 122304,
+    "SHA256": "FFE3693804A1F41D7EA47AC05A5E0203A72B7280B94FD880DB369802F696AA30"
+  },
+  {
+    "Path": "linux-x64/zh-Hans/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 30512,
+    "SHA256": "90180E5438303052381BDF449FBF2FE099C01534F4135077E39CFEE5C95589C0"
+  },
+  {
+    "Path": "linux-x64/zh-Hant/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 123800,
+    "SHA256": "01971B0AE675748076095F0210F7828E00C04AC9F48DD4A68D7A21C2EFF1F8FC"
+  },
+  {
+    "Path": "linux-x64/zh-Hant/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 31032,
+    "SHA256": "E833B4C36C427CAE43C200BF97971BDD77CD3DB3D8B0749AA3B6ACA745EBF8B8"
+  },
+  {
+    "Path": "win-x64/cs/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 139672,
+    "SHA256": "B6DD6D3FAB53D5DEEA43D73A82CD06B95BAE3CFBE8723CDF4F347578B7EA0A56"
+  },
+  {
+    "Path": "win-x64/cs/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 33072,
+    "SHA256": "6E0167C3EAB6627A9739A0664879186E39FAF4AF7D744E2CD383BB2AF3D61E24"
+  },
+  {
+    "Path": "win-x64/de/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 144792,
+    "SHA256": "BC6B39F38C1B9826C03C4B8442D2375C37D80735717BFEFB295A38EB2C7146B3"
+  },
+  {
+    "Path": "win-x64/de/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 35128,
+    "SHA256": "241F786A307CD37003D5E158E830D18031F0C068C6E55D36E3160EC7C60DE656"
+  },
+  {
+    "Path": "win-x64/es/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 141720,
+    "SHA256": "39334A280C50D93ADD362D72BF5918FEE95A96DBCCBBD8050E9CB118E084C9C9"
+  },
+  {
+    "Path": "win-x64/es/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34632,
+    "SHA256": "FF8E3C98E5E91CFBC70481169E1E69924EF7C6BDAE84C6BEE1021FA0D3B9C097"
+  },
+  {
+    "Path": "win-x64/fr/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 147392,
+    "SHA256": "03DF8C51B3C0183B3E4D85001D821384B3FF5022E14C348645A5F55BD16614DC"
+  },
+  {
+    "Path": "win-x64/fr/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 35144,
+    "SHA256": "C5FF393D073C0660CBC19BF551BBBB91BA1C5BCFB62BD0988A04550D0982ECF3"
+  },
+  {
+    "Path": "win-x64/it/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 142232,
+    "SHA256": "3349BD32DDD9BE9236C8463D39EEB71B706DECF4E996C9B4E938E3B2DD82812C"
+  },
+  {
+    "Path": "win-x64/it/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34632,
+    "SHA256": "097369E613EFC4C4A60F3F040E60731A653CC8CED71F2F11CCDA7336566907DE"
+  },
+  {
+    "Path": "win-x64/ja/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 156568,
+    "SHA256": "70C057A982DB701369D0F7DB6A21C2AE252F0606866B0B859861256F8A684320"
+  },
+  {
+    "Path": "win-x64/ja/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 36680,
+    "SHA256": "451F64EAD21D516F11591C614BF62CAA22B38E82FB9BEF48AF0A86169EEDAE90"
+  },
+  {
+    "Path": "win-x64/ko/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 144272,
+    "SHA256": "042B66940A42784EBD1F670638C9211954731FD02C3B89960D7EDC17E7738487"
+  },
+  {
+    "Path": "win-x64/ko/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34120,
+    "SHA256": "F7E327D73D826A2A2F8B8DD3200348F9764838359438D597A4C021D5B4FBB9DD"
+  },
+  {
+    "Path": "win-x64/Microsoft.Bcl.Cryptography.dll",
+    "Length": 16168,
+    "SHA256": "E7C1072A8E23A72529CB98B6918F8CA849338FF6A956B04DF5C2720F5F58189B"
+  },
+  {
+    "Path": "win-x64/Microsoft.Data.SqlClient.dll",
+    "Length": 1676184,
+    "SHA256": "8DC77DB19AE7F65EFC609E8989D4F4B720638529E1AF089B15469A52F019322D"
+  },
+  {
+    "Path": "win-x64/Microsoft.Data.SqlClient.Extensions.Abstractions.dll",
+    "Length": 23488,
+    "SHA256": "335BDF70C3C90EEEAC9A34F703F1F5318FEB53C8BD33E22551E3B12A2AD7DF3E"
+  },
+  {
+    "Path": "win-x64/Microsoft.Data.SqlClient.Internal.Logging.dll",
+    "Length": 53696,
+    "SHA256": "C3B9046D0C2481A4A35DCB9FC93669A0AF9D70586BDD0A00F04249680351C134"
+  },
+  {
+    "Path": "win-x64/Microsoft.Data.SqlClient.SNI.dll",
+    "Length": 555416,
+    "SHA256": "148451836C0D3D5B2076C095140FC770062B93E0969C840C33446FFF6E528DE1"
+  },
+  {
+    "Path": "win-x64/Microsoft.Extensions.Caching.Abstractions.dll",
+    "Length": 36136,
+    "SHA256": "63466921440BDBBFD72807373C83775A7A8C4CB74EA46EB12B7C333F40E9B56C"
+  },
+  {
+    "Path": "win-x64/Microsoft.Extensions.Caching.Memory.dll",
+    "Length": 48464,
+    "SHA256": "2E7315065FD68E8FD5EDB160357C33691958B5CEBCD7D6E0DA53E28934C530F2"
+  },
+  {
+    "Path": "win-x64/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+    "Length": 66312,
+    "SHA256": "7C97C4463FE0FC11D1F22F4D160B2BD2288981ADF1DE2717A6FF3FB993DDF294"
+  },
+  {
+    "Path": "win-x64/Microsoft.Extensions.Logging.Abstractions.dll",
+    "Length": 67344,
+    "SHA256": "A76A735B63E6EF3B0BF41FF92423CBD16103B8952E8306140A9BD650346034DC"
+  },
+  {
+    "Path": "win-x64/Microsoft.Extensions.Options.dll",
+    "Length": 65832,
+    "SHA256": "BFA1C470A5326ABD4F51DAC1A3634ADD6D7A084752005B37BB5F4E24EA9FC5DB"
+  },
+  {
+    "Path": "win-x64/Microsoft.Extensions.Primitives.dll",
+    "Length": 44880,
+    "SHA256": "FD3AF3078083BB227526B8F91FC980DCB497002C9927DEE9FDC97034CD6FE782"
+  },
+  {
+    "Path": "win-x64/Microsoft.IdentityModel.Abstractions.dll",
+    "Length": 19528,
+    "SHA256": "613FD94FF39CE6FF90666E062E93D5D5EA7FDEAE93AAAB2BF2CB6F5C87CEA39D"
+  },
+  {
+    "Path": "win-x64/Microsoft.IdentityModel.JsonWebTokens.dll",
+    "Length": 173088,
+    "SHA256": "D1AF130B42EAA6E8B5B45B0A48D286E7A282F2B67F5809AEB828AAA909D94891"
+  },
+  {
+    "Path": "win-x64/Microsoft.IdentityModel.Logging.dll",
+    "Length": 38432,
+    "SHA256": "B2B89896DA6F307FE4C7FBA033F4F629CE43B92CC6D28C7DAA024A4E5CD68DBD"
+  },
+  {
+    "Path": "win-x64/Microsoft.IdentityModel.Protocols.dll",
+    "Length": 53280,
+    "SHA256": "647F131D0FD0A66802A80ADC9CC38FE02AA2CAF78D6F58796E758829541B16DE"
+  },
+  {
+    "Path": "win-x64/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+    "Length": 137248,
+    "SHA256": "F19F659E8533AD2B0D4650779231EFD0E25247DF72C127B57CFDBF186BE8D256"
+  },
+  {
+    "Path": "win-x64/Microsoft.IdentityModel.Tokens.dll",
+    "Length": 391200,
+    "SHA256": "21C943EC715D8771C3A711AD78FC109ADCEAC0E002F67A76F3BCA33D195D0F5F"
+  },
+  {
+    "Path": "win-x64/Microsoft.SqlServer.Server.dll",
+    "Length": 23976,
+    "SHA256": "A9DCA1B42BC875F966B78B2C0880E62B838F0ED6567166D7F1F07AE4B76EC4BF"
+  },
+  {
+    "Path": "win-x64/Microsoft.SqlServer.TransactSql.ScriptDom.dll",
+    "Length": 6964024,
+    "SHA256": "2722A9C67E525BCC2EF6FE6166025E49C5AD8006B9BFC92C81952A1618733036"
+  },
+  {
+    "Path": "win-x64/pl/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 144792,
+    "SHA256": "88FD0A578F7D574832887A669753A7674965F99D3D9133C40D33390256C3DDE5"
+  },
+  {
+    "Path": "win-x64/pl/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34584,
+    "SHA256": "3DF39D87D2866B357B1CBA74E79CE838C156A0935B636DD3FE0B423AE4EEBC37"
+  },
+  {
+    "Path": "win-x64/pt-BR/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 138648,
+    "SHA256": "1E20C81756EDF95C2B491CA2C5197A6284542A9F099FEC794080438A005E0BD6"
+  },
+  {
+    "Path": "win-x64/pt-BR/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34584,
+    "SHA256": "7220922F83F2315C9D627EDA978DBC1D7DF920D1AA372E48EE1204E3CF20C7FD"
+  },
+  {
+    "Path": "win-x64/ru/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 186776,
+    "SHA256": "CE676C909F1A2579406F7B8E3FA4C8EC1A2666D51522618F81B13CC3AF0388EB"
+  },
+  {
+    "Path": "win-x64/ru/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 41760,
+    "SHA256": "05CE2B73B64887CA500D41FD8A921B989D569F2DE1AFA39E50324ADE4BCC557E"
+  },
+  {
+    "Path": "win-x64/SqlClientLoader.deps.json",
+    "Length": 26338,
+    "SHA256": "2AFAF3AE69CC9004FD17F043BC6650C9BE2F6FC1946C19EC63917855F4628399"
+  },
+  {
+    "Path": "win-x64/SqlClientLoader.dll",
+    "Length": 3072,
+    "SHA256": "1A606BCE9930871FB26DE7320ABAABB044B17C5466BC09A8516CA4CC8ECC840B"
+  },
+  {
+    "Path": "win-x64/SqlClientLoader.pdb",
+    "Length": 12108,
+    "SHA256": "594D490E41E7B48012F3EC7BEE05B8FEA1AB645887C4A57AB95158DD4505198F"
+  },
+  {
+    "Path": "win-x64/System.Configuration.ConfigurationManager.dll",
+    "Length": 442704,
+    "SHA256": "B68EC58A433A2AC99BB3BF46088A063452064C12EE136972703BD773EA7DF084"
+  },
+  {
+    "Path": "win-x64/System.Diagnostics.EventLog.dll",
+    "Length": 174376,
+    "SHA256": "9BC909646F7E63F3182E1280D4B74F04AE46660B4A0D7825C5688E7B854DEB32"
+  },
+  {
+    "Path": "win-x64/System.Diagnostics.EventLog.Messages.dll",
+    "Length": 800552,
+    "SHA256": "AE6A61032D8282D48B4FB23A859B4AE4E98264C69199CCFDFBC336A66F03DDAC"
+  },
+  {
+    "Path": "win-x64/System.IdentityModel.Tokens.Jwt.dll",
+    "Length": 92232,
+    "SHA256": "D6026966EB5304C2E3BDB3BC091A94D204DCB27696A61CDC89D1ABF5259E24CA"
+  },
+  {
+    "Path": "win-x64/System.Security.Cryptography.Pkcs.dll",
+    "Length": 319784,
+    "SHA256": "996B209DB304F9B623A5DBAE541D533401941AD6DADCD6C491E80C09AA0AFE1B"
+  },
+  {
+    "Path": "win-x64/System.Security.Cryptography.ProtectedData.dll",
+    "Length": 38184,
+    "SHA256": "3CC4239147E43D645AA1E79B1924F6BEAD8E6BA2593183B352FD812C70E78790"
+  },
+  {
+    "Path": "win-x64/System.Threading.RateLimiting.dll",
+    "Length": 69408,
+    "SHA256": "E818CF973F40EF47C86BF750BCDFE51EBDCAE5180236B3411540A5E8612810B9"
+  },
+  {
+    "Path": "win-x64/tr/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 135616,
+    "SHA256": "38B87E81E8EEF3E59F388B0F139D499387BB9395F0F1CE0AB55E848A774EC526"
+  },
+  {
+    "Path": "win-x64/tr/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 34072,
+    "SHA256": "3DB4C262513F26E1087FADA55CA3A005232BC6718D59FBA04C20B868C4B1242A"
+  },
+  {
+    "Path": "win-x64/zh-Hans/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 122304,
+    "SHA256": "FFE3693804A1F41D7EA47AC05A5E0203A72B7280B94FD880DB369802F696AA30"
+  },
+  {
+    "Path": "win-x64/zh-Hans/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 30512,
+    "SHA256": "90180E5438303052381BDF449FBF2FE099C01534F4135077E39CFEE5C95589C0"
+  },
+  {
+    "Path": "win-x64/zh-Hant/Microsoft.Data.SqlClient.resources.dll",
+    "Length": 123800,
+    "SHA256": "01971B0AE675748076095F0210F7828E00C04AC9F48DD4A68D7A21C2EFF1F8FC"
+  },
+  {
+    "Path": "win-x64/zh-Hant/Microsoft.SqlServer.TransactSql.ScriptDom.resources.dll",
+    "Length": 31032,
+    "SHA256": "E833B4C36C427CAE43C200BF97971BDD77CD3DB3D8B0749AA3B6ACA745EBF8B8"
+  }
+]

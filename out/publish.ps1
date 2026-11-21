@@ -20,7 +20,6 @@ $moduleRoot = [System.IO.Path]::GetFullPath(
 $supportedRids = @(
 	'win-x64'
 	'linux-x64'
-	'osx-x64'
 )
 
 # Validate sources before removing the previous staged package.
@@ -87,6 +86,11 @@ foreach ($rid in $supportedRids) {
 	if (Test-Path -LiteralPath $nestedPublish) {
 		Remove-Item -LiteralPath $nestedPublish -Recurse -Force
 	}
+}
+
+$stagedRids = @(Get-ChildItem -LiteralPath $moduleLibRoot -Directory | Select-Object -ExpandProperty Name)
+if ($stagedRids.Count -ne $supportedRids.Count -or @($stagedRids | Where-Object { $_ -cnotin $supportedRids }).Count -gt 0) {
+	throw "Unexpected staged runtime directories: $($stagedRids -join ', '). Expected exactly: $($supportedRids -join ', ')."
 }
 
 $manifestPath = Join-Path $moduleRoot 'Fast1data.SqlServer.psd1'

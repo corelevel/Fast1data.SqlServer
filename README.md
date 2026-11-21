@@ -9,17 +9,18 @@ Fast1data.SqlServer is a PowerShell module for SQL Server administration and dep
 
 ## Requirements
 
-- PowerShell 7.6 or later
+- PowerShell 7.6 or later (Core)
 - No separate SqlServer PowerShell module installation is required.
-- An x64 Windows, Linux, or macOS runtime
+- An x64 Windows or x64 Linux runtime, with both OS and PowerShell process reporting X64
 - Network and database permissions required by the selected feature
 
-The module bundles `Microsoft.Data.SqlClient`, `Microsoft.SqlServer.TransactSql.ScriptDom`,
+The module bundles `Microsoft.Data.SqlClient` 7.1.2, `Microsoft.SqlServer.TransactSql.ScriptDom` 180.154.0,
 and their required native/resource dependencies for these runtime identifiers:
 
 - `win-x64`
 - `linux-x64`
-- `osx-x64`
+
+macOS, ARM64, x86, and all other operating systems and architectures are unsupported.
 
 See [migration authoring and recovery guidance](Fast1Migration.md) for supported
 T-SQL batches, unsupported SQLCMD syntax, and idempotent retries after partial failures.
@@ -30,6 +31,21 @@ T-SQL batches, unsupported SQLCMD syntax, and idempotent retries after partial f
 ```powershell
 Install-Module -Name Fast1data.SqlServer
 ```
+
+## Upgrading to 0.2.0 from macOS
+
+Module 0.2.0 removes macOS support immediately. Move orchestration to x64 Windows
+(`win-x64`) or x64 Linux (`linux-x64`) before upgrading. Old macOS bundles or
+preloaded assemblies do not enable support in this release. Previously installed
+versions and historical releases are not removed by this change.
+
+Retain existing SQL Server database state, migration history and SHA-256 checksums,
+audit checkpoints, archiving state, and configuration. Preserve portable migration
+paths and script identities when copying migration files. Arrange equivalent access
+to configured files and shares, with the permissions and credentials required on the
+new host. Keep credentials in your existing secure configuration mechanism.
+No database-format migration or configuration-format conversion is required by
+platform removal. PowerShell 7.6+ Core and bundled dependency prerequisites are unchanged.
 
 ## Install from source
 

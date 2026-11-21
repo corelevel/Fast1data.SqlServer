@@ -228,7 +228,9 @@ Describe 'Internal ownership and unchanged distribution contract' {
 		$rootModule.ExportedAliases.Count | Should -Be 0
 		$rootModule.ExportedVariables.Count | Should -Be 0
 		$rootModule.ExportedCmdlets.Count | Should -Be 0
-		foreach ($rid in @('win-x64', 'linux-x64', 'osx-x64')) {
+		$runtimeDirectories = @(Get-ChildItem -LiteralPath (Join-Path $DistributionRoot 'lib') -Directory | Select-Object -ExpandProperty Name | Sort-Object)
+		($runtimeDirectories -join ',') | Should -BeExactly 'linux-x64,win-x64'
+		foreach ($rid in @('win-x64', 'linux-x64')) {
 			Test-Path (Join-Path $DistributionRoot "lib/$rid/Microsoft.Data.SqlClient.dll") | Should -BeTrue
 			Test-Path (Join-Path $DistributionRoot "lib/$rid/Microsoft.SqlServer.TransactSql.ScriptDom.dll") | Should -BeTrue
 		}

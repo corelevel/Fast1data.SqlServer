@@ -50,10 +50,14 @@ try {
 					$identity.CultureName = 'fr'
 				}
 				'PreloadToken' {
-					$identity.SetPublicKeyToken([byte[]](1, 2, 3, 4, 5, 6, 7, 8))
+					# Emit derives the token from the public key, overriding a token-only edit.
+					$identity.SetPublicKey([string].Assembly.GetName().GetPublicKey())
 				}
 			}
 			$preloaded = [System.Reflection.Emit.AssemblyBuilder]::DefineDynamicAssembly($identity, [System.Reflection.Emit.AssemblyBuilderAccess]::Run)
+			if ($preloaded.GetName().FullName -ine $identity.FullName) {
+				throw 'Preload fault did not retain the requested incompatible identity.'
+			}
 		}
 		if ($LibraryCase -in @('Reuse', 'WarmMissing', 'WarmCorrupt', 'WarmType') -or $LibraryCase.EndsWith('TypesReuse') -or $LibraryCase -eq 'CaseSensitiveReuse') {
 			$firstOutput = @(Import-RequiredLibrary -DllName $DllName -RequiredTypeName $RequiredTypeName)
@@ -106,6 +110,9 @@ try {
 				}
 			}
 			$observation.LibraryError = $failure.Exception.Message
+			if ($null -ne $failure.Exception.InnerException) {
+				$observation.LibraryCause = $failure.Exception.InnerException.Message
+			}
 		}
 		else {
 			if ($null -ne $failure) {
