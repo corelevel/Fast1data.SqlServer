@@ -2,6 +2,42 @@
 
 Execution: 2026-11-20–2026-11-21. Branch: `dev`. No release publication is authorized or performed.
 
+## Native Linux follow-up on 2026-11-21
+
+**26 of 26 tasks complete.** T021 passed on native Linux x64 with PowerShell 7.6.10. The earlier 7.7.0 run passed T023 live SQL acceptance and exposed a version-sensitive snapshot comparison. Release readiness remains false while that comparison fails on 7.7.0.
+
+### PowerShell 7.6.10 rerun of T021
+
+Tested an isolated archive of `49dd545` with the existing win-x64 and linux-x64 bundles. Microsoft’s PowerShell 7.6.10 amd64 package was extracted locally. Its `pwsh` ran `out/publish.ps1 -StageOnly` and the quickstart import workers, offline suites and shared-helper matrix with Pester 6.2.0. Staging and its analyzer passed. The tests and frozen six-command snapshot were unchanged.
+
+| Check | Source | Fresh stage |
+|---|---|---|
+| Manifest, Direct, ModelFirst in fresh processes | 3 passed | 3 passed |
+| Offline suites excluding the matrix | 527 passed, 7 skipped | 511 passed, 23 skipped |
+| Shared-helper matrix | 30/30 scenarios passed | 30/30 scenarios passed |
+| Nested cases across the 30 scenarios | 7,590 passed, zero failed or skipped | 7,590 passed, zero failed or skipped |
+
+Each fresh import reported six exports and loaded SqlClient and ScriptDom from its distribution’s linux-x64 bundle. The seven Windows-only offline cases skipped in both distributions. Stage also skipped the 16 source-only packaging cases. The rerun covered offline acceptance. Live SQL and SMB results below are from 7.7.0.
+
+### PowerShell 7.7.0 results
+
+Tested commit `6d237f8` on Ubuntu 26.04.1 LTS, x64 OS and process, with PowerShell 7.7.0, Pester 6.2.0 and PSScriptAnalyzer 1.25.0. The run used an isolated archive of the clean commit and the checkout’s existing linux-x64 and win-x64 bundles. Running `pwsh -NoProfile -File out/publish.ps1 -StageOnly` produced a fresh staged package and passed its analyzer. Both distributions contained the same 108 files under lib, with matching source/stage SHA-256 hashes. This run reused locally built assets. Eight hashes differed from the earlier Windows build inventory (the three SqlClientLoader outputs and System.Security.Cryptography.Pkcs.dll in each RID).
+
+| Native Linux check | Source | Fresh stage |
+|---|---|---|
+| Manifest, Direct, ModelFirst in fresh processes | 3/3 passed | 3/3 passed |
+| Packaging and simulated runtime | 110 passed | 94 passed, 16 source-only packaging cases skipped |
+| Module loaders | 101 passed | 101 passed |
+| Remaining 11 offline suites | 316 passed, 7 Windows-only skips | 316 passed, 7 Windows-only skips |
+| Shared-helper matrix | 30 of 30 tuples failed | 30 of 30 tuples failed |
+| Live SQL and SMB | 75 passed, zero skipped | 75 passed, zero skipped |
+
+Used the fresh-worker and Pester suite selections in quickstart sections 4–5, plus the focused Packaging and RuntimeSupport suites. Each worker loaded SqlClient and ScriptDom from its own linux-x64 bundle and reported six exports. All 21 Linux audit unit cases and all 34 migration-phase cases ran successfully in each distribution, including the case-sensitive path check.
+
+All 30 matrix tuples in each distribution reported the same first difference in the frozen public metadata snapshot. An independent field-by-field comparison of the source contract found exactly 54 differing values. PowerShell supplied assembly version `7.7.0.500` for 30 ValidateVariableName and 24 ArgumentTypeConverterAttribute values where the snapshot records `7.6.0.500`. The snapshot assertion failed as written. No assertion or snapshot was modified for this run.
+
+The sandboxed SQL connectivity probe failed. With network access to the configured fixtures, source and stage ran sequentially and each passed 36 migration, 6 public query, 29 archiving and 4 Linux audit integration cases. Per-suite counts are in the `NativeLinux` section of [validation-results.json](validation-results.json). The Windows-era entries below describe the earlier execution.
+
 ## Prerequisites (T001)
 
 - Native Windows `Microsoft Windows 10.0.26300`; reported OS and process architecture: X64/X64.
@@ -100,7 +136,7 @@ Corrected loader suites passed 101/101 each from source and stage, including all
 | FR-007 | Authorized Principle IV amendment, constitution 2.0.0, module 0.2.0 decision; original ratification and Amendment 1.1.0 retained. PASS. |
 | FR-008 | No database/schema/state/configuration/command implementation changes. Retained-host transition guidance preserves state/paths/access; Windows SQL acceptance 75/75 per distribution. Native Linux command acceptance remains open. |
 
-No release readiness is certified: T021 (native Linux source/stage/offline/import acceptance) and T023 (native Linux source/stage SQL acceptance) require a host the user confirmed is unavailable. They remain unchecked. Native macOS rejection is supplemental and explicitly unrun. StageOnly and substituted native facts do not satisfy these native Linux gates.
+At the end of Windows validation, no release readiness was certified: T021 (native Linux source/stage/offline/import acceptance) and T023 (native Linux source/stage SQL acceptance) require a host the user confirmed is unavailable. They remain unchecked. Native macOS rejection is supplemental and explicitly unrun. StageOnly and substituted native facts do not satisfy these native Linux gates.
 
 Final diff scope is build/stage/runtime selection, metadata/guidance/policy, tests and execution evidence. The dependency project, public implementations/signatures, root/bootstrap ordering, 23-file private inventory, SQL schemas, frozen public snapshot, historical specifications/releases and .vscode tracking are preserved. The existing 0.1.0 release-note text is retained verbatim. Current work remains on dev; nothing was committed or published.
 
@@ -108,7 +144,7 @@ Final loader evidence: `.tmp/008-evidence/windows-source-loaders-final.json` and
 
 Analyzer command: `Invoke-ScriptAnalyzer -Path <each of 11 changed/new PowerShell paths> -Severity Warning,Error`, with default settings because no repository settings exist. Exact paths and findings are captured in `.tmp/008-analyzer-final.json` and the final validation-results artifact. Five real `out/publish.ps1 -StageOnly` passes validated package imports and recursive package-wide analyzer checks, including the corrected test worker on the last pass.
 
-## Final completion record
+## Windows completion record
 
 Native Windows source and stage each passed all 30 final shared-helper tuples. Source duration 836.56 seconds; stage duration 858.79 seconds. Each matrix contains 7,590 nested tests: 7,560 passed, 30 existing case-sensitive-filesystem skips, zero failures and zero unexpected skips. Frozen six-command metadata and defining-module ownership pass across all five loading patterns and six operation orders.
 
