@@ -4,7 +4,22 @@ Execution: 2026-11-20–2026-11-21. Branch: `dev`. No release publication is aut
 
 ## Native Linux follow-up on 2026-11-21
 
-**25 of 26 tasks complete.** Native Linux SQL acceptance (T023) passed from both distributions. T021 remains open on the shared-helper matrix. Release readiness remains false.
+**26 of 26 tasks complete.** T021 passed on native Linux x64 with PowerShell 7.6.10. The earlier 7.7.0 run passed T023 live SQL acceptance and exposed a version-sensitive snapshot comparison. Release readiness remains false while that comparison fails on 7.7.0.
+
+### PowerShell 7.6.10 rerun of T021
+
+Tested an isolated archive of `49dd545` with the existing win-x64 and linux-x64 bundles. Microsoft’s PowerShell 7.6.10 amd64 package was extracted locally. Its `pwsh` ran `out/publish.ps1 -StageOnly` and the quickstart import workers, offline suites and shared-helper matrix with Pester 6.2.0. Staging and its analyzer passed. The tests and frozen six-command snapshot were unchanged.
+
+| Check | Source | Fresh stage |
+|---|---|---|
+| Manifest, Direct, ModelFirst in fresh processes | 3 passed | 3 passed |
+| Offline suites excluding the matrix | 527 passed, 7 skipped | 511 passed, 23 skipped |
+| Shared-helper matrix | 30/30 scenarios passed | 30/30 scenarios passed |
+| Nested cases across the 30 scenarios | 7,590 passed, zero failed or skipped | 7,590 passed, zero failed or skipped |
+
+Each fresh import reported six exports and loaded SqlClient and ScriptDom from its distribution’s linux-x64 bundle. The seven Windows-only offline cases skipped in both distributions. Stage also skipped the 16 source-only packaging cases. The rerun covered offline acceptance. Live SQL and SMB results below are from 7.7.0.
+
+### PowerShell 7.7.0 results
 
 Tested commit `6d237f8` on Ubuntu 26.04.1 LTS, x64 OS and process, with PowerShell 7.7.0, Pester 6.2.0 and PSScriptAnalyzer 1.25.0. The run used an isolated archive of the clean commit and the checkout’s existing linux-x64 and win-x64 bundles. Running `pwsh -NoProfile -File out/publish.ps1 -StageOnly` produced a fresh staged package and passed its analyzer. Both distributions contained the same 108 files under lib, with matching source/stage SHA-256 hashes. This run reused locally built assets. Eight hashes differed from the earlier Windows build inventory (the three SqlClientLoader outputs and System.Security.Cryptography.Pkcs.dll in each RID).
 

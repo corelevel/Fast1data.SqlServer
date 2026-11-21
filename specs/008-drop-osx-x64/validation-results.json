@@ -1840,11 +1840,10 @@
   },
   "PreservedPublicSnapshotSHA256": "107952ED7D1DA2E57ACA511D04BB96E1C2C50366D59711671C4D38C9B81163B3",
   "NativeLinux": {
-    "Status": "Failed shared-helper matrix; SQL acceptance passed",
-    "RequiredOpenTasks": [
-      "T021"
-    ],
+    "Status": "T021 passed on PowerShell 7.6.10 and T023 passed on 7.7.0. The 7.7.0 matrix snapshot mismatch remains reproducible.",
+    "RequiredOpenTasks": [],
     "PassedTasks": [
+      "T021",
       "T023"
     ],
     "Revision": "6d237f837b0982fb1c4d0396cc4ea46b48e4e3d3",
@@ -2195,6 +2194,62 @@
           "Result": "Passed"
         }
       ]
+    },
+    "PowerShell7610Rerun": {
+      "Revision": "49dd545083ee88d1be8052d460031e1977caf672",
+      "PowerShell": "7.6.10",
+      "Pester": "6.2.0",
+      "StageOnly": "Passed",
+      "Source": {
+        "CompletedWorkers": [
+          "Manifest",
+          "Direct",
+          "ModelFirst"
+        ],
+        "OfflineExcludingMatrix": {
+          "TotalCount": 534,
+          "PassedCount": 527,
+          "FailedCount": 0,
+          "SkippedCount": 7,
+          "Result": "Passed"
+        },
+        "Matrix": {
+          "TotalCount": 30,
+          "PassedCount": 30,
+          "FailedCount": 0,
+          "SkippedCount": 0,
+          "Result": "Passed"
+        },
+        "CasesPerTuple": 253,
+        "NestedPassed": 7590,
+        "NestedSkipped": 0,
+        "NestedFailed": 0
+      },
+      "Stage": {
+        "CompletedWorkers": [
+          "Manifest",
+          "Direct",
+          "ModelFirst"
+        ],
+        "OfflineExcludingMatrix": {
+          "TotalCount": 534,
+          "PassedCount": 511,
+          "FailedCount": 0,
+          "SkippedCount": 23,
+          "Result": "Passed"
+        },
+        "Matrix": {
+          "TotalCount": 30,
+          "PassedCount": 30,
+          "FailedCount": 0,
+          "SkippedCount": 0,
+          "Result": "Passed"
+        },
+        "CasesPerTuple": 253,
+        "NestedPassed": 7590,
+        "NestedSkipped": 0,
+        "NestedFailed": 0
+      }
     }
   },
   "NativeMacOS": {
