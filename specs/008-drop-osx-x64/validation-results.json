@@ -1840,12 +1840,362 @@
   },
   "PreservedPublicSnapshotSHA256": "107952ED7D1DA2E57ACA511D04BB96E1C2C50366D59711671C4D38C9B81163B3",
   "NativeLinux": {
+    "Status": "Failed shared-helper matrix; SQL acceptance passed",
     "RequiredOpenTasks": [
-      "T021",
+      "T021"
+    ],
+    "PassedTasks": [
       "T023"
     ],
-    "Status": "Unrun",
-    "Reason": "User confirmed no native Linux host available"
+    "Revision": "6d237f837b0982fb1c4d0396cc4ea46b48e4e3d3",
+    "Host": {
+      "OS": "Ubuntu 26.04.1 LTS",
+      "OSArchitecture": "X64",
+      "ProcessArchitecture": "X64",
+      "PowerShell": "7.7.0",
+      "Pester": "6.2.0",
+      "PSScriptAnalyzer": "1.25.0"
+    },
+    "StageOnly": "Passed",
+    "MatrixFailure": "All tuples reported the frozen snapshot assembly-version mismatch. The independent comparison found 54 differing PowerShell attribute values (7.6.0.500 versus 7.7.0.500).",
+    "Source": {
+      "CompletedWorkers": [
+        "Manifest",
+        "Direct",
+        "ModelFirst"
+      ],
+      "Focused": [
+        {
+          "File": "Packaging.Tests.ps1",
+          "Passed": 16,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 16,
+          "Result": "Passed"
+        },
+        {
+          "File": "RuntimeSupport.Tests.ps1",
+          "Passed": 94,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 94,
+          "Result": "Passed"
+        }
+      ],
+      "Loaders": [
+        {
+          "File": "ModuleLoaders.Tests.ps1",
+          "Passed": 101,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 101,
+          "Result": "Passed"
+        }
+      ],
+      "Offline": [
+        {
+          "File": "Archiving.Execution.Tests.ps1",
+          "Passed": 28,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 28,
+          "Result": "Passed"
+        },
+        {
+          "File": "Audit.Common.Tests.ps1",
+          "Passed": 4,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 4,
+          "Result": "Passed"
+        },
+        {
+          "File": "Audit.Linux.Tests.ps1",
+          "Passed": 21,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 21,
+          "Result": "Passed"
+        },
+        {
+          "File": "Audit.Windows.Tests.ps1",
+          "Passed": 0,
+          "Failed": 0,
+          "Skipped": 7,
+          "Total": 7,
+          "Result": "Skipped"
+        },
+        {
+          "File": "GenericSqlQuery.Tests.ps1",
+          "Passed": 45,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 45,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Command.Tests.ps1",
+          "Passed": 16,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 16,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Execution.Tests.ps1",
+          "Passed": 16,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 16,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Phase.Tests.ps1",
+          "Passed": 34,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 34,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Preflight.Tests.ps1",
+          "Passed": 14,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 14,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Tests.ps1",
+          "Passed": 56,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 56,
+          "Result": "Passed"
+        },
+        {
+          "File": "SqlCleanup.Tests.ps1",
+          "Passed": 82,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 82,
+          "Result": "Passed"
+        }
+      ],
+      "SharedHelperMatrix": [
+        {
+          "File": "SharedHelpers.Import.Tests.ps1",
+          "Passed": 0,
+          "Failed": 30,
+          "Skipped": 0,
+          "Total": 30,
+          "Result": "Failed"
+        }
+      ],
+      "LiveSQL": [
+        {
+          "File": "Archiving.Integration.Tests.ps1",
+          "Passed": 29,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 29,
+          "Result": "Passed"
+        },
+        {
+          "File": "Audit.Integration.Linux.Tests.ps1",
+          "Passed": 4,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 4,
+          "Result": "Passed"
+        },
+        {
+          "File": "GenericSqlQuery.Integration.Tests.ps1",
+          "Passed": 6,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 6,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Integration.Tests.ps1",
+          "Passed": 36,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 36,
+          "Result": "Passed"
+        }
+      ]
+    },
+    "Stage": {
+      "CompletedWorkers": [
+        "Manifest",
+        "Direct",
+        "ModelFirst"
+      ],
+      "Focused": [
+        {
+          "File": "Packaging.Tests.ps1",
+          "Passed": 0,
+          "Failed": 0,
+          "Skipped": 16,
+          "Total": 16,
+          "Result": "Skipped"
+        },
+        {
+          "File": "RuntimeSupport.Tests.ps1",
+          "Passed": 94,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 94,
+          "Result": "Passed"
+        }
+      ],
+      "Loaders": [
+        {
+          "File": "ModuleLoaders.Tests.ps1",
+          "Passed": 101,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 101,
+          "Result": "Passed"
+        }
+      ],
+      "Offline": [
+        {
+          "File": "Archiving.Execution.Tests.ps1",
+          "Passed": 28,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 28,
+          "Result": "Passed"
+        },
+        {
+          "File": "Audit.Common.Tests.ps1",
+          "Passed": 4,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 4,
+          "Result": "Passed"
+        },
+        {
+          "File": "Audit.Linux.Tests.ps1",
+          "Passed": 21,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 21,
+          "Result": "Passed"
+        },
+        {
+          "File": "Audit.Windows.Tests.ps1",
+          "Passed": 0,
+          "Failed": 0,
+          "Skipped": 7,
+          "Total": 7,
+          "Result": "Skipped"
+        },
+        {
+          "File": "GenericSqlQuery.Tests.ps1",
+          "Passed": 45,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 45,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Command.Tests.ps1",
+          "Passed": 16,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 16,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Execution.Tests.ps1",
+          "Passed": 16,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 16,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Phase.Tests.ps1",
+          "Passed": 34,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 34,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Preflight.Tests.ps1",
+          "Passed": 14,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 14,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Tests.ps1",
+          "Passed": 56,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 56,
+          "Result": "Passed"
+        },
+        {
+          "File": "SqlCleanup.Tests.ps1",
+          "Passed": 82,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 82,
+          "Result": "Passed"
+        }
+      ],
+      "SharedHelperMatrix": [
+        {
+          "File": "SharedHelpers.Import.Tests.ps1",
+          "Passed": 0,
+          "Failed": 30,
+          "Skipped": 0,
+          "Total": 30,
+          "Result": "Failed"
+        }
+      ],
+      "LiveSQL": [
+        {
+          "File": "Archiving.Integration.Tests.ps1",
+          "Passed": 29,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 29,
+          "Result": "Passed"
+        },
+        {
+          "File": "Audit.Integration.Linux.Tests.ps1",
+          "Passed": 4,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 4,
+          "Result": "Passed"
+        },
+        {
+          "File": "GenericSqlQuery.Integration.Tests.ps1",
+          "Passed": 6,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 6,
+          "Result": "Passed"
+        },
+        {
+          "File": "Migration.Integration.Tests.ps1",
+          "Passed": 36,
+          "Failed": 0,
+          "Skipped": 0,
+          "Total": 36,
+          "Result": "Passed"
+        }
+      ]
+    }
   },
   "NativeMacOS": {
     "SupplementalOnly": true,
