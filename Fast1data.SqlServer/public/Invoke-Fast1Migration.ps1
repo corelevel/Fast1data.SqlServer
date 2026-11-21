@@ -23,9 +23,22 @@
 	history schema and grant the required execution and history permissions first.
 
 	Requires PowerShell 7.6+
-	Requires SQL Server PowerShell module
-	https://learn.microsoft.com/en-us/powershell/sql-server/download-sql-server-ps-module
-
+	Uses bundled SqlClient and ScriptDom; no SqlServer PowerShell module is required.
+	Each file is fully validated with TSql160Parser before its original GO batches
+	execute on one command in a separate per-file session. SQLCMD directives, counted GO and reserved
+	substitutions are rejected. Empty files still receive one completion record.
+	The executor receives the original ConnStr and owns each file's connection and
+	command with timeout 0. History retains its separate command/settings/transaction
+	without timeout switching. Script target and authentication come from ConnStr,
+	including its configured/default catalog. Script USE and session state cannot
+	affect history or later files, including with pooling.
+	The executor suppresses ambient transactions through SQL cleanup and requires
+	completed explicit transactions. History follows final transaction validation and
+	successful command, connection and suppression-scope cleanup. Any failure stops
+	later work; committed SQL can survive and requires idempotent retry.
+	Rejected and zero-batch files allocate no execution SQL resources. Empty files
+	still receive history. This public command owns history resources only after
+	confirmation and disposes its command then connection on every exit.
 .PARAMETER ConnStr
 	SQL Server connection string
 
@@ -108,12 +121,41 @@ function Invoke-Fast1Migration {
 	$connStrParser = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($ConnStr)
 	$target = "DataSource: $($connStrParser.DataSource), InitialCatalog: $($connStrParser.InitialCatalog), Phase: $Phase"
 	if ($PSCmdlet.ShouldProcess($target)) {
-		foreach ($script in $eligible) {
-			Invoke-Migration -ConnStr $ConnStr -Script $script.FullPath -ErrorAction Stop
-			Set-Executed -ConnStr $ConnStr -ScriptName $script.ScriptName -Phase $Phase `
-				-Checksum $script.Checksum -HistoryScriptName $script.HistoryScriptName `
-				-ForceScript ($script.IsForced -and $script.WasExecuted) -ErrorAction Stop
-			Write-LogMessage -Message "Migration completed: $($script.ScriptName)" -Level Verbose
+		$sqlConn = $null
+		$sqlCmd = $null
+		$operationError = $null
+		try {
+			try {
+				$sqlConn = Get-MigrationConnection -ConnectionString $ConnStr
+				$sqlConn.Open()
+				$sqlCmd = Get-GenericSqlCommand -SqlConn $sqlConn -Query ''
+			}
+			catch {
+				throw [System.InvalidOperationException]::new(
+					"Migration phase '$Phase': could not open mutation resources.", $_.Exception
+				)
+			}
+			foreach ($script in $eligible) {
+				Invoke-Migration -ConnStr $ConnStr -Script $script.FullPath -ErrorAction Stop
+				Set-Executed -SqlCmd $sqlCmd -ScriptName $script.ScriptName -Phase $Phase `
+					-Checksum $script.Checksum -HistoryScriptName $script.HistoryScriptName `
+					-ForceScript ($script.IsForced -and $script.WasExecuted) -ErrorAction Stop
+				Write-LogMessage -Message "Migration completed: $($script.ScriptName)" -Level Verbose
+			}
+		}
+		catch {
+			$operationError = $_
+			throw
+		}
+		finally {
+			Close-GenericSqlResource -Resources ([ordered]@{ Command = $sqlCmd; Connection = $sqlConn }) `
+				-PrimaryError $operationError
 		}
 	}
+}
+
+# Narrow construction seam; the public operation opens and owns this connection.
+function Get-MigrationConnection {
+	param ([string]$ConnectionString)
+	[Microsoft.Data.SqlClient.SqlConnection]::new($ConnectionString)
 }

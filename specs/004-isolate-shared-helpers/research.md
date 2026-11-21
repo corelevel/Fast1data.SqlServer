@@ -17,7 +17,7 @@ Paths are relative to `Fast1data.SqlServer/private/`. “Root” means the `Fast
 | Definition | Intended owner(s) | Consumers and loading path |
 |---|---|---|
 | `shared/Write-LogMessage.ps1`: `Write-LogMessage` | Root and Model | Root audit/migration and comparison callers; model `TableGroup`, `Table`, and comparison paths. Both owners dot-source it. |
-| `shared/GenericSqlQuery.ps1`: `Get-GenericSqlCommand`, `Invoke-GenericSqlQuery` | Root and Model | Root migration history writes; model server-identity, constraints, process-state and table operations. Query helpers resolve their owner's factories and cleanup functions. |
+| `shared/GenericSqlQuery.ps1`: `Get-GenericSqlCommand`, `Invoke-Fast1GenericSqlQuery` | Root and Model | Root migration history writes; model server-identity, constraints, process-state and table operations. Query helpers resolve their owner's factories and cleanup functions. |
 | `shared/GenericSqlCleanup.ps1`: `Close-GenericSqlResource`, `Add-GenericSqlCleanupFailure`, `Get-GenericSqlCleanupFailure` | Root and Model | Root audit/migration resources; model execution, resources, constraints and nested SQL failures. Loaded through each owner's query source. Root excludes separate duplicate loading. |
 | `shared/GenericSqlParam.psm1`: `GenericSqlParam` | Class module | `using module` from query source, migration `Set-Executed`, and model. No function exports needed. |
 | `archiving/Metadata.psm1`: metadata types | Class module | `using module` from model and `Compare-Column`. Retain type names/fields; no command exports. |
@@ -55,7 +55,7 @@ Ambient preferences remained unchanged; class construction worked and the model 
 
 **Decision**: Leave SQL and cleanup implementations unchanged; test behavior in both local owners and through model class execution.
 
-**Rationale**: The reported defect proves logging failure, not SQL corruption. `Invoke-GenericSqlQuery` sets text/type, validates `GenericSqlParam`, forwards size/precision/scale, maps null to `DBNull`, returns scalar values, and deliberately suppresses non-query results. Cleanup disposes owned commands while retaining borrowed connections. Audit result columns and model row counters keep their separate contracts.
+**Rationale**: The reported defect proves logging failure, not SQL corruption. `Invoke-Fast1GenericSqlQuery` sets text/type, validates `GenericSqlParam`, forwards size/precision/scale, maps null to `DBNull`, returns scalar values, and deliberately suppresses non-query results. Cleanup disposes owned commands while retaining borrowed connections. Audit result columns and model row counters keep their separate contracts.
 
 Cleanup attempts all resources in order, preserves a primary error, or throws the first disposal failure after all attempts. Context uses `Fast1Sql.CleanupFailures` / `Fast1Archiving.CleanupFailures`. Model execution enriches context and restores constraints under existing rules. `SqlCleanup.Tests.ps1` and `Archiving.Execution.Tests.ps1` provide controlled seams; live suites are needed for durable effects and foreign-key state.
 

@@ -52,7 +52,7 @@ Describe 'Owned archiving execution without SQL' {
 
 			$attributes.Mandatory | Should -Contain $true
 		}
-		@(Get-Command -Module Fast1data.SqlServer).Count | Should -Be 3
+		@(Get-Command -Module Fast1data.SqlServer).Count | Should -Be 6
 	}
 }
 
@@ -184,7 +184,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 				}
 				$bulk
 			}
-			Mock Invoke-GenericSqlQuery -ModuleName 'Fast1data.SqlServer/ArchivingModel' {
+			Mock Invoke-Fast1GenericSqlQuery -ModuleName 'Fast1data.SqlServer/ArchivingModel' {
 				param ($Query, $Parameters)
 				$id = [int]$Parameters.ProcessStateId.Value - 100
 				$state = $script:h.Persisted[$id]
@@ -494,7 +494,7 @@ Describe 'Shared SQL command setup and release' {
 		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
 			$script:helperStatus.FailRelease = $true
 			try {
-				Invoke-GenericSqlQuery -SqlConn $script:helperConnection -Query 'unused' -Parameters @{ invalid = 'wrong type' }
+				Invoke-Fast1GenericSqlQuery -SqlConn $script:helperConnection -Query 'unused' -Parameters @{ invalid = 'wrong type' }
 				throw 'Expected validation failure'
 			}
 			catch {
@@ -508,7 +508,7 @@ Describe 'Shared SQL command setup and release' {
 
 	It 'retains scalar, non-query and typed null/size/precision/scale mapping' {
 		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
-			$value = Invoke-GenericSqlQuery -SqlConn $script:helperConnection -Query 'unused' -Scalar -CommandType StoredProcedure -Parameters @{
+			$value = Invoke-Fast1GenericSqlQuery -SqlConn $script:helperConnection -Query 'unused' -Scalar -CommandType StoredProcedure -Parameters @{
 				text = [GenericSqlParam]@{ Value = $null; Type = [System.Data.SqlDbType]::NVarChar; Size = 20 }
 				number = [GenericSqlParam]@{ Value = 1.25; Type = [System.Data.SqlDbType]::Decimal; Precision = 8; Scale = 2 }
 			}
@@ -518,7 +518,7 @@ Describe 'Shared SQL command setup and release' {
 			$script:helperCommand.Parameters['@number'].Precision | Should -Be 8
 			$script:helperCommand.Parameters['@number'].Scale | Should -Be 2
 			$script:helperStatus.Released | Should -BeTrue
-			@(Invoke-GenericSqlQuery -SqlConn $script:helperConnection -Query 'unused').Count | Should -Be 0
+			@(Invoke-Fast1GenericSqlQuery -SqlConn $script:helperConnection -Query 'unused').Count | Should -Be 0
 			$script:helperStatus.Execution | Should -Be 'non-query'
 		}
 	}

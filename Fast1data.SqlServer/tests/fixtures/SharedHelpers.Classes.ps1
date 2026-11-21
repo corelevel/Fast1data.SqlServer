@@ -51,6 +51,11 @@ foreach ($consumer in @((Get-Module Fast1data.SqlServer), $model)) {
 	$descriptor.Size | Should -Be 8
 	$descriptor.Precision | Should -Be 12
 	$descriptor.Scale | Should -Be 2
+	[GenericSqlParam].GetProperty('Type').PropertyType | Should -Be ([Nullable[System.Data.SqlDbType]])
+	($null -eq [GenericSqlParam]::new().Type) | Should -BeTrue
+	$publicDescriptor = New-Fast1GenericSqlParam -Type BigInt -Value 42
+	$publicDescriptor | Should -BeOfType ([GenericSqlParam])
+	$publicDescriptor.Type | Should -Be ([System.Data.SqlDbType]::BigInt)
 }
 foreach ($preference in @($null, [System.Management.Automation.ActionPreference]::Continue, [System.Management.Automation.ActionPreference]::SilentlyContinue)) {
 	$group = [TableGroup]::new('Server=controlled', 'empty')

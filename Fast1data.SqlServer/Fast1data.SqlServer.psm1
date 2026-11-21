@@ -3,13 +3,18 @@ using module ./private/shared/GenericSqlParam.psm1
 Set-StrictMode -Version Latest
 
 $previousErrorActionPreference = $ErrorActionPreference
-$loadStage = 'SqlClient bootstrap'
+$loadStage = 'runtime identifier bootstrap'
+# Required loads must terminate even when the caller continues on errors.
+$ErrorActionPreference = 'Stop'
 try {
-	# Required loads must terminate even when the caller continues on errors.
-	$ErrorActionPreference = 'Stop'
 	. "$PSScriptRoot/private/shared/Get-RuntimeIdentifier.ps1"
-	. "$PSScriptRoot/private/shared/Import-SqlClientLib.ps1"
-	Import-SqlClientLib
+
+	$loadStage = 'SqlClient bootstrap'
+	. "$PSScriptRoot/private/shared/Import-RequiredLibrary.ps1"
+	Import-RequiredLibrary -DllName Microsoft.Data.SqlClient.dll -RequiredTypeName Microsoft.Data.SqlClient.SqlConnection
+
+	$loadStage = 'ScriptDom bootstrap'
+	Import-RequiredLibrary -DllName Microsoft.SqlServer.TransactSql.ScriptDom.dll -RequiredTypeName Microsoft.SqlServer.TransactSql.ScriptDom.TSql160Parser
 
 	$loadStage = 'shared behavior'
 	. "$PSScriptRoot/private/shared/Load.ps1"

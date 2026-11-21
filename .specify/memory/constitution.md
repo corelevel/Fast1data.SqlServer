@@ -34,8 +34,7 @@ secrets MUST NOT appear in committed examples or operational logs.
 
 ### IV. Portable PowerShell Contracts
 
-The module MUST maintain its documented PowerShell 7.6-or-later Core baseline and x64 Windows,
-Linux, and macOS support until an explicit compatibility change is approved. Public commands
+The module MUST maintain its documented PowerShell 7.6-or-later Core baseline and x64 Windows and Linux support until an explicit compatibility change is approved. Public commands
 MUST be explicitly exported through the manifest. Changes to parameters, configuration formats,
 SQL schemas, dependencies, or runtime requirements MUST update affected manifest entries, help,
 and documentation. Paths MUST respect documented portable migration conventions. New
@@ -52,8 +51,10 @@ setup order, limitations, and recovery behavior affected by a change.
 
 ## Database and Runtime Constraints
 
-- PowerShell orchestration, Microsoft.Data.SqlClient, the SqlServer module, and versioned SQL
-  setup scripts form the supported implementation stack.
+- PowerShell orchestration, Microsoft.Data.SqlClient, Microsoft.SqlServer.TransactSql.ScriptDom,
+  and versioned SQL setup scripts form the supported implementation stack. Required client
+  and parser assemblies MUST be bundled for each supported runtime and initialized through
+  designated loaders; a separate SqlServer PowerShell module installation is not required.
 - Database object changes MUST account for existing installations and persisted migration,
   audit, and archiving state. Required upgrade steps MUST be documented.
 - Archiving MUST retain its documented primary-key requirement and the requirement that the
@@ -102,4 +103,34 @@ module versions are independent. Amendments MUST retain the original ratificatio
 update the last-amended date when content changes. Dependent workflows MUST read the active
 constitution at runtime; their templates are outside this amendment's scope.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-28: maintainer must confirm adoption date | **Last Amended**: 2026-10-28
+### Amendment 1.1.0 — 2026-11-19
+
+Maintainer approved replacing the SqlServer PowerShell prerequisite with bundled
+SqlClient and ScriptDom, constitution 1.1.0, and module release 0.1.0. Direct migration
+execution with whole-file parsing motivates this change. Installation, private helper
+signatures, script syntax, and loader/build contracts change. Rebuild all supported RID
+bundles and update manifest/help/guides; reject unsupported SQLCMD syntax before execution
+and retain idempotent retry requirements. Existing migration history requires no upgrade.
+
+### Amendment 2.0.0 — 2026-11-20
+
+Maintainer authorized removal of macOS support in feature `008-drop-osx-x64`, keeping
+exactly x64 Windows (`win-x64`) and x64 Linux (`linux-x64`). This narrows Principle IV
+to the maintained platforms and is an incompatible principle redefinition, adopting
+constitution 2.0.0. The independent module release decision is 0.2.0.
+
+Affected contracts are dependency build targets, bounded obsolete-bundle cleanup,
+staging allowlists and exact runtime sets, early runtime rejection, and current
+manifest metadata, release notes and installation/help guidance. Both reported OS
+and process architectures must be X64. The PowerShell 7.6+ Core baseline, bundled
+dependency versions, six public commands and their signatures remain unchanged.
+
+macOS users must move orchestration to a retained host before upgrading, preserving
+database state, migration history/checksums and portable paths, audit checkpoints,
+archiving state and configuration. Arrange equivalent external file/share access,
+permissions and credentials. No database-format migration is required, and existing
+installations and historical releases are not deleted. Validate real builds/staging,
+early unsupported-platform rejection and native retained-host command acceptance;
+record unavailable environments as open release gates.
+
+**Version**: 2.0.0 | **Ratified**: 2026-10-28: maintainer must confirm adoption date | **Last Amended**: 2026-11-20

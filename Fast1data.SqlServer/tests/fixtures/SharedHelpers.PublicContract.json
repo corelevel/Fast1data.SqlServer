@@ -2,7 +2,10 @@
   "FunctionsToExport": [
     "Invoke-Fast1Archiving",
     "Invoke-Fast1Audit",
-    "Invoke-Fast1Migration"
+    "Invoke-Fast1GenericSqlQuery",
+    "Invoke-Fast1GenericSqlQueryReader",
+    "Invoke-Fast1Migration",
+    "New-Fast1GenericSqlParam"
   ],
   "AliasesToExport": [],
   "VariablesToExport": [],
@@ -2006,6 +2009,2236 @@
       ]
     },
     {
+      "Name": "Invoke-Fast1GenericSqlQuery",
+      "CmdletBinding": true,
+      "CommandAttributes": [
+        "[CmdletBinding()]"
+      ],
+      "DefaultParameterSet": null,
+      "Declaration": "param (\n\t\t[Parameter(Mandatory)]\n\t\t[Microsoft.Data.SqlClient.SqlConnection]$SqlConn,\n\n\t\t[Parameter(Mandatory)]\n\t\t[string]$Query,\n\n\t\t[System.Data.CommandType]$CommandType = [System.Data.CommandType]::Text,\n\t\t[hashtable]$Parameters,\n\t\t[switch]$Scalar\n\t)",
+      "Parameters": [
+        {
+          "Name": "CommandType",
+          "Type": "System.Data.CommandType",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "2"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Debug",
+          "Type": "System.Management.Automation.SwitchParameter",
+          "Aliases": [
+            "db"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "db"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "ErrorAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "ea"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ea"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "ErrorVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "ev"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ev"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "InformationAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "infa"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "infa"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "InformationVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "iv"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "iv"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "OutBuffer",
+          "Type": "System.Int32",
+          "Aliases": [
+            "ob"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ValidateRangeAttribute",
+              "Properties": {
+                "MaxRange": [
+                  "2147483647"
+                ],
+                "MinRange": [
+                  "0"
+                ],
+                "TypeId": [
+                  "ValidateRange"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ob"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "OutVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "ov"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ov"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Parameters",
+          "Type": "System.Collections.Hashtable",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "3"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "PipelineVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "pv"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "pv"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "ProgressAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "proga"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "proga"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Query",
+          "Type": "System.String",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "True"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "1"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Scalar",
+          "Type": "System.Management.Automation.SwitchParameter",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "SqlConn",
+          "Type": "Microsoft.Data.SqlClient.SqlConnection",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "True"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "0"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Verbose",
+          "Type": "System.Management.Automation.SwitchParameter",
+          "Aliases": [
+            "vb"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "vb"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "WarningAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "wa"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "wa"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "WarningVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "wv"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "wv"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "ParameterSets": [
+        "[-SqlConn] <SqlConnection> [-Query] <string> [[-CommandType] <CommandType>] [[-Parameters] <hashtable>] [-Scalar] [<CommonParameters>]"
+      ]
+    },
+    {
+      "Name": "Invoke-Fast1GenericSqlQueryReader",
+      "CmdletBinding": true,
+      "CommandAttributes": [
+        "[CmdletBinding()]"
+      ],
+      "DefaultParameterSet": null,
+      "Declaration": "param (\n\t\t[Parameter(Mandatory)]\n\t\t[Microsoft.Data.SqlClient.SqlConnection]$SqlConn,\n\n\t\t[Parameter(Mandatory)]\n\t\t[string]$Query,\n\n\t\t[System.Data.CommandType]$CommandType = [System.Data.CommandType]::Text,\n\t\t[hashtable]$Parameters\n\t)",
+      "Parameters": [
+        {
+          "Name": "CommandType",
+          "Type": "System.Data.CommandType",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "2"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Debug",
+          "Type": "System.Management.Automation.SwitchParameter",
+          "Aliases": [
+            "db"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "db"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "ErrorAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "ea"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ea"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "ErrorVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "ev"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ev"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "InformationAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "infa"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "infa"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "InformationVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "iv"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "iv"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "OutBuffer",
+          "Type": "System.Int32",
+          "Aliases": [
+            "ob"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ValidateRangeAttribute",
+              "Properties": {
+                "MaxRange": [
+                  "2147483647"
+                ],
+                "MinRange": [
+                  "0"
+                ],
+                "TypeId": [
+                  "ValidateRange"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ob"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "OutVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "ov"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ov"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Parameters",
+          "Type": "System.Collections.Hashtable",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "3"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "PipelineVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "pv"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "pv"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "ProgressAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "proga"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "proga"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Query",
+          "Type": "System.String",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "True"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "1"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "SqlConn",
+          "Type": "Microsoft.Data.SqlClient.SqlConnection",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "True"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "0"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Verbose",
+          "Type": "System.Management.Automation.SwitchParameter",
+          "Aliases": [
+            "vb"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "vb"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "WarningAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "wa"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "wa"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "WarningVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "wv"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "wv"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "ParameterSets": [
+        "[-SqlConn] <SqlConnection> [-Query] <string> [[-CommandType] <CommandType>] [[-Parameters] <hashtable>] [<CommonParameters>]"
+      ]
+    },
+    {
       "Name": "Invoke-Fast1Migration",
       "CmdletBinding": true,
       "CommandAttributes": [
@@ -3291,6 +5524,1310 @@
       ],
       "ParameterSets": [
         "[-ConnStr] <string> [-BasePath] <string> [-Phase] <string> [[-IgnoreScripts] <string[]>] [[-ForceScripts] <string[]>] [-WhatIf] [-Confirm] [<CommonParameters>]"
+      ]
+    },
+    {
+      "Name": "New-Fast1GenericSqlParam",
+      "CmdletBinding": true,
+      "CommandAttributes": [
+        "[CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]"
+      ],
+      "DefaultParameterSet": null,
+      "Declaration": "param (\n\t\t[Parameter(Mandatory)]\n\t\t[ValidateNotNull()]\n\t\t[System.Data.SqlDbType]$Type,\n\n\t\t[AllowNull()]\n\t\t[object]$Value,\n\n\t\t[ValidateRange(0, [int]::MaxValue)]\n\t\t[int]$Size = 0,\n\n\t\t[byte]$Precision = 0,\n\t\t[byte]$Scale = 0\n\t)",
+      "Parameters": [
+        {
+          "Name": "Confirm",
+          "Type": "System.Management.Automation.SwitchParameter",
+          "Aliases": [
+            "cf"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "cf"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Debug",
+          "Type": "System.Management.Automation.SwitchParameter",
+          "Aliases": [
+            "db"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "db"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "ErrorAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "ea"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ea"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "ErrorVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "ev"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ev"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "InformationAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "infa"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "infa"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "InformationVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "iv"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "iv"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "OutBuffer",
+          "Type": "System.Int32",
+          "Aliases": [
+            "ob"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ValidateRangeAttribute",
+              "Properties": {
+                "MaxRange": [
+                  "2147483647"
+                ],
+                "MinRange": [
+                  "0"
+                ],
+                "TypeId": [
+                  "ValidateRange"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ob"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "OutVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "ov"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "ov"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "PipelineVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "pv"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "pv"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Precision",
+          "Type": "System.Byte",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "3"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "ProgressAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "proga"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "proga"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Scale",
+          "Type": "System.Byte",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "4"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Size",
+          "Type": "System.Int32",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "2"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ValidateRangeAttribute",
+              "Properties": {
+                "MaxRange": [
+                  "2147483647"
+                ],
+                "MinRange": [
+                  "0"
+                ],
+                "TypeId": [
+                  "ValidateRange"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Type",
+          "Type": "System.Data.SqlDbType",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ValidateNotNullAttribute",
+              "Properties": {
+                "TypeId": [
+                  "ValidateNotNull"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "True"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "0"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Value",
+          "Type": "System.Object",
+          "Aliases": [],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "1"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AllowNullAttribute",
+              "Properties": {
+                "TypeId": [
+                  "AllowNull"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.ArgumentTypeConverterAttribute",
+              "Properties": {
+                "TransformNullOptionalParameters": [
+                  "True"
+                ],
+                "TypeId": [
+                  "System.Management.Automation.ArgumentTypeConverterAttribute, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Verbose",
+          "Type": "System.Management.Automation.SwitchParameter",
+          "Aliases": [
+            "vb"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "vb"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "WarningAction",
+          "Type": "System.Management.Automation.ActionPreference",
+          "Aliases": [
+            "wa"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "wa"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "WarningVariable",
+          "Type": "System.String",
+          "Aliases": [
+            "wv"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "wv"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.Internal.CommonParameters+ValidateVariableName",
+              "Properties": {
+                "TypeId": [
+                  "System.Management.Automation.Internal.CommonParameters+ValidateVariableName, System.Management.Automation, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "Name": "WhatIf",
+          "Type": "System.Management.Automation.SwitchParameter",
+          "Aliases": [
+            "wi"
+          ],
+          "Attributes": [
+            {
+              "Type": "System.Management.Automation.ParameterAttribute",
+              "Properties": {
+                "DontShow": [
+                  "False"
+                ],
+                "ExperimentAction": [
+                  "None"
+                ],
+                "ExperimentName": [
+                  ""
+                ],
+                "HelpMessage": [
+                  ""
+                ],
+                "HelpMessageBaseName": [
+                  ""
+                ],
+                "HelpMessageResourceId": [
+                  ""
+                ],
+                "Mandatory": [
+                  "False"
+                ],
+                "ParameterSetName": [
+                  "__AllParameterSets"
+                ],
+                "Position": [
+                  "-2147483648"
+                ],
+                "TypeId": [
+                  "Parameter"
+                ],
+                "ValueFromPipeline": [
+                  "False"
+                ],
+                "ValueFromPipelineByPropertyName": [
+                  "False"
+                ],
+                "ValueFromRemainingArguments": [
+                  "False"
+                ]
+              }
+            },
+            {
+              "Type": "System.Management.Automation.AliasAttribute",
+              "Properties": {
+                "AliasNames": [
+                  "wi"
+                ],
+                "TypeId": [
+                  "Alias"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "ParameterSets": [
+        "[-Type] <SqlDbType> [[-Value] <Object>] [[-Size] <int>] [[-Precision] <byte>] [[-Scale] <byte>] [-WhatIf] [-Confirm] [<CommonParameters>]"
       ]
     }
   ]

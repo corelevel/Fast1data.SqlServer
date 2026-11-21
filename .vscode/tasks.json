@@ -13,7 +13,15 @@
 				"${workspaceFolder}/out/publish.ps1"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}"
+				"cwd": "${workspaceFolder}",
+				"env": {
+					"FAST1_TEST_MIGRATION_SQL_CONN_STR": "${env:FAST1_TEST_MIGRATION_SQL_CONN_STR}",
+					"FAST1_TEST_ARCHIVING_SQL_CONN_STR": "${env:FAST1_TEST_ARCHIVING_SQL_CONN_STR}",
+					"FAST1_TEST_AUDIT_SQL_CONN_STR": "${env:FAST1_TEST_AUDIT_SQL_CONN_STR}",
+					"FAST1_TEST_AUDIT_FOLDER": "${env:FAST1_TEST_AUDIT_FOLDER}",
+					"FAST1_TEST_AUDIT_SMB_USER": "${env:FAST1_TEST_AUDIT_SMB_USER}",
+					"FAST1_TEST_AUDIT_SMB_PASSWORD": "${env:FAST1_TEST_AUDIT_SMB_PASSWORD}"
+				}
 			},
 			"group": {
 				"kind": "test",

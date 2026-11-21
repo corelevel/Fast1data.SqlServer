@@ -6,6 +6,8 @@ $previousErrorActionPreference = $ErrorActionPreference
 try {
 	$ErrorActionPreference = 'Stop'
 	. "$PSScriptRoot/../shared/Load.ps1"
+	. "$PSScriptRoot/../../public/Invoke-Fast1GenericSqlQuery.ps1"
+	. "$PSScriptRoot/../../public/Invoke-Fast1GenericSqlQueryReader.ps1"
 	. "$PSScriptRoot/Get-DelayIntervalInSecond.ps1"
 	. "$PSScriptRoot/Compare-Column.ps1"
 }
@@ -42,7 +44,7 @@ function Get-ArchivingBulkCopy {
 
 function Get-ArchivingServerIdentity {
 	param ($Connection)
-	Invoke-GenericSqlQuery -SqlConn $Connection -Query "set nocount on; select cast(serverproperty('ServerName') as nvarchar(128))" -Scalar
+	Invoke-Fast1GenericSqlQuery -SqlConn $Connection -Query "set nocount on; select cast(serverproperty('ServerName') as nvarchar(128))" -Scalar
 }
 
 function ConvertTo-ArchivingIdentifier {
@@ -65,7 +67,7 @@ function Invoke-ArchivingConstraintAction {
 	else {
 		'with nocheck check'
 	}
-	Invoke-GenericSqlQuery -SqlConn $Connection -Query "alter table $database.$schema.$table $action constraint $name"
+	Invoke-Fast1GenericSqlQuery -SqlConn $Connection -Query "alter table $database.$schema.$table $action constraint $name"
 }
 
 class TableGroup : System.IDisposable {
@@ -298,7 +300,7 @@ class ProcessState {
 	[Microsoft.Data.SqlClient.SqlConnection]$ArcSqlConn
 
 	UpdateKeyMaxValue() {
-		$this.KeyMaxValue = [int](Invoke-GenericSqlQuery `
+		$this.KeyMaxValue = [int](Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateKeyMaxValue' `
 			-CommandType StoredProcedure `
@@ -314,7 +316,7 @@ class ProcessState {
 
 	UpdateKeyCopyDate() {
 		$confirmedDate = [datetime]::Now
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
@@ -333,7 +335,7 @@ class ProcessState {
 
 	UpdateCompleteDate() {
 		$confirmedDate = [datetime]::Now
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
@@ -352,7 +354,7 @@ class ProcessState {
 
 	UpdateArchiveComplete() {
 		$confirmedDate = [datetime]::Now
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
@@ -378,7 +380,7 @@ class ProcessState {
 	}
 
 	UpdateArchiveState() {
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
@@ -400,7 +402,7 @@ class ProcessState {
 
 	UpdatePurgeComplete() {
 		$confirmedDate = [datetime]::Now
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
@@ -426,7 +428,7 @@ class ProcessState {
 	}
 
 	UpdatePurgeState() {
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_UpdateProcessState' `
 			-CommandType StoredProcedure `
@@ -450,7 +452,7 @@ class ProcessState {
 		if ($this.Id -ne 0) {
 			throw 'State.Id already has a value'
 		}
-		$this.Id = [int](Invoke-GenericSqlQuery `
+		$this.Id = [int](Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_InsertProcessState' `
 			-CommandType StoredProcedure `
@@ -477,7 +479,7 @@ class ProcessState {
 	}
 
 	[bool]FixAndGetLastArchivedKey() {
-		$newLastArchivedKey = [int](Invoke-GenericSqlQuery `
+		$newLastArchivedKey = [int](Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.ArcSqlConn `
 			-Query 'dbo.stp_FixLastArchivedKey' `
 			-CommandType StoredProcedure `
@@ -831,7 +833,7 @@ select	case when exists
 			else 0
 		end v
 '@
-		return [bool](Invoke-GenericSqlQuery `
+		return [bool](Invoke-Fast1GenericSqlQuery `
 			-SqlConn $sqlConnection `
 			-Query $query `
 			-Parameters @{
@@ -855,7 +857,7 @@ select	case when exists
 set nocount on
 select case when exists (select	1 from sys.schemas where [name] = @SchemaName) then 1 else 0 end v
 '@
-		return [bool](Invoke-GenericSqlQuery `
+		return [bool](Invoke-Fast1GenericSqlQuery `
 			-SqlConn $sqlConnection `
 			-Query $query `
 			-Parameters @{
@@ -1110,7 +1112,7 @@ where kc.[type] = 'PK'
 		}
 		$query.Length -= 1
 
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.Group.DstSqlConn `
 			-Query $query.ToString()
 		return $true
@@ -1156,14 +1158,14 @@ where kc.[type] = 'PK'
 		}
 		$query.Append('commit tran')
 
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.Group.DstSqlConn `
 			-Query $query.ToString()
 	}
 
 	CreateDestinationTableSchema() {
 		$query = "create schema [$($this.SchemaName)]"
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.Group.DstSqlConn `
 			-Query $query.ToString()
 	}
@@ -1186,7 +1188,7 @@ begin
 end
 "@
 
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.Group.ArcSqlConn `
 			-Query $query `
 	}
@@ -1214,7 +1216,7 @@ create table dbo.[$($this.SrcWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 		$query.Length -= 1
 		$query.Append(')')
 
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.Group.ArcSqlConn `
 			-Query $query `
 	}
@@ -1242,7 +1244,7 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 		$query.Length -= 1
 		$query.Append(')')
 
-		Invoke-GenericSqlQuery `
+		Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.Group.ArcSqlConn `
 			-Query $query `
 	}
@@ -1440,7 +1442,7 @@ order by $position
 
 	PurgeData() {
 		$this.State.RowsPurgedForBatch = 0
-		$this.State.RowsPurgedForBatch = [int](Invoke-GenericSqlQuery `
+		$this.State.RowsPurgedForBatch = [int](Invoke-Fast1GenericSqlQuery `
 			-SqlConn $this.Group.ArcSqlConn `
 			-Query 'dbo.stp_PurgeData' `
 			-CommandType StoredProcedure `

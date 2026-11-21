@@ -12,7 +12,7 @@ Paths below are relative to `Fast1data.SqlServer/private/`. The table accounts f
 |---|---|---|
 | Assembly bootstrap | `shared/Get-RuntimeIdentifier.ps1`, `shared/Import-SqlClientLib.ps1` | `Get-RuntimeIdentifier`, `Import-SqlClientLib` |
 | Shared behavior | `shared/GenericSqlCleanup.ps1` | `Close-GenericSqlResource`, `Add-GenericSqlCleanupFailure`, `Get-GenericSqlCleanupFailure` |
-| Shared behavior | `shared/GenericSqlQuery.ps1` | `Get-GenericSqlCommand`, `Invoke-GenericSqlQuery` |
+| Shared behavior | `shared/GenericSqlQuery.ps1` | `Get-GenericSqlCommand`, `Invoke-Fast1GenericSqlQuery` |
 | Shared behavior | `shared/Write-LogMessage.ps1` | `Write-LogMessage` |
 | Shared behavior | `shared/Get-FileChecksum.ps1` | `Get-FileChecksum` |
 | Shared behavior | `shared/Get-RelativePath.ps1` | `Get-RelativePath` |

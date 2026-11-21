@@ -6,17 +6,12 @@ BeforeAll {
 	. (Join-Path $PSScriptRoot 'fixtures/Import-SharedHelperDependency.ps1') -DistributionRoot $script:moduleRoot
 
 	# The SQL login must be allowed to create/drop databases.
-	# Live test configuration: edit only the server and credentials.
-	$connectionString = @(
-		'Data Source=pester-srv'
-		'User ID=pester'
-		'Password=pester'
-		'Encrypt=False'
-		'TrustServerCertificate=True'
-		'Application Name=Fast1data.SqlServer.Archiving.Tests'
-		'Initial Catalog=master'
-	) -join ';'
+	$connectionString = $env:FAST1_TEST_ARCHIVING_SQL_CONN_STR
+	if ([string]::IsNullOrWhiteSpace($connectionString)) {
+		throw 'Set FAST1_TEST_ARCHIVING_SQL_CONN_STR to select a disposable SQL test target.'
+	}
 	$builder = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($connectionString)
+	$builder['Initial Catalog'] = 'master'
 	$script:masterConnectionString = $builder.ConnectionString
 	$script:serverName = $builder.DataSource
 	$script:destinationServerName = $builder.DataSource

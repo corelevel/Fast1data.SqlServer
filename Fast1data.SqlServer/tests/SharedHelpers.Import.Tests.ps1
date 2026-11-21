@@ -13,7 +13,7 @@ BeforeAll {
 	$script:results = [System.Collections.Generic.List[object]]::new()
 }
 
-Describe 'Isolated shared-helper import and operation matrix' {
+Describe 'Isolated shared-helper import and operation matrix' -Tag 'Slow' {
 	It '<Loading> / <Order> retains the selected distribution contract' -ForEach $script:tuples {
 		$output = @(& (Join-Path $PSHOME 'pwsh') -NoProfile -File $script:worker -DistributionRoot $script:distributionRoot -LoadingScenario $Loading -OperationOrder $Order 2>&1)
 		$script:workerExit = $LASTEXITCODE
@@ -24,7 +24,7 @@ Describe 'Isolated shared-helper import and operation matrix' {
 		$result.Root | Should -Be $script:distributionRoot
 		$result.Loading | Should -Be $Loading
 		$result.Order | Should -Be $Order
-		$result.Total | Should -Be 136
+		$result.Total | Should -Be 253
 		($result.Passed + $result.Skipped) | Should -Be $result.Total
 		$result.Failed | Should -Be 0
 		$result.UnexpectedSkipped | Should -Be 0

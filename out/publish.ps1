@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param()
+param (
+	# Prepare a reviewable package without running integration suites on implicit targets.
+	[switch]$StageOnly
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -17,7 +20,6 @@ $moduleRoot = [System.IO.Path]::GetFullPath(
 $supportedRids = @(
 	'win-x64'
 	'linux-x64'
-	'osx-x64'
 )
 
 # Validate sources before removing the previous staged package.
@@ -36,6 +38,7 @@ $requiredPaths = @(
 
 foreach ($rid in $supportedRids) {
 	$requiredPaths += Join-Path $sourceModuleRoot "lib\$rid\Microsoft.Data.SqlClient.dll"
+	$requiredPaths += Join-Path $sourceModuleRoot "lib\$rid\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
 }
 
 $missingPaths = $requiredPaths | Where-Object {
@@ -78,11 +81,19 @@ foreach ($rid in $supportedRids) {
 	$destination = Join-Path $moduleLibRoot $rid
 	Copy-Item -LiteralPath $source -Destination $destination -Recurse
 
+	# Remove debugging symbols from the published package.
+	Get-ChildItem -LiteralPath $destination -Filter '*.pdb' -Recurse -File | Remove-Item -Force
+
 	# Exclude accidentally nested build output from the published package.
 	$nestedPublish = Join-Path $destination 'publish'
 	if (Test-Path -LiteralPath $nestedPublish) {
 		Remove-Item -LiteralPath $nestedPublish -Recurse -Force
 	}
+}
+
+$stagedRids = @(Get-ChildItem -LiteralPath $moduleLibRoot -Directory | Select-Object -ExpandProperty Name)
+if ($stagedRids.Count -ne $supportedRids.Count -or @($stagedRids | Where-Object { $_ -cnotin $supportedRids }).Count -gt 0) {
+	throw "Unexpected staged runtime directories: $($stagedRids -join ', '). Expected exactly: $($supportedRids -join ', ')."
 }
 
 $manifestPath = Join-Path $moduleRoot 'Fast1data.SqlServer.psd1'
@@ -91,6 +102,8 @@ $manifest = Test-ModuleManifest -Path $manifestPath
 $missingStagedLibraries = $supportedRids | Where-Object {
 	-not (Test-Path -LiteralPath (
 		Join-Path $moduleLibRoot "$_\Microsoft.Data.SqlClient.dll"
+	)) -or -not (Test-Path -LiteralPath (
+		Join-Path $moduleLibRoot "$_\Microsoft.SqlServer.TransactSql.ScriptDom.dll"
 	))
 }
 
@@ -99,10 +112,16 @@ if ($missingStagedLibraries) {
 }
 
 try {
-	Import-Module PSScriptAnalyzer -ErrorAction Stop
+	$loadedAnalyzer = Get-Module PSScriptAnalyzer
+
+	if (-not $loadedAnalyzer) {
+		Import-Module PSScriptAnalyzer -ErrorAction Stop
+	}
+
+	Import-Module $manifestPath -Force -ErrorAction Stop
 }
 catch {
-	throw "Failed to load PSScriptAnalyzer: $($_.Exception.Message)"
+	throw "Failed to load release validation modules: $($_.Exception.Message)"
 }
 
 Write-Host ''
@@ -122,6 +141,11 @@ if ($analyzerResults) {
 		Format-Table RuleName, Severity, ScriptName, Line, Message -AutoSize |
 		Out-Host
 	throw "PSScriptAnalyzer reported $($analyzerResults.Count) warning(s) or error(s)."
+}
+
+if ($StageOnly) {
+	Write-Information "Package staged at '$moduleRoot'; analyzer passed. Tests were not run; release validation is incomplete." -InformationAction Continue
+	return
 }
 
 try {
@@ -148,11 +172,21 @@ $pesterConfiguration = New-PesterConfiguration
 $pesterConfiguration.Run.Path = Join-Path $moduleRoot 'tests'
 $pesterConfiguration.Run.TestExtension = '.Tests.ps1'
 $pesterConfiguration.Run.PassThru = $true
+$pesterConfiguration.TestRegistry.Enabled = $false
 $pesterConfiguration.Output.Verbosity = 'Detailed'
+$pesterConfiguration.Filter.ExcludeTag = @('Slow')
+#$pesterConfiguration.Filter.Tag = @('RunMe')
 $pesterResult = Invoke-Pester -Configuration $pesterConfiguration
 
 if ($pesterResult.FailedCount -gt 0) {
 	throw "Pester reported $($pesterResult.FailedCount) failed test(s)."
+}
+
+# Remove test files from the distribution package after validation.
+$stagedTestsPath = Join-Path $moduleRoot 'tests'
+
+if (Test-Path -LiteralPath $stagedTestsPath) {
+	Remove-Item -LiteralPath $stagedTestsPath -Recurse -Force
 }
 
 Write-Host "Release package created successfully:"
@@ -161,4 +195,4 @@ Write-Host "  Module:  $($manifest.Name)"
 Write-Host "  Version: $($manifest.Version)"
 Write-Host ''
 Write-Host 'Dry-run publishing command:'
-Write-Host "  Publish-Module -Path '$moduleRoot' -Repository PSGallery -NuGetApiKey '<key>' -WhatIf -Verbose"
+Write-Host "  Publish-PSResource -Path '$moduleRoot' -Repository PSGallery -ApiKey '<key>' -Verbose"

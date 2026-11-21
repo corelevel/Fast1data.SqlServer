@@ -188,8 +188,10 @@ Describe 'Real operational logging in one session' {
 
 Describe 'Internal ownership and unchanged distribution contract' {
 	It 'retains separate defining session states and selected-root paths for every helper' {
-		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-GenericSqlQuery', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure')
-		$rootOnly = @('Get-FileChecksum', 'Get-RelativePath', 'Get-RuntimeIdentifier', 'Import-SqlClientLib', 'Invoke-ArchivingProcess', 'Get-SqlAuditFile', 'Get-SqlAuditFileEntry', 'Import-SqlAuditFile', 'Get-ImportState', 'Get-Executed', 'Set-Executed', 'Invoke-Migration', 'Resolve-MigrationPhase')
+		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-Fast1GenericSqlQuery', 'Invoke-Fast1GenericSqlQueryReader', 'Add-GenericSqlParameter', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure')
+		$rootOnly = @('Get-FileChecksum', 'Get-RelativePath', 'Get-RuntimeIdentifier', 'Import-RequiredLibrary', 'Invoke-ArchivingProcess', 'Get-SqlAuditFile', 'Get-SqlAuditFileEntry', 'Import-SqlAuditFile', 'Get-ImportState', 'Get-Executed', 'Set-Executed', 'Invoke-Migration', 'Resolve-MigrationPhase')
+		$rootOnly += @('Get-MigrationConnection', 'New-Fast1GenericSqlParam')
+		$rootOnly += @('Get-MigrationScriptConnection', 'Get-MigrationSuppressionScope', 'Get-MigrationScriptCommand')
 		$modelOnly = @('Compare-Column', 'Get-DelayIntervalInSecond', 'Get-ArchivingConnection', 'Get-ArchivingCommand', 'Get-ArchivingTable', 'Get-ArchivingBulkCopy', 'Get-ArchivingServerIdentity', 'ConvertTo-ArchivingIdentifier', 'Invoke-ArchivingConstraintAction')
 		$model = Get-Module ArchivingModel
 		foreach ($entry in @(@{ Module = $rootModule; Names = $shared + $rootOnly }, @{ Module = $model; Names = $shared + $modelOnly })) {
@@ -198,6 +200,9 @@ Describe 'Internal ownership and unchanged distribution contract' {
 				[object]::ReferenceEquals($command.Module, $entry.Module) | Should -BeTrue -Because "$name must retain its defining module"
 				[object]::ReferenceEquals($command.Module.SessionState, $entry.Module.SessionState) | Should -BeTrue
 				$command.ScriptBlock.File.StartsWith($DistributionRoot + [System.IO.Path]::DirectorySeparatorChar) | Should -BeTrue
+				if ($name -in @('Invoke-Fast1GenericSqlQuery', 'Invoke-Fast1GenericSqlQueryReader')) {
+					$command.ScriptBlock.File | Should -BeExactly ([System.IO.Path]::GetFullPath((Join-Path $DistributionRoot "public/$name.ps1")))
+				}
 			}
 		}
 		[object]::ReferenceEquals($OwnerBefore, (& $rootModule { (Get-Command Write-LogMessage).Module })) | Should -BeTrue
@@ -219,13 +224,17 @@ Describe 'Internal ownership and unchanged distribution contract' {
 		$expected = Get-Content (Join-Path $PSScriptRoot 'SharedHelpers.PublicContract.json') -Raw | ConvertFrom-Json | ConvertTo-Json -Depth 20 -Compress
 		$actual = Get-SharedHelperPublicContract -DistributionRoot $DistributionRoot | ConvertFrom-Json | ConvertTo-Json -Depth 20 -Compress
 		$actual | Should -Be $expected
-		($rootModule.ExportedFunctions.Keys | Sort-Object) -join ',' | Should -Be 'Invoke-Fast1Archiving,Invoke-Fast1Audit,Invoke-Fast1Migration'
+		($rootModule.ExportedFunctions.Keys | Sort-Object) -join ',' | Should -Be 'Invoke-Fast1Archiving,Invoke-Fast1Audit,Invoke-Fast1GenericSqlQuery,Invoke-Fast1GenericSqlQueryReader,Invoke-Fast1Migration,New-Fast1GenericSqlParam'
 		$rootModule.ExportedAliases.Count | Should -Be 0
 		$rootModule.ExportedVariables.Count | Should -Be 0
 		$rootModule.ExportedCmdlets.Count | Should -Be 0
-		foreach ($rid in @('win-x64', 'linux-x64', 'osx-x64')) {
+		$runtimeDirectories = @(Get-ChildItem -LiteralPath (Join-Path $DistributionRoot 'lib') -Directory | Select-Object -ExpandProperty Name | Sort-Object)
+		($runtimeDirectories -join ',') | Should -BeExactly 'linux-x64,win-x64'
+		foreach ($rid in @('win-x64', 'linux-x64')) {
 			Test-Path (Join-Path $DistributionRoot "lib/$rid/Microsoft.Data.SqlClient.dll") | Should -BeTrue
+			Test-Path (Join-Path $DistributionRoot "lib/$rid/Microsoft.SqlServer.TransactSql.ScriptDom.dll") | Should -BeTrue
 		}
+		[Microsoft.SqlServer.TransactSql.ScriptDom.TSql160Parser].Assembly.Location.StartsWith($DistributionRoot + [System.IO.Path]::DirectorySeparatorChar) | Should -BeTrue
 		[Microsoft.Data.SqlClient.SqlConnection].Assembly.Location.StartsWith($DistributionRoot + [System.IO.Path]::DirectorySeparatorChar) | Should -BeTrue
 	}
 }

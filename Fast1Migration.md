@@ -108,12 +108,21 @@ For the selected phase, the module:
 3. Validates the entire phase: duplicates, ignored/forced conflicts, paths, files, and checksums.
 4. Skips previously executed scripts whose checksums have not changed.
 5. Stops if an executed script has been modified.
-6. Executes new or forced scripts through `Invoke-Sqlcmd`.
-7. Records new scripts or updates forced-script history.
+6. Validates each selected file completely with the bundled TSql160Parser, then executes its original batches on a shared SqlClient command.
+7. Restores the original target database if the script used `USE`, then records completion once for the entire file, including an empty file.
 
 All phase validation finishes before confirmation, execution, or history writes.
 A valid first script followed by an invalid later entry executes no scripts.
 Validation is a snapshot: it does not lock files or history against subsequent changes.
+
+The private history reader delegates to `Invoke-Fast1GenericSqlQueryReader` with a typed
+NVarChar(32) phase filter. It streams `script_name` and `checksum` without changing
+stored spelling, case, separators, or checksums; phase evaluation owns identity
+normalization. Empty history emits no rows. The inner query releases its reader
+then command before the history helper releases its owned connection, including
+failure and early pipeline termination. A later read failure can leave rows already
+delivered; cleanup preserves the primary error and safe cleanup details. Migration
+order, checksum checks, force/ignore, preview and idempotent retry rules are unchanged.
 
 If a script is listed in both `IgnoreScripts` and `ForceScripts`, evaluation
 stops with an error, including when that name is absent from configuration.
@@ -171,9 +180,21 @@ non-idempotent scripts safe.
 Isolated command tests are in `tests/Migration.Tests.ps1`; phase validation tests
 are in `tests/Migration.Phase.Tests.ps1`. Neither suite connects to SQL Server.
 
-Live SQL tests are in `tests/Migration.Integration.Tests.ps1`. Review the connection
-settings in its integration `BeforeAll` block before running. The suite creates
-uniquely named disposable databases, installs the migration schema, and drops the
+### Live integration tests
+
+Live SQL tests are in `Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1`.
+Set `$env:FAST1_TEST_MIGRATION_SQL_CONN_STR` in the PowerShell session to select
+the SQL Server test instance. Missing or blank configuration skips the suite.
+Run from the repository root:
+
+```powershell
+$env:FAST1_TEST_MIGRATION_SQL_CONN_STR = 'Server=YOUR_TEST_SERVER;Initial Catalog=master;Integrated Security=True;Encrypt=True'
+Invoke-Pester -Path ./Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1 -Output Detailed
+```
+
+Use the authentication and encryption options required by your test environment.
+The suite creates uniquely named disposable databases, installs the migration
+schema, and drops the
 databases during cleanup. The SQL login needs database creation/drop, schema and
 fixture creation, and migration execution/history permissions. See the
 [validation commands](specs/002-consolidate-migration-phases/quickstart.md).
@@ -216,3 +237,78 @@ Do not commit database passwords or access tokens to source control.
 An executable example is available in [`example/migration/deploy-tempdb.ps1`](example/migration/deploy-tempdb.ps1).
 
 Review its connection string before running it.
+
+## Script language and command ownership (0.1.0)
+
+No SqlServer PowerShell module installation is required. The distribution bundles
+SqlClient and ScriptDom for the supported runtimes. The public invocation and history
+schema are unchanged. Private `Invoke-Migration -ConnStr <string> -Script <string>`
+owns its execution connection and command. `Set-Executed` takes a borrowed
+`-SqlCmd <Microsoft.Data.SqlClient.SqlCommand>` for history.
+
+Scripts must parse as TSql160 with quoted identifiers initially enabled. Standalone,
+case-insensitive `GO` separates batches. The runner sends original source slices;
+separator-like text in literals/comments, multiline statements, and batch-scoped
+definitions retain their meaning. Leading/trailing/consecutive empty batches are
+skipped. Empty, whitespace-only and comment-only files succeed and receive history.
+Explicit `SET QUOTED_IDENTIFIER` must remain compatible with this parser dialect;
+the parser resets its quoting mode at batch boundaries and does not discover server
+session settings.
+
+SQLCMD directives (`:r`, `:setvar`, `:connect`, and others), shell/utility commands,
+and counted separators including `GO 1` and `GO 3` are unsupported. The spelling
+`$(Name)` is reserved and rejected even in strings, identifiers and comments. A
+directive mention inside a SQL literal/comment is otherwise ordinary text. Unsupported
+constructs or syntax errors anywhere in a file prevent every batch in that file.
+
+Every executable file uses one executor-owned connection; batches within it share
+its owned command/session, so temporary objects and settings survive `GO`. History
+stays on the original connection. Script `USE`, temporary objects, settings and
+transaction state cannot reach history or later files. Pooling may reuse a physical
+session after resetting its state; a unique SPID across files is not required.
+
+The public owner forwards its original connection string unchanged for every file.
+The executor rejects blank input and locally validates syntax, keywords and typed
+option values with SqlConnectionStringBuilder, including for empty files. It then
+reads and validates the complete script before allocating SQL resources. Invalid
+and zero-batch files open no execution connection and perform no login probe.
+
+For each executable file, the executor suppresses ambient transactions, creates and
+opens a connection from that original string, then creates one command with timeout
+`0`. Authentication, options and configured/default catalog come from the string.
+Changing the history connection's database or redacting its password does not affect
+this input. Connection-string authentication must be provisioned for the deployment;
+external credential/token/callback objects are outside this interface. Initialization
+failure terminates. Required libraries use the private `Import-RequiredLibrary`
+bootstrap and the selected distribution's runtime bundle.
+
+History keeps its own command's timeout and assigned transaction without switching
+timeouts between scripts and history. `Set-Executed` preserves its borrowed connection,
+timeout, transaction and lifetime while replacing operation text and typed parameters.
+The executor owns command, connection and suppression scope and attempts disposal in
+that order, keeping ambient suppression active through SQL cleanup. The public owner
+allocates history resources only for confirmed eligible work, then disposes its
+command and connection on every exit. Callers remain responsible for history transactions.
+## Failure and retry
+
+Files execute in configured order. After all batches, the runner requires zero
+outstanding transactions through `SELECT @@TRANCOUNT`. Authors must finish every
+explicit transaction within the file; the runner never commits one automatically.
+History follows this check and successful command, connection and scope disposal,
+before the next file. Input/read/preflight/parse/runtime/transaction/cleanup/history failures terminate the
+operation. Diagnostics identify the file and original coordinates or executable batch
+ordinal, retaining the underlying cause without copying SQL/provider details into
+context messages. Cleanup attempts every owned resource and preserves the primary
+failure when cleanup also fails.
+
+There is no implicit phase rollback. Earlier batches can remain committed after a
+later runtime failure. SQL success and history recording are separate completion
+steps: history can fail after SQL has committed. Scripts must be independently
+idempotent and manage any explicit SQL transactions themselves. A failed forced rerun
+leaves the previous completion record unchanged; it does not undo earlier SQL effects.
+
+For recovery, inspect the underlying failure and actual database state, repair the
+script or history permissions, and rerun the same public invocation. Existing successful
+files remain skipped. Use `-ForceScripts` explicitly when retrying a previously recorded
+file whose contents changed. Review partial effects before forcing it; rerunning must
+be safe without relying on a phase transaction.

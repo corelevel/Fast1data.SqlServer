@@ -11,7 +11,7 @@
 RootModule = 'Fast1data.SqlServer.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.5'
+ModuleVersion = '0.2.1'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -50,9 +50,7 @@ PowerShellVersion = '7.6'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @(
-	'SqlServer'
-)
+RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -73,7 +71,10 @@ RequiredModules = @(
 FunctionsToExport = @(
 	'Invoke-Fast1Audit',
 	'Invoke-Fast1Migration',
-	'Invoke-Fast1Archiving'
+	'Invoke-Fast1Archiving',
+	'Invoke-Fast1GenericSqlQuery',
+	'Invoke-Fast1GenericSqlQueryReader',
+	'New-Fast1GenericSqlParam'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -108,7 +109,6 @@ PrivateData = @{
 			'PSEdition_Core'
 			'Windows'
 			'Linux'
-			'macOS'
 		)
 
 		# A URL to the license for this module.
@@ -121,8 +121,30 @@ PrivateData = @{
 		# IconUri = ''
 
 		# ReleaseNotes of this module
-		ReleaseNotes = 'Upgraded to .NET 10; now requires PowerShell 7.6 or later.
-		Updated Microsoft.Data.SqlClient to 7.1.1.
+		ReleaseNotes = '0.2.1: Excluded Pester test files and debug symbols (`.pdb`) from the release package, reducing package size.
+
+		0.2.0: macOS support is removed immediately. Supported runtimes are x64 Windows (win-x64) and x64 Linux (linux-x64) only.
+		ARM64, x86 and all other platforms are unsupported; both OS and PowerShell process must report X64.
+		Move macOS orchestration to x64 Windows or Linux, retaining database state, migration history/checksums and portable paths,
+		audit checkpoints, archiving state and configuration. Arrange equivalent file/share access, permissions and credentials.
+		No database-format migration is required. PowerShell 7.6+ Core and dependency versions remain unchanged.
+		See README upgrade guidance before upgrading.
+
+		0.1.0: Removed the SqlServer PowerShell module prerequisite; bundled SqlClient 7.1.2 and ScriptDom 180.154.0.
+		Added public Invoke-Fast1GenericSqlQuery, streaming Invoke-Fast1GenericSqlQueryReader, and New-Fast1GenericSqlParam.
+		Nullable private parameter Type distinguishes missing types from valid BigInt/zero; native binary values are preserved.
+		Migration history streams through the row command while preserving exact persisted keys and ordered resource cleanup.
+		Migrations validate complete files with TSql160Parser and execute original batches on one owned command/session per file.
+		Private Invoke-Migration takes original ConnStr and owns execution resources; Set-Executed borrows SqlCmd for history.
+		One Import-RequiredLibrary bootstrap validates selected bundle identity and requested types for all managed DLLs.
+		Each executable file opens a separate connection from original ConnStr with ambient enlistment suppressed and timeout 0.
+		Target, authentication and options follow original ConnStr, including configured/default catalog; pooled sessions reset between files.
+		Rejected/zero-batch files open no execution connection; explicit SQL transactions must finish within each file.
+		History retains its command timeout/transaction and follows transaction validation and owned command/connection/scope cleanup.
+		SQLCMD directives, substitutions (including quoted mentions), and counted GO separators are unsupported.
+		Earlier SQL may remain committed after execution/cleanup/history failures; retries require idempotent scripts.
+		Upgraded to .NET 10; now requires PowerShell 7.6 or later.
+		Dependency project targets net10.0 with System.Security.Cryptography.Pkcs 11.0.0.
 		Added Linux audit discovery over SMB with credential support and unified Windows/Linux file handling.
 		Improved migration validation, path handling, execution history, and -WhatIf previews.
 		Strengthened archiving recovery, checkpoint handling, foreign-key restoration, and resource cleanup.

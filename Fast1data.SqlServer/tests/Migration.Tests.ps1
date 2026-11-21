@@ -1,3 +1,5 @@
+. (Join-Path $PSScriptRoot 'fixtures/GenericSqlQuery.HistoryCases.ps1')
+
 BeforeAll {
 	$script:moduleRoot = Split-Path -Parent $PSScriptRoot
 	$modulePath = Join-Path $script:moduleRoot 'Fast1data.SqlServer.psd1'
@@ -20,9 +22,32 @@ BeforeAll {
 		}
 		$base
 	}
+	function Initialize-MigrationOwnershipMock {
+		InModuleScope Fast1data.SqlServer {
+			$script:ownedCommand = $null
+			Mock Get-MigrationConnection {
+				$connection = [Microsoft.Data.SqlClient.SqlConnection]::new()
+				$connection | Add-Member -MemberType ScriptMethod -Name Open -Force -Value {}
+				$connection | Add-Member -NotePropertyName Database -NotePropertyValue 'initial' -Force
+				$connection | Add-Member -MemberType ScriptMethod -Name ChangeDatabase -Force -Value {
+					param ($Database)
+					$this.Database = $Database
+				}
+				$connection
+			}
+			Mock Get-GenericSqlCommand {
+				$script:ownedCommand = [Microsoft.Data.SqlClient.SqlCommand]::new('', $SqlConn)
+				$script:ownedCommand.CommandTimeout = 41
+				$script:ownedCommand
+			}
+		}
+	}
 }
 
 Describe 'Migration validation' {
+	BeforeEach {
+		Initialize-MigrationOwnershipMock
+	}
 	It 'rejects scripts outside the selected phase directory' {
 		$basePath = Join-Path $TestDrive 'traversal'
 		$phasePath = Join-Path $basePath 'phase01'
@@ -75,6 +100,9 @@ Describe 'Migration validation' {
 }
 
 Describe 'Whole-phase command guards' {
+	BeforeEach {
+		Initialize-MigrationOwnershipMock
+	}
 	It 'rejects <Invalid> before mutation (WhatIf=<Preview>)' -ForEach @(
 		foreach ($preview in @($false, $true)) {
 			foreach ($invalid in @('configuration', 'phase', 'directory', 'duplicate', 'conflict', 'unknown-conflict', 'parent', 'absolute', 'sibling-prefix', 'self', 'ignored-escape', 'forced-escape', 'missing', 'forced-missing', 'drift')) {
@@ -174,11 +202,16 @@ Describe 'Whole-phase command guards' {
 			} | Should -Throw $message
 			Should -Invoke Invoke-Migration -Times 0 -Exactly
 			Should -Invoke Set-Executed -Times 0 -Exactly
+			Should -Invoke Get-MigrationConnection -Times 0 -Exactly
+			Should -Invoke Get-GenericSqlCommand -Times 0 -Exactly
 		}
 	}
 }
 
 Describe 'Migration preview contract' {
+	BeforeEach {
+		Initialize-MigrationOwnershipMock
+	}
 	It 'performs reads and validation but no mutations when confirmation is declined' {
 		if (-not ('Fast1MigrationDecliningHost' -as [type])) {
 			Add-Type -TypeDefinition @'
@@ -253,6 +286,10 @@ public sealed class Fast1MigrationDecliningUI : PSHostUserInterface {
 					function script:Set-Executed {
 						$script:declineTrace.Add('write')
 					}
+					function script:Get-MigrationConnection {
+						$script:declineTrace.Add('allocate')
+						throw 'Declined confirmation must not allocate mutation resources.'
+					}
 				}
 				Invoke-Fast1Migration -ConnStr 'Data Source=unused;Initial Catalog=unused' -BasePath $BasePath -Phase 'phase01' -Confirm
 				& (Get-Module Fast1data.SqlServer) { $script:declineTrace.ToArray() }
@@ -291,6 +328,8 @@ public sealed class Fast1MigrationDecliningUI : PSHostUserInterface {
 			Should -Invoke Get-Executed -Times 1 -Exactly
 			Should -Invoke Invoke-Migration -Times 0 -Exactly
 			Should -Invoke Set-Executed -Times 0 -Exactly
+			Should -Invoke Get-MigrationConnection -Times 0 -Exactly
+			Should -Invoke Get-GenericSqlCommand -Times 0 -Exactly
 			$normal = @(Invoke-Fast1Migration @arguments 4>&1 3>&1)
 			$previewDecisions = @($preview | Where-Object { $_ -is [System.Management.Automation.VerboseRecord] -and $_.Message -match '\[Verbose\] (Run|Skip) migration script:' } | ForEach-Object { $_.Message -replace '^\[[^\]]+\] \[Verbose\] ', '' })
 			$normalDecisions = @($normal | Where-Object { $_ -is [System.Management.Automation.VerboseRecord] -and $_.Message -match '\[Verbose\] (Run|Skip) migration script:' } | ForEach-Object { $_.Message -replace '^\[[^\]]+\] \[Verbose\] ', '' })
@@ -342,6 +381,8 @@ public sealed class Fast1MigrationDecliningUI : PSHostUserInterface {
 			Should -Invoke Get-Executed -Times 2 -Exactly
 			Should -Invoke Invoke-Migration -Times 0 -Exactly
 			Should -Invoke Set-Executed -Times 0 -Exactly
+			Should -Invoke Get-MigrationConnection -Times 0 -Exactly
+			Should -Invoke Get-GenericSqlCommand -Times 0 -Exactly
 		}
 	}
 
@@ -372,6 +413,9 @@ public sealed class Fast1MigrationDecliningUI : PSHostUserInterface {
 }
 
 Describe 'Migration history coordination' {
+	BeforeEach {
+		Initialize-MigrationOwnershipMock
+	}
 	It 'executes then records each eligible script in configured order and preserves original update keys' {
 		$basePath = New-CommandFixture -Scripts 'z.sql', 'Nested/Legacy.sql', 'a.sql', 'skip.sql'
 		InModuleScope 'Fast1data.SqlServer' -Parameters @{ BasePath = $basePath } {
@@ -379,9 +423,15 @@ Describe 'Migration history coordination' {
 			$script:writtenRecords = [System.Collections.Generic.List[object]]::new()
 			Mock Get-Executed { @([PSCustomObject]@{ script_name = 'NESTED\LEGACY.SQL'; checksum = 'old' }) }
 			Mock Invoke-Migration {
+				($ConnStr -ceq 'Data Source=unused;Initial Catalog=unused;Application Name="original spacing"') | Should -BeTrue
+				$script:ownedCommand.CommandTimeout | Should -Be 41
+				$script:ownedCommand.Connection.Database | Should -BeExactly 'initial'
 				$script:coordinationTrace.Add("execute:$([System.IO.Path]::GetFileName($Script))")
 			}
 			Mock Set-Executed {
+				[object]::ReferenceEquals($SqlCmd, $script:ownedCommand) | Should -BeTrue
+				$SqlCmd.CommandTimeout | Should -Be 41
+				$SqlCmd.Connection.Database | Should -BeExactly 'initial'
 				$script:coordinationTrace.Add("write:$ScriptName")
 				$script:writtenRecords.Add([PSCustomObject]@{
 					Name = $ScriptName
@@ -391,7 +441,7 @@ Describe 'Migration history coordination' {
 					Phase = $Phase
 				})
 			}
-			Invoke-Fast1Migration -ConnStr 'Data Source=unused;Initial Catalog=unused' -BasePath $BasePath -Phase 'phase01' `
+			Invoke-Fast1Migration -ConnStr 'Data Source=unused;Initial Catalog=unused;Application Name="original spacing"' -BasePath $BasePath -Phase 'phase01' `
 				-IgnoreScripts 'skip.sql' -ForceScripts 'nested/LEGACY.sql', 'A.SQL' -Confirm:$false
 			$script:coordinationTrace.ToArray() | Should -Be @('execute:z.sql', 'write:z.sql', 'execute:Legacy.sql', 'write:Nested/Legacy.sql', 'execute:a.sql', 'write:a.sql')
 			$script:writtenRecords.Name | Should -Be @('z.sql', 'Nested/Legacy.sql', 'a.sql')
@@ -403,6 +453,8 @@ Describe 'Migration history coordination' {
 				$record.Checksum | Should -Be (Get-FileChecksum (Join-Path $BasePath "phase01/$($record.Name)"))
 			}
 			Should -Invoke Get-Executed -Times 1 -Exactly
+			Should -Invoke Get-MigrationConnection -Times 1 -Exactly
+			Should -Invoke Get-GenericSqlCommand -Times 1 -Exactly
 			Should -Invoke Set-Executed -Times 0 -Exactly -ParameterFilter { $ScriptName -eq 'skip.sql' }
 		}
 	}
@@ -410,6 +462,9 @@ Describe 'Migration history coordination' {
 	It 'stops on <Failure> failure, retains earlier progress, and retries truthfully' -ForEach @(
 		@{ Failure = 'execution' }
 		@{ Failure = 'recording' }
+		@{ Failure = 'transaction' }
+		@{ Failure = 'command creation' }
+		@{ Failure = 'disposal' }
 	) {
 		$basePath = New-CommandFixture -Scripts 'first.sql', 'middle.sql', 'last.sql'
 		InModuleScope 'Fast1data.SqlServer' -Parameters @{ BasePath = $basePath; Failure = $Failure } {
@@ -425,8 +480,8 @@ Describe 'Migration history coordination' {
 			Mock Invoke-Migration {
 				$name = [System.IO.Path]::GetFileName($Script)
 				$script:failureTrace.Add("execute:$name")
-				if ($name -eq 'middle.sql' -and $script:injectFailure -and $script:failureKind -eq 'execution') {
-					Write-Error 'injected execution failure'
+				if ($name -eq 'middle.sql' -and $script:injectFailure -and $script:failureKind -ne 'recording') {
+					Write-Error "injected $script:failureKind failure"
 				}
 			}
 			Mock Set-Executed {

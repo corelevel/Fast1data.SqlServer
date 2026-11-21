@@ -1,9 +1,12 @@
 [CmdletBinding()]
 param (
 	[Parameter(Mandatory)][string]$DistributionRoot,
-	[ValidateSet('Direct', 'Manifest', 'ModelFirst', 'Sentinel', 'Extension', 'Reuse', 'Fault')][string]$Scenario = 'Direct',
+	[ValidateSet('Direct', 'Manifest', 'ModelFirst', 'Sentinel', 'Extension', 'Reuse', 'Fault', 'Library')][string]$Scenario = 'Direct',
+	[string]$DllName = 'Microsoft.SqlServer.TransactSql.ScriptDom.dll',
+	[string]$RequiredTypeName = 'Microsoft.SqlServer.TransactSql.ScriptDom.TSql160Parser',
+	[string]$LibraryCase = 'Cold',
 	[string]$FaultPath,
-	[ValidateSet('Missing', 'Corrupt', 'RuntimeError')][string]$FaultKind = 'Missing',
+	[ValidateSet('Missing', 'Corrupt', 'RuntimeError', 'Incompatible')][string]$FaultKind = 'Missing',
 	[ValidateSet('Root', 'Model')][string]$Consumer = 'Root',
 	[switch]$Instrument
 )
@@ -19,6 +22,123 @@ try {
 	}
 	$DistributionRoot = (Resolve-Path -LiteralPath $DistributionRoot -ErrorAction Stop).Path
 	$observation.Root = $DistributionRoot
+	$env:PSModulePath = Join-Path $PSHOME 'Modules'
+	if (Get-Module -ListAvailable -Name SqlServer) {
+		throw 'Loader acceptance requires SqlServer to be absent.'
+	}
+	if ($Scenario -eq 'Library') {
+		if (-not (Test-Path -LiteralPath (Join-Path $DistributionRoot '.loader-test-copy'))) {
+			throw 'Library scenarios require a marked disposable copy.'
+		}
+		. (Join-Path $DistributionRoot 'private/shared/Get-RuntimeIdentifier.ps1')
+		. (Join-Path $DistributionRoot 'private/shared/Import-RequiredLibrary.ps1')
+		$rid = Get-RuntimeIdentifier
+		$asset = Join-Path $DistributionRoot "lib/$rid/$DllName"
+		$expectedFailure = $LibraryCase -notin @('Cold', 'Reuse', 'CompatiblePreload', 'OmittedTypesCold', 'OmittedTypesReuse', 'MultipleTypesCold', 'MultipleTypesReuse')
+		if ($LibraryCase -eq 'CompatiblePreload') {
+			$preloadPath = Join-Path $DistributionRoot $DllName
+			Copy-Item -LiteralPath $asset -Destination $preloadPath
+			$preloaded = [System.Reflection.Assembly]::LoadFrom($preloadPath)
+		}
+		if ($LibraryCase -match '^Preload(Version|Culture|Token)$') {
+			$identity = [System.Reflection.AssemblyName]::GetAssemblyName($asset)
+			switch ($LibraryCase) {
+				'PreloadVersion' {
+					$identity.Version = [version]::new($identity.Version.Major + 1, 0, 0, 0)
+				}
+				'PreloadCulture' {
+					$identity.CultureName = 'fr'
+				}
+				'PreloadToken' {
+					# Emit derives the token from the public key, overriding a token-only edit.
+					$identity.SetPublicKey([string].Assembly.GetName().GetPublicKey())
+				}
+			}
+			$preloaded = [System.Reflection.Emit.AssemblyBuilder]::DefineDynamicAssembly($identity, [System.Reflection.Emit.AssemblyBuilderAccess]::Run)
+			if ($preloaded.GetName().FullName -ine $identity.FullName) {
+				throw 'Preload fault did not retain the requested incompatible identity.'
+			}
+		}
+		if ($LibraryCase -in @('Reuse', 'WarmMissing', 'WarmCorrupt', 'WarmType') -or $LibraryCase.EndsWith('TypesReuse') -or $LibraryCase -eq 'CaseSensitiveReuse') {
+			$firstOutput = @(Import-RequiredLibrary -DllName $DllName -RequiredTypeName $RequiredTypeName)
+			if ($firstOutput.Count -ne 0) {
+				throw 'First initialization emitted success output.'
+			}
+			$preloaded = [AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.GetName().Name -eq [System.IO.Path]::GetFileNameWithoutExtension($DllName) } | Select-Object -First 1
+		}
+		if ($LibraryCase -in @('ColdMissing', 'WarmMissing', 'WarmCorrupt')) {
+			Rename-Item -LiteralPath $asset -NewName ($DllName + '.loaded')
+		}
+		if ($LibraryCase -in @('ColdCorrupt', 'WarmCorrupt')) {
+			Set-Content -LiteralPath $asset -Value 'not a managed assembly'
+		}
+		if ($LibraryCase -eq 'WrongIdentity') {
+			Copy-Item -LiteralPath (Join-Path (Split-Path -Parent $asset) 'Microsoft.SqlServer.Server.dll') -Destination $asset -Force
+		}
+		if ($LibraryCase -in @('ColdType', 'WarmType')) {
+			$RequiredTypeName = 'Missing.CaseSensitive.RequiredType'
+		}
+		$libraryRequest = @{ DllName = $DllName; RequiredTypeName = @($RequiredTypeName) }
+		if ($LibraryCase.StartsWith('OmittedTypes')) {
+			$libraryRequest.Remove('RequiredTypeName')
+		}
+		if ($LibraryCase.StartsWith('MultipleTypes')) {
+			$libraryRequest.RequiredTypeName += 'Microsoft.SqlServer.TransactSql.ScriptDom.TSqlParser'
+		}
+		if ($LibraryCase.StartsWith('CaseSensitive')) {
+			$libraryRequest.RequiredTypeName = @($RequiredTypeName.ToLowerInvariant())
+		}
+		$failure = $null
+		try {
+			$result = @(Import-RequiredLibrary @libraryRequest)
+		}
+		catch {
+			$failure = $_
+		}
+		if ($expectedFailure) {
+			if ($null -eq $failure) {
+				throw "Library case $LibraryCase unexpectedly succeeded."
+			}
+			if ($LibraryCase -ne 'InvalidName') {
+				foreach ($context in @($DllName, $rid, $asset, 'build/build.ps1')) {
+					if ($failure.Exception.Message -notlike ('*' + [System.Management.Automation.WildcardPattern]::Escape($context) + '*')) {
+						throw "Library failure omitted context: $context"
+					}
+				}
+				if ($null -eq $failure.Exception.InnerException) {
+					throw 'Library failure lost its cause.'
+				}
+			}
+			$observation.LibraryError = $failure.Exception.Message
+			if ($null -ne $failure.Exception.InnerException) {
+				$observation.LibraryCause = $failure.Exception.InnerException.Message
+			}
+		}
+		else {
+			if ($null -ne $failure) {
+				throw $failure
+			}
+			if ($result.Count -ne 0) {
+				throw 'Library initialization emitted success output.'
+			}
+			$assembly = [AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.GetName().Name -eq [System.IO.Path]::GetFileNameWithoutExtension($DllName) } | Select-Object -First 1
+			foreach ($typeName in $libraryRequest.RequiredTypeName) {
+				if ($null -eq $assembly.GetType($typeName, $false, $false)) {
+					throw 'Required type was not available.'
+				}
+			}
+			if (($LibraryCase -in @('Reuse', 'CompatiblePreload') -or $LibraryCase.EndsWith('TypesReuse')) -and -not [object]::ReferenceEquals($assembly, $preloaded)) {
+				throw 'Compatible assembly was not reused.'
+			}
+			if ($LibraryCase -ne 'CompatiblePreload' -and $assembly.Location -ne $asset) {
+				throw 'Cold library location did not match selected bundle.'
+			}
+			$observation.Assembly = $assembly.Location
+		}
+		$observation.Complete = $true
+		'MODULE_LOADER_RESULT:' + ($observation | ConvertTo-Json -Depth 10 -Compress)
+		exit 0
+	}
 	if ($Instrument -or $Scenario -in @('Sentinel', 'Extension', 'Reuse', 'Fault')) {
 		if (-not (Test-Path -LiteralPath (Join-Path $DistributionRoot '.loader-test-copy'))) {
 			throw 'Mutation requires a marked disposable distribution copy.'
@@ -27,7 +147,8 @@ try {
 	if ($Instrument) {
 		$rootPath = Join-Path $DistributionRoot 'Fast1data.SqlServer.psm1'
 		$rootText = Get-Content -LiteralPath $rootPath -Raw
-		$rootText = $rootText -replace '(?m)^(\s*)Import-SqlClientLib\s*$', "`$1Import-SqlClientLib`n[AppDomain]::CurrentDomain.GetData('Fast1ModuleLoaderTrace').Add(@{ Stage = 'bootstrap' })"
+		$rootText = $rootText -replace '(?m)^(\s*Import-RequiredLibrary -DllName Microsoft\.Data\.SqlClient\.dll -RequiredTypeName Microsoft\.Data\.SqlClient\.SqlConnection)\s*$', "`$1`n[AppDomain]::CurrentDomain.GetData('Fast1ModuleLoaderTrace').Add(@{ Stage = 'bootstrap' })"
+		$rootText = $rootText -replace '(?m)^(\s*Import-RequiredLibrary -DllName Microsoft\.SqlServer\.TransactSql\.ScriptDom\.dll -RequiredTypeName Microsoft\.SqlServer\.TransactSql\.ScriptDom\.TSql160Parser)\s*$', "`$1`n[AppDomain]::CurrentDomain.GetData('Fast1ModuleLoaderTrace').Add(@{ Stage = 'parser bootstrap' })"
 		Set-Content -LiteralPath $rootPath -Value $rootText
 		foreach ($relative in @('private/shared/Load.ps1', 'private/audit/Get-ImportState.ps1', 'private/audit/Get-SqlAuditFile.ps1', 'private/audit/Get-SqlAuditFileEntry.ps1', 'private/audit/Import-SqlAuditFile.ps1', 'private/migration/Get-FileChecksum.ps1', 'private/migration/Get-RelativePath.ps1', 'private/migration/Get-Executed.ps1', 'private/migration/Set-Executed.ps1', 'private/migration/Resolve-MigrationPhase.ps1', 'private/migration/Invoke-Migration.ps1', 'private/archiving/Load.ps1', 'private/archiving/Invoke-ArchivingProcess.ps1')) {
 			$path = Join-Path $DistributionRoot $relative
@@ -51,17 +172,20 @@ try {
 	}
 	if ($Scenario -in @('ModelFirst', 'Reuse') -or $Consumer -eq 'Model') {
 		. (Join-Path $DistributionRoot 'private/shared/Get-RuntimeIdentifier.ps1')
-		. (Join-Path $DistributionRoot 'private/shared/Import-SqlClientLib.ps1')
-		Import-SqlClientLib
+		. (Join-Path $DistributionRoot 'private/shared/Import-RequiredLibrary.ps1')
+		Import-RequiredLibrary -DllName Microsoft.Data.SqlClient.dll -RequiredTypeName Microsoft.Data.SqlClient.SqlConnection
 		$loaderTrace.Add(@{ Stage = 'bootstrap' })
 	}
 	if ($Scenario -eq 'Reuse') {
+		Import-RequiredLibrary -DllName Microsoft.SqlServer.TransactSql.ScriptDom.dll -RequiredTypeName Microsoft.SqlServer.TransactSql.ScriptDom.TSql160Parser
+		$parserBefore = [Microsoft.SqlServer.TransactSql.ScriptDom.TSql160Parser].Assembly
 		$assemblyBefore = [Microsoft.Data.SqlClient.SqlConnection].Assembly
-		$runtimePath = Join-Path $DistributionRoot "lib/$(Get-RuntimeIdentifier)/Microsoft.Data.SqlClient.dll"
-		# Rename a loaded Windows DLL rather than attempting to overwrite it.
-		Rename-Item -LiteralPath $runtimePath -NewName 'Microsoft.Data.SqlClient.loaded.dll'
 	}
 	if ($Scenario -eq 'Fault') {
+		if ($FaultPath -eq 'ScriptDom') {
+			. (Join-Path $DistributionRoot 'private/shared/Get-RuntimeIdentifier.ps1')
+			$FaultPath = "lib/$(Get-RuntimeIdentifier)/Microsoft.SqlServer.TransactSql.ScriptDom.dll"
+		}
 		if ($FaultPath -eq 'SqlClient') {
 			. (Join-Path $DistributionRoot 'private/shared/Get-RuntimeIdentifier.ps1')
 			$FaultPath = "lib/$(Get-RuntimeIdentifier)/Microsoft.Data.SqlClient.dll"
@@ -71,6 +195,9 @@ try {
 			throw 'Fault path must stay inside the disposable distribution.'
 		}
 		switch ($FaultKind) {
+			'Incompatible' {
+				Copy-Item -LiteralPath (Join-Path (Split-Path -Parent $target) 'Microsoft.Data.SqlClient.dll') -Destination $target -Force
+			}
 			'Missing' {
 				Remove-Item -LiteralPath $target -ErrorAction Stop
 			}
@@ -123,7 +250,7 @@ try {
 	$observation.DeclarationErrors = $declarationErrors
 	$observation.OriginalError = "$originalError"
 	$observation.Trace = @($loaderTrace)
-	$observation.PublicCommands = @(Get-Command -Name Invoke-Fast1Audit, Invoke-Fast1Migration, Invoke-Fast1Archiving -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
+	$observation.PublicCommands = @(Get-Command -Name Invoke-Fast1Audit, Invoke-Fast1Migration, Invoke-Fast1Archiving, Invoke-Fast1GenericSqlQuery, Invoke-Fast1GenericSqlQueryReader, New-Fast1GenericSqlParam -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
 	if ($Scenario -eq 'Fault') {
 		if ($null -eq $originalError) {
 			throw 'Required dependency did not terminate initialization.'
@@ -149,10 +276,10 @@ try {
 		if ($null -ne $originalError -or $importErrors.Count -gt 0 -or $records.Count -gt 0) {
 			throw "Unexpected initialization errors/output: $originalError $($records -join ' ')"
 		}
-		if ($null -eq $root -or $null -eq $model -or $observation.PublicCommands.Count -ne 3) {
-			throw 'Import did not assemble both consumers and three public commands.'
+		if ($null -eq $root -or $null -eq $model -or $observation.PublicCommands.Count -ne 6) {
+			throw 'Import did not assemble both consumers and six public commands.'
 		}
-		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-GenericSqlQuery', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure')
+		$shared = @('Write-LogMessage', 'Get-GenericSqlCommand', 'Invoke-Fast1GenericSqlQuery', 'Invoke-Fast1GenericSqlQueryReader', 'Add-GenericSqlParameter', 'Close-GenericSqlResource', 'Add-GenericSqlCleanupFailure', 'Get-GenericSqlCleanupFailure')
 		$observation.Owners = @(
 			foreach ($module in @($root, $model)) {
 				foreach ($name in $shared) {
@@ -163,7 +290,13 @@ try {
 					if (-not $command.ScriptBlock.File.StartsWith($DistributionRoot + [System.IO.Path]::DirectorySeparatorChar)) {
 						throw "Wrong distribution for $name."
 					}
-					@{ Function = $name; Owner = $module.Name }
+					if ($name -in @('Invoke-Fast1GenericSqlQuery', 'Invoke-Fast1GenericSqlQueryReader')) {
+						$expectedPath = [System.IO.Path]::GetFullPath((Join-Path $DistributionRoot "public/$name.ps1"))
+						if ($command.ScriptBlock.File -cne $expectedPath) {
+							throw "Wrong public source for $name in $($module.Name): $($command.ScriptBlock.File)"
+						}
+					}
+					@{ Function = $name; Owner = $module.Name; SourceFile = $command.ScriptBlock.File }
 				}
 				if ($Scenario -eq 'Extension' -and (& $module { Get-LoaderExtension }) -ne 'extension') {
 					throw 'Shared-list extension did not reach both consumers.'
@@ -181,6 +314,18 @@ try {
 			}
 		}
 		$observation.Assembly = [Microsoft.Data.SqlClient.SqlConnection].Assembly.Location
+		$observation.ParserAssembly = [Microsoft.SqlServer.TransactSql.ScriptDom.TSql160Parser].Assembly.Location
+		if (-not $observation.ParserAssembly.StartsWith($DistributionRoot + [System.IO.Path]::DirectorySeparatorChar)) {
+			throw 'Parser used another distribution assembly.'
+		}
+		& $root {
+			Import-RequiredLibrary -DllName Microsoft.Data.SqlClient.dll -RequiredTypeName Microsoft.Data.SqlClient.SqlConnection
+			Import-RequiredLibrary -DllName Microsoft.SqlServer.TransactSql.ScriptDom.dll -RequiredTypeName Microsoft.SqlServer.TransactSql.ScriptDom.TSql160Parser
+			Import-RequiredLibrary -DllName Microsoft.SqlServer.TransactSql.ScriptDom.dll -RequiredTypeName Microsoft.SqlServer.TransactSql.ScriptDom.TSql160Parser
+		}
+		if ($Scenario -eq 'Reuse' -and -not [object]::ReferenceEquals($parserBefore, [Microsoft.SqlServer.TransactSql.ScriptDom.TSql160Parser].Assembly)) {
+			throw 'Compatible parser assembly was not reused.'
+		}
 		if ($Scenario -ne 'Manifest' -and -not $observation.Assembly.StartsWith($DistributionRoot + [System.IO.Path]::DirectorySeparatorChar)) {
 			throw 'Cold/bootstrap import used another distribution assembly.'
 		}
@@ -197,6 +342,10 @@ try {
 				throw 'Behavior ran before SqlClient bootstrap.'
 			}
 			$stages = @($loaderTrace.Stage)
+			if ([array]::IndexOf($stages, 'parser bootstrap') -lt 0 -or
+				[array]::IndexOf($stages, 'parser bootstrap') -ge [array]::IndexOf($stages, 'private/migration/Invoke-Migration.ps1')) {
+				throw 'Migration behavior ran before parser bootstrap.'
+			}
 			if ([array]::IndexOf($stages, 'private/archiving/Load.ps1') -ge [array]::IndexOf($stages, 'private/archiving/Invoke-ArchivingProcess.ps1')) {
 				throw 'Adapter loaded before staged declarations.'
 			}

@@ -5,11 +5,13 @@ Records a successfully executed migration script.
 .DESCRIPTION
 Inserts a migration-history record for a newly executed script. For a forced
 rerun of an existing script, locates the original stored key and updates its name,
-checksum and database UTC execution timestamp.
+checksum and database UTC execution timestamp. Uses the borrowed command directly;
+replaces its text/parameters but preserves timeout, connection and transaction.
+The caller owns all resource cleanup, including after errors. A failed history
+write can follow committed SQL and requires idempotent retry.
 
-.PARAMETER ConnStr
-Specifies the Microsoft.Data.SqlClient connection string for the target
-database.
+.PARAMETER SqlCmd
+Caller-owned Microsoft.Data.SqlClient command with an already open connection.
 
 .PARAMETER ScriptName
 Specifies the portable, phase-relative script name stored in migration history.
@@ -36,7 +38,8 @@ function Set-Executed {
 	[CmdletBinding()]
 	param (
 		[Parameter(Mandatory)]
-		[string]$ConnStr,
+		[AllowNull()]
+		[Microsoft.Data.SqlClient.SqlCommand]$SqlCmd,
 
 		[Parameter(Mandatory)]
 		[string]$ScriptName,
@@ -53,12 +56,11 @@ function Set-Executed {
 		[string]$HistoryScriptName = $ScriptName
 	)
 
-	$sqlConn = $null
-	$operationError = $null
+	if ($null -eq $SqlCmd -or $null -eq $SqlCmd.Connection -or
+		$SqlCmd.Connection.State -ne [System.Data.ConnectionState]::Open) {
+		throw 'SqlCmd must reference a command with an already open connection; the caller must open it.'
+	}
 	try {
-		$sqlConn = [Microsoft.Data.SqlClient.SqlConnection]::new()
-		$sqlConn.ConnectionString = $ConnStr
-
 		$query = ''
 		if ($ForceScript) {
 			$query = @'
@@ -81,39 +83,18 @@ values(@script_name, @phase, @checksum)
 '@
 		}
 
-		$sqlConn.Open()
-		Invoke-GenericSqlQuery `
-			-SqlConn $sqlConn `
-			-Query $query `
-			-Parameters @{
-				script_name = [GenericSqlParam]@{
-					Value = $ScriptName
-					Type = [System.Data.SqlDbType]::NVarChar
-					Size = 255
-				}
-				phase = [GenericSqlParam]@{
-					Value = $Phase
-					Type = [System.Data.SqlDbType]::NVarChar
-					Size = 32
-				}
-				checksum = [GenericSqlParam]@{
-					Value = $Checksum
-					Type = [System.Data.SqlDbType]::Char
-					Size = 64
-				}
-				history_script_name = [GenericSqlParam]@{
-					Value = $HistoryScriptName
-					Type = [System.Data.SqlDbType]::NVarChar
-					Size = 255
-				}
-			}
+		$SqlCmd.Parameters.Clear()
+		$SqlCmd.CommandType = [System.Data.CommandType]::Text
+		$SqlCmd.CommandText = $query
+		$SqlCmd.Parameters.Add('@script_name', [System.Data.SqlDbType]::NVarChar, 255).Value = $ScriptName
+		$SqlCmd.Parameters.Add('@history_script_name', [System.Data.SqlDbType]::NVarChar, 255).Value = $HistoryScriptName
+		$SqlCmd.Parameters.Add('@phase', [System.Data.SqlDbType]::NVarChar, 32).Value = $Phase
+		$SqlCmd.Parameters.Add('@checksum', [System.Data.SqlDbType]::Char, 64).Value = $Checksum
+		$null = $SqlCmd.ExecuteNonQuery()
 	}
 	catch {
-		$operationError = $_
-		throw
-	}
-	finally {
-		Close-GenericSqlResource -Resources ([ordered]@{ Connection = $sqlConn }) `
-			-PrimaryError $operationError
+		throw [System.InvalidOperationException]::new(
+			"Migration '$ScriptName' in phase '$Phase': history write failed.", $_.Exception
+		)
 	}
 }

@@ -1,6 +1,6 @@
 class GenericSqlParam {
 	[object]$Value
-	[System.Data.SqlDbType]$Type
+	[Nullable[System.Data.SqlDbType]]$Type
 	[int]$Size
 	[byte]$Precision
 	[byte]$Scale
