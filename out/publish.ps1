@@ -81,6 +81,9 @@ foreach ($rid in $supportedRids) {
 	$destination = Join-Path $moduleLibRoot $rid
 	Copy-Item -LiteralPath $source -Destination $destination -Recurse
 
+	# Remove debugging symbols from the published package.
+	Get-ChildItem -LiteralPath $destination -Filter '*.pdb' -Recurse -File | Remove-Item -Force
+
 	# Exclude accidentally nested build output from the published package.
 	$nestedPublish = Join-Path $destination 'publish'
 	if (Test-Path -LiteralPath $nestedPublish) {
@@ -179,10 +182,17 @@ if ($pesterResult.FailedCount -gt 0) {
 	throw "Pester reported $($pesterResult.FailedCount) failed test(s)."
 }
 
+# Remove test files from the distribution package after validation.
+$stagedTestsPath = Join-Path $moduleRoot 'tests'
+
+if (Test-Path -LiteralPath $stagedTestsPath) {
+	Remove-Item -LiteralPath $stagedTestsPath -Recurse -Force
+}
+
 Write-Host "Release package created successfully:"
 Write-Host "  Path:    $moduleRoot"
 Write-Host "  Module:  $($manifest.Name)"
 Write-Host "  Version: $($manifest.Version)"
 Write-Host ''
 Write-Host 'Dry-run publishing command:'
-Write-Host "  Publish-Module -Path '$moduleRoot' -Repository PSGallery -NuGetApiKey '<key>' -WhatIf -Verbose"
+Write-Host "  Publish-PSResource -Path '$moduleRoot' -Repository PSGallery -ApiKey '<key>' -Verbose"

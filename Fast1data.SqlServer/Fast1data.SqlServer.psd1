@@ -11,7 +11,7 @@
 RootModule = 'Fast1data.SqlServer.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.0'
+ModuleVersion = '0.2.1'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -121,7 +121,9 @@ PrivateData = @{
 		# IconUri = ''
 
 		# ReleaseNotes of this module
-		ReleaseNotes = '0.2.0: macOS support is removed immediately. Supported runtimes are x64 Windows (win-x64) and x64 Linux (linux-x64) only.
+		ReleaseNotes = '0.2.1: Excluded Pester test files and debug symbols (`.pdb`) from the release package, reducing package size.
+
+		0.2.0: macOS support is removed immediately. Supported runtimes are x64 Windows (win-x64) and x64 Linux (linux-x64) only.
 		ARM64, x86 and all other platforms are unsupported; both OS and PowerShell process must report X64.
 		Move macOS orchestration to x64 Windows or Linux, retaining database state, migration history/checksums and portable paths,
 		audit checkpoints, archiving state and configuration. Arrange equivalent file/share access, permissions and credentials.
