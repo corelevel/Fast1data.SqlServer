@@ -231,16 +231,17 @@ class TableGroup : System.IDisposable {
 			while ($sqlReader.Read()) {
 				$this.SourceTables.Add(
 					(Get-ArchivingTable -Values @{
-						Id = $sqlReader['SourceTableId']
+						Id = $sqlReader.GetInt32($sqlReader.GetOrdinal('SourceTableId'))
 						SchemaName = $sqlReader['SchemaName']
 						TableName = $sqlReader['TableName']
-						DataCopyBatchSize = $sqlReader['DataCopyBatchSize']
-						KeyCopyBatchSize = $sqlReader['KeyCopyBatchSize']
-						PurgeBatchSize = $sqlReader['PurgeBatchSize']
+						DataCopyBatchSize = $sqlReader.GetInt32($sqlReader.GetOrdinal('DataCopyBatchSize'))
+						KeyCopyBatchSize = $sqlReader.GetInt32($sqlReader.GetOrdinal('KeyCopyBatchSize'))
+						PurgeBatchSize = $sqlReader.GetInt32($sqlReader.GetOrdinal('PurgeBatchSize'))
+						BulkCopyTimeout = $sqlReader.GetInt32($sqlReader.GetOrdinal('BulkCopyTimeout'))
 						KeyQuery = $sqlReader['KeyQuery']
-						Archive = $sqlReader['Archive']
-						Purge = $sqlReader['Purge']
-						PurgeOrder = $sqlReader['PurgeOrder']
+						Archive = $sqlReader.GetBoolean($sqlReader.GetOrdinal('Archive'))
+						Purge = $sqlReader.GetBoolean($sqlReader.GetOrdinal('Purge'))
+						PurgeOrder = $sqlReader.GetInt16($sqlReader.GetOrdinal('PurgeOrder'))
 						DelayIntervalInSeconds = Get-DelayIntervalInSecond -DelayInterval $sqlReader['DelayInterval']
 						AlwaysRunCheck = $sqlReader['AlwaysRunCheck']
 						SrcWorkingTableName = $sqlReader['SrcWorkingTableName']
@@ -508,10 +509,11 @@ class Table {
 	[int]$DataCopyBatchSize
 	[int]$KeyCopyBatchSize
 	[int]$PurgeBatchSize
+	[int]$BulkCopyTimeout
 	[string]$KeyQuery
 	[bool]$Archive
 	[bool]$Purge
-	[int]$PurgeOrder
+	[short]$PurgeOrder
 	[int]$DelayIntervalInSeconds
 	[bool]$AlwaysRunCheck
 	[string]$SrcWorkingTableName
@@ -1276,6 +1278,7 @@ create table dbo.[$($this.DstWorkingTableName)] ([$($this.WorkingTableKeyName)] 
 			$bulkCopy.DestinationTableName = $this.SrcWorkingTableName
 			$bulkCopy.EnableStreaming = $true
 			$bulkCopy.BatchSize = $this.KeyCopyBatchSize
+			$bulkCopy.BulkCopyTimeout = $this.BulkCopyTimeout
 			foreach ($c in $this.SrcPkColumns) {
 				[void]$bulkCopy.ColumnMappings.Add([Microsoft.Data.SqlClient.SqlBulkCopyColumnMapping]::new($c.Name, $c.Name))
 			}
@@ -1379,6 +1382,7 @@ order by $position
 				$bulkCopy.DestinationTableName = 'dbo.' + (ConvertTo-ArchivingIdentifier $this.DstWorkingTableName)
 				$bulkCopy.EnableStreaming = $true
 				$bulkCopy.BatchSize = $this.KeyCopyBatchSize
+				$bulkCopy.BulkCopyTimeout = $this.BulkCopyTimeout
 				foreach ($key in $keys) {
 					[void]$bulkCopy.ColumnMappings.Add($key.Name, $key.Name)
 				}
@@ -1421,6 +1425,7 @@ order by $position
 			$bulkCopy.DestinationTableName = "[$($this.SchemaName)].[$($this.TableName)]"
 			$bulkCopy.EnableStreaming = $true
 			$bulkCopy.BatchSize = $this.DataCopyBatchSize
+			$bulkCopy.BulkCopyTimeout = $this.BulkCopyTimeout
 
 			foreach ($c in $this.SrcColumns.Values.Where({ -not $_.Computed })) {
 				[void]$bulkCopy.ColumnMappings.Add([Microsoft.Data.SqlClient.SqlBulkCopyColumnMapping]::new($c.Name, $c.Name))

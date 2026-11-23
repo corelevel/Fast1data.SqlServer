@@ -47,6 +47,8 @@ begin
 		DataCopyBatchSize	int not null,			-- batch size for data copy
 		KeyCopyBatchSize	int not null,			-- batch size for keys copy
 		PurgeBatchSize		int not null,			-- batch size for purge
+		BulkCopyTimeout		int not null constraint DF_SourceTable__BulkCopyTimeout default(30)
+			constraint CK_SourceTable__BulkCopyTimeout check (BulkCopyTimeout >= 0), -- seconds. 0 is unlimited
 		KeyQuery			nvarchar(max) not null,	-- to select primary keys values from the source
 
 		Archive				bit not null,			-- can be archived
