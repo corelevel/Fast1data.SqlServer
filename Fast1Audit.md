@@ -9,7 +9,7 @@ Fast1 Audit imports [SQL Server Audit](https://learn.microsoft.com/en-us/sql/rel
 - SQL Server with SQL Server Audit enabled
 - A target database, such as `fast1_audit`
 - Read access to the directory containing the `.sqlaudit` files
-- Permission to execute the Fast1 Audit stored procedures
+- SQL login permissions to execute the Fast1 Audit stored procedures and read audit data (see [Database setup](#database-setup))
 
 The audit path is used by two processes:
 
@@ -38,7 +38,14 @@ The module login needs permission to execute:
 - `dbo.stp_get_import_state`
 - `dbo.stp_import_audit_files`
 
-SQL Server must also be able to read the audit files through `sys.fn_get_audit_file`.
+The importer calls `sys.fn_get_audit_file` through dynamic SQL. In addition to procedure execution permissions, the module login needs the following server-level permission on the SQL Server instance used for importing:
+
+- SQL Server 2019 (15.x) and earlier: `CONTROL SERVER`
+- SQL Server 2022 (16.x) and later: `VIEW SERVER SECURITY AUDIT`
+
+See Microsoft's [`sys.fn_get_audit_file` permissions reference](https://learn.microsoft.com/en-us/sql/relational-databases/system-functions/sys-fn-get-audit-file-transact-sql#permissions).
+
+The SQL Server service account must independently have read access to the audit files. SQL login permissions and procedure execution permissions do not grant service-account file access.
 
 ### Parameters
 
@@ -113,7 +120,7 @@ $connectionString = @'
 Data Source=<server>;
 Initial Catalog=fast1_audit;
 Encrypt=True;
-TrustServerCertificate=True;
+TrustServerCertificate=False;
 Integrated Security=True;
 Application Name=Fast1data.SqlServer;
 '@
@@ -124,6 +131,8 @@ Invoke-Fast1Audit `
 	-Verbose
 ```
 - Imported audit data will be in the `dbo.fast1_audit` table
+
+The connection example validates the server certificate. Configure SQL Server with a certificate trusted by the client and use a server name matching that certificate. See Microsoft's [`TrustServerCertificate` reference](https://learn.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnectionstringbuilder.trustservercertificate).
 
 ## Linux tests
 

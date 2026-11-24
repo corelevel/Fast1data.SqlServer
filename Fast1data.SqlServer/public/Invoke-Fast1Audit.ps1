@@ -25,6 +25,30 @@ Supports local and UNC paths on Windows and UNC paths on Linux.
 .PARAMETER Credential
 Specifies the credentials used to access the SMB share.
 Required on Linux and not used on Windows.
+
+.EXAMPLE
+$connectionString = 'Server=sql01.example.com;Database=fast1_audit;' +
+	'Integrated Security=True;Encrypt=True;TrustServerCertificate=False'
+Invoke-Fast1Audit -ConnStr $connectionString `
+	-Folder '\\audit-server\sql-audit' -Verbose
+
+On Windows, imports audit files using the current Windows identity for discovery
+and Windows authentication to SQL Server. Deploy the audit schema and grant the SQL login audit-read
+permissions first. The SQL Server service account also needs read access to the
+share. Use a SQL Server name matching a certificate trusted by the client.
+
+.EXAMPLE
+$connectionString = $env:FAST1_AUDIT_SQL_CONN_STR
+$shareCredential = Get-Credential -UserName 'DOMAIN\audit-reader' -Message 'SMB share credentials'
+Invoke-Fast1Audit -ConnStr $connectionString `
+	-Folder '\\audit-server\sql-audit' -Credential $shareCredential -Verbose
+
+On Linux, discovers audit files with smbclient in PATH and prompted SMB credentials.
+First supply FAST1_AUDIT_SQL_CONN_STR through your secret store with the target audit
+database, provisioned SQL authentication, Encrypt=True, and TrustServerCertificate=False.
+Deploy the audit schema and grant the SQL login audit-read permissions first.
+The SMB credentials are for discovery; the SQL Server service account needs its
+own read access to the share, and the SQL Server certificate must be trusted by the client.
 #>
 function Invoke-Fast1Audit {
 	[CmdletBinding()]

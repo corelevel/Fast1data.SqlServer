@@ -38,6 +38,17 @@ configuration database.
 
 .PARAMETER GroupName
 Specifies the configured table-group name to archive or purge.
+
+.EXAMPLE
+$connectionString = 'Server=sql01.example.com;Database=fast1_archiving;' +
+	'Integrated Security=True;Encrypt=True;TrustServerCertificate=False'
+Invoke-Fast1Archiving -ConnStr $connectionString -GroupName 'Orders' -Verbose
+
+Runs the configured Orders group and reports progress. Deploy the archiving schema,
+configure its source/destination connections and source tables, and grant the required
+permissions first. Configuration controls whether rows are archived, purged, or both;
+incomplete work resumes from saved checkpoints. This example uses provisioned Windows
+authentication and a SQL Server certificate trusted by the client.
 #>
 function Invoke-Fast1Archiving {
 	[CmdletBinding()]

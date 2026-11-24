@@ -99,6 +99,8 @@ Make the selection criteria stable for the duration of a run. Rows returned by t
 
 `BulkCopyTimeout` applies before every write in all three operations: source primary keys into the source working table, destination primary keys into the destination working table (each reconciliation page), and archive data into the destination table (each batch). The database supplies the 30-second default for omitted inserts. Zero explicitly removes the bulk-copy time limit. Negative values and explicit `NULL` are rejected by the database; rejected updates preserve the prior value. Each table, including tables in the same group, uses its own loaded setting. Edits take effect when configuration is next loaded.
 
+Ordinary SQL query timeouts remain unchanged, including the connection string's `Command Timeout` where already applicable. Setting `BulkCopyTimeout = 0` removes only the bulk-copy time limit; it does not remove query time limits.
+
 ### `dbo.ProcessState`
 
 The module manages this table automatically.
@@ -143,7 +145,7 @@ $connectionString = @(
 	'User ID=archiving_user'
 	'Password=replace-me'
 	'Encrypt=True'
-	'TrustServerCertificate=True'
+	'TrustServerCertificate=False'
 ) -join ';'
 
 Invoke-Fast1Archiving `
@@ -154,6 +156,8 @@ Invoke-Fast1Archiving `
 
 An additional executable example is available in [`example/archiving/archive-StackOverflow2013.ps1`](example/archiving/archive-StackOverflow2013.ps1).
 Review its connection strings and configuration before running it.
+
+The connection example validates the server certificate. Configure SQL Server with a certificate trusted by the client and use a server name matching that certificate. See Microsoft's [`TrustServerCertificate` reference](https://learn.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnectionstringbuilder.trustservercertificate).
 
 ## Tests
 

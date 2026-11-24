@@ -53,14 +53,48 @@ Describe 'Connection-string executor input' {
 		Should -Invoke Get-MigrationSuppressionScope -Times 0 -Exactly
 	}
 
-	It 'does not validate <Kind> ConnStr for an empty script or allocate SQL resources' -ForEach @(
-		@{ Kind = 'valid'; Value = 'Server=unreachable;Database=unused;User ID=synthetic;Password=synthetic' }
-		@{ Kind = 'whitespace'; Value = '   ' }
-		@{ Kind = 'malformed'; Value = 'Server="unterminated' }
-		@{ Kind = 'unknown keyword'; Value = 'PrivateKeyword=private-value' }
-		@{ Kind = 'invalid typed value'; Value = 'Server=unused;Connect Timeout=private-value' }
+	It 'rejects <Kind> ConnStr locally without SQL allocation (executable=<Executable>)' -ForEach @(
+		foreach ($executable in @($false, $true)) {
+			foreach ($entry in @(
+				@{ Kind = 'whitespace'; Value = '   ' }
+				@{ Kind = 'malformed'; Value = 'Server="unterminated' }
+				@{ Kind = 'unknown keyword'; Value = 'PrivateKeyword=private-value' }
+				@{ Kind = 'invalid typed value'; Value = 'Server=unused;Connect Timeout=private-value' }
+			)) {
+				@{ Kind = $entry.Kind; Value = $entry.Value; Executable = $executable }
+			}
+		}
 	) {
-		@(Invoke-Migration -ConnStr $Value -Script $script:inputPath) | Should -HaveCount 0
+		if ($Executable) {
+			[System.IO.File]::WriteAllText($script:inputPath, 'SELECT 1;')
+		}
+		$caught = $null
+		try {
+			Invoke-Migration -ConnStr $Value -Script $script:inputPath
+		}
+		catch {
+			$caught = $_
+		}
+		$caught.Exception | Should -BeOfType ([System.ArgumentException])
+		$caught.Exception.Message | Should -Match 'ConnStr|connection string'
+		$caught.Exception.Message | Should -BeLike "*Migration '$script:inputPath':*"
+		$caught.Exception.Message | Should -Not -Match 'private-value|unterminated|PrivateKeyword'
+		if ($Kind -ne 'whitespace') {
+			$caught.Exception.InnerException | Should -Not -BeNullOrEmpty
+		}
+		Should -Invoke Get-MigrationScriptConnection -Times 0 -Exactly
+		Should -Invoke Get-MigrationScriptCommand -Times 0 -Exactly
+		Should -Invoke Get-MigrationSuppressionScope -Times 0 -Exactly
+	}
+
+	It 'validates ConnStr for a <Kind> script without probing the server or allocating SQL resources' -ForEach @(
+		@{ Kind = 'empty'; Source = '' }
+		@{ Kind = 'whitespace-only'; Source = " `t`r`n" }
+		@{ Kind = 'comment-only'; Source = '-- no executable statements' }
+	) {
+		[System.IO.File]::WriteAllText($script:inputPath, $Source)
+		@(Invoke-Migration -ConnStr 'Server=unreachable;Database=unused;User ID=synthetic;Password=synthetic' `
+			-Script $script:inputPath) | Should -HaveCount 0
 		Should -Invoke Get-MigrationScriptConnection -Times 0 -Exactly
 		Should -Invoke Get-MigrationScriptCommand -Times 0 -Exactly
 		Should -Invoke Get-MigrationSuppressionScope -Times 0 -Exactly

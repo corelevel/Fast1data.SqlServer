@@ -5,22 +5,19 @@ Fast1data.SqlServer is a PowerShell module for SQL Server administration and dep
 - [Fast1 Audit](Fast1Audit.md) — resumable import of [SQL Server Audit](https://learn.microsoft.com/en-us/sql/relational-databases/security/auditing/sql-server-audit-database-engine) (`.sqlaudit`) files into a SQL Server database.
 - [Fast1 Migration](Fast1Migration.md) — ordered, checksum-protected execution of SQL Server migration scripts.
 - [Fast1 Archiving](Fast1Archiving.md) — resumable, batch-based archiving and purging between SQL Server databases.
-- Typed scalar, silent non-query, and streaming row commands for caller-owned SQL connections.
+- [Generic SQL commands](#generic-sql-commands) — `Invoke-Fast1GenericSqlQuery` for scalar values and non-query commands, `Invoke-Fast1GenericSqlQueryReader` for streaming rows, and `New-Fast1GenericSqlParam` for typed input parameters.
 
 ## Requirements
 
 - PowerShell 7.6 or later (Core)
-- No separate SqlServer PowerShell module installation is required.
 - An x64 Windows or x64 Linux runtime, with both OS and PowerShell process reporting X64
 - Network and database permissions required by the selected feature
 
-The module bundles `Microsoft.Data.SqlClient` 7.1.2, `Microsoft.SqlServer.TransactSql.ScriptDom` 180.154.0,
+The module bundles `Microsoft.Data.SqlClient 7.1.2`, `Microsoft.SqlServer.TransactSql.ScriptDom 180.154.0`,
 and their required native/resource dependencies for these runtime identifiers:
 
 - `win-x64`
 - `linux-x64`
-
-macOS, ARM64, x86, and all other operating systems and architectures are unsupported.
 
 See [migration authoring and recovery guidance](Fast1Migration.md) for supported
 T-SQL batches, unsupported SQLCMD syntax, and idempotent retries after partial failures.
@@ -31,21 +28,6 @@ T-SQL batches, unsupported SQLCMD syntax, and idempotent retries after partial f
 ```powershell
 Install-Module -Name Fast1data.SqlServer
 ```
-
-## Upgrading to 0.2.0 from macOS
-
-Module 0.2.0 removes macOS support immediately. Move orchestration to x64 Windows
-(`win-x64`) or x64 Linux (`linux-x64`) before upgrading. Old macOS bundles or
-preloaded assemblies do not enable support in this release. Previously installed
-versions and historical releases are not removed by this change.
-
-Retain existing SQL Server database state, migration history and SHA-256 checksums,
-audit checkpoints, archiving state, and configuration. Preserve portable migration
-paths and script identities when copying migration files. Arrange equivalent access
-to configured files and shares, with the permissions and credentials required on the
-new host. Keep credentials in your existing secure configuration mechanism.
-No database-format migration or configuration-format conversion is required by
-platform removal. PowerShell 7.6+ Core and bundled dependency prerequisites are unchanged.
 
 ## Install from source
 
@@ -85,14 +67,21 @@ See [Fast1Archiving.md](Fast1Archiving.md) for prerequisites, database setup, ta
 
 ### Generic SQL commands
 
-The root module exports exactly `Invoke-Fast1Audit`, `Invoke-Fast1Migration`,
-`Invoke-Fast1Archiving`, `Invoke-Fast1GenericSqlQuery`, `Invoke-Fast1GenericSqlQueryReader`, and
-`New-Fast1GenericSqlParam`. Both manifest and direct `.psm1` imports support this surface.
-No private class import or `using module` is needed by callers.
+Use these three functions to run parameterized SQL on an open `Microsoft.Data.SqlClient.SqlConnection`:
 
-Open the connection before querying and dispose it afterward. Query commands own
-their commands and readers and leave your connection open. SQL text and procedure
-names are executable administrator inputs. Existing command timeout defaults apply.
+| Function | Use it to |
+| --- | --- |
+| `Invoke-Fast1GenericSqlQuery` | Execute a command without output, or add `-Scalar` to return the first column of the first row. |
+| `Invoke-Fast1GenericSqlQueryReader` | Stream result rows as PowerShell objects for filtering, processing, or export. |
+| `New-Fast1GenericSqlParam` | Create a typed input parameter for either query function. |
+
+Pass parameters in a hashtable with names **without** `@`; use `@` in the SQL text.
+Specify each parameter's SQL type with `-Type`, and use `-Size`, `-Precision`, or
+`-Scale` when needed. Omitting `-Value` or passing `$null` creates a typed SQL NULL.
+
+The following example creates parameters, reads rows, retrieves a scalar, and
+updates data. Open the connection before calling the query functions and dispose
+it when finished; both functions leave it open.
 
 ```powershell
 Import-Module Fast1data.SqlServer
@@ -102,15 +91,20 @@ try {
 	$connection.Open()
 	$parameters = @{
 		Id = New-Fast1GenericSqlParam -Type BigInt -Value 42
-		Name = New-Fast1GenericSqlParam -Type NVarChar -Size 100 # Typed SQL NULL
+		Name = New-Fast1GenericSqlParam -Type NVarChar -Size 100 -Value 'Example'
 	}
+
+	# Read rows as objects and export them to CSV.
 	Invoke-Fast1GenericSqlQueryReader -SqlConn $connection `
-		-Query 'SELECT @Id AS Id, @Name AS Name' -Parameters $parameters |
+		-Query 'SELECT Id, Name FROM dbo.Example WHERE Id = @Id' `
+		-Parameters @{ Id = $parameters.Id } |
 		Export-Csv ./example.csv -NoTypeInformation
 
-	# First column of the first row; empty/DBNull retain provider scalar behavior.
-	$count = Invoke-Fast1GenericSqlQuery -SqlConn $connection -Query 'SELECT COUNT(*) FROM dbo.Example' -Scalar
-	# No affected-row count or other success output.
+	# Return a single value.
+	$count = Invoke-Fast1GenericSqlQuery -SqlConn $connection `
+		-Query 'SELECT COUNT(*) FROM dbo.Example' -Scalar
+
+	# Execute an update without returning an affected-row count.
 	Invoke-Fast1GenericSqlQuery -SqlConn $connection `
 		-Query 'UPDATE dbo.Example SET Name = @Name WHERE Id = @Id' -Parameters $parameters
 }
@@ -119,28 +113,21 @@ finally {
 }
 ```
 
-Parameter keys omit `@`. The factory requires an explicit SQL type, accepts
-BigInt/enum zero, and preserves native values, including byte arrays. Omitted or
-explicit null Value represents typed SQL NULL. Size accepts 0 through Int32.MaxValue;
-Precision and Scale use byte ranges. Only positive metadata is forwarded; zero
-retains provider defaults, including decimal scale inference. MAX size -1 and
-output parameters are unsupported. The factory supports standard `-WhatIf` and
-`-Confirm`; `-WhatIf` emits no descriptor. Stored procedures use `-CommandType StoredProcedure`.
+For stored procedures, pass the procedure name to `-Query` and add
+`-CommandType StoredProcedure` to either query function.
 
-`Invoke-Fast1GenericSqlQueryReader` emits a fresh ordered object for each row, retaining
-native values and mapping SQL NULL to PowerShell null. Give every column a nonblank,
-distinct SQL alias; names must be unique under ordinal case-insensitive comparison,
-even for empty results. Only the first result with columns is selected. An empty
-first tabular result emits nothing, even if a later result contains rows; commands
-without a tabular result also emit nothing.
+`Invoke-Fast1GenericSqlQueryReader` returns rows from the first result set with
+columns, preserving column order and native values and converting SQL NULL to
+PowerShell `$null`. An empty first result set produces no rows; later result sets
+are ignored. Column names must be nonblank and unique, ignoring case; use SQL
+aliases where needed. Rows arrive incrementally, so rows already delivered remain
+available if a later read fails. Stopping the pipeline does not guarantee SQL
+cancellation or rollback.
 
-Rows arrive incrementally, but whole individual values can be materialized. A later
-failure terminates delivery while previously emitted rows remain available. Pipeline
-truncation, such as `Select-Object -First 1`, stops application reads and releases
-owned resources. Reader disposal may wait for pending results, and later SQL statements
-can still execute. Streaming does not promise cancellation, rollback, or atomic output.
-PowerShell can suppress cleanup exceptions while stopping an upstream pipeline;
-reader and command disposal are still attempted in order.
+`New-Fast1GenericSqlParam` preserves native input values, including byte arrays.
+Only positive size, precision, and scale values override provider defaults; a
+scale of `0` leaves scale inference to the provider. Size `-1` (`MAX`) and output
+parameters are unsupported. See `Get-Help <function-name> -Full` for full details.
 
 ## Help
 
@@ -212,45 +199,6 @@ folder accessible to both the SMB account and SQL Server service.
 See [migration](Fast1Migration.md#live-integration-tests),
 [archiving](Fast1Archiving.md#tests), and [audit](Fast1Audit.md#live-integration-tests)
 for suite-specific commands and prerequisites.
-
-## Maintaining private loaders
-
-`Fast1data.SqlServer/private/shared/Load.ps1` is the only shared behavior list.
-Root and `private/archiving/ArchivingModel.psm1` dot-source it independently, giving
-each module its own private support functions. The query definitions and complete
-help live in `public/Invoke-Fast1GenericSqlQuery.ps1` and
-`public/Invoke-Fast1GenericSqlQueryReader.ps1`; the factory remains in
-`public/New-Fast1GenericSqlParam.ps1`. Root loads public files through its discovery
-loop and exports their basenames. The model explicitly dot-sources only the two
-query files immediately after shared support, retaining its own defining scope
-and empty exports. Root explicitly selects audit,
-migration (including checksum and relative-path helpers), and the archiving
-adapter; the model selects comparison/delay helpers and retains its local
-functions and classes. Ordinary function files contain behavior; their loaders
-supply dependencies.
-
-Root bootstraps SqlClient and ScriptDom before loading shared behavior and the declaration-only
-`private/archiving/Load.ps1`, then loads the archiving adapter and public commands.
-Both libraries use `private/shared/Import-RequiredLibrary.ps1` with `-DllName` and
-`-RequiredTypeName`. Other bundled managed DLLs use the same function without another
-loader. It validates the selected RID asset on every call, even with a preload;
-reuse requires matching name, version, culture, public key token and requested types.
-Missing/corrupt assets and incompatible preloads fail with rebuild guidance.
-Each executable migration file opens its own connection from the original `ConnStr`
-under ambient transaction suppression and uses an owned command with timeout `0`.
-The string determines authentication/options and configured/default catalog. History
-uses its separate borrowed `SqlCmd` with unchanged settings and assigned transaction.
-Input and whole-file validation precede execution allocation; zero-batch files need
-no login. History follows a zero-transaction check and successful command, connection
-and scope cleanup. Complete explicit SQL transactions within each file.
-Session state remains isolated across files with pooling. Committed SQL can survive
-execution or cleanup/history failure; follow the [migration retry guidance](Fast1Migration.md#failure-and-retry).
-Direct model-first imports require explicit SqlClient bootstrap before parsing
-model classes. After repairing a missing or corrupt required dependency, retry in
-a fresh PowerShell process because class definitions persist within a process.
-The six public commands, runtime requirements, configuration, and persisted
-data contracts are unchanged. See the [loader validation guide](specs/005-explicit-module-loaders/quickstart.md)
-for cold imports, fault isolation, and source/package checks.
 
 ## License
 
