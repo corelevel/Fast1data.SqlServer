@@ -104,3 +104,7 @@ Removed the `Table.BulkCopyTimeout` initializer so the database is the sole sour
 
 Re-ran `Archiving.Execution.Tests.ps1` in PowerShell Core: **40 passed, 0 failed, 0 skipped**. This includes metadata mapping, all three write operations, zero, Int32 maximum and missing-metadata failure. `git diff --check` passes. Live integration suites were not rerun for this follow-up; the live results above describe the original implementation validation.
 
+## Release-version follow-up: 2026-11-24
+
+The maintainer selected **0.3.0**, superseding the earlier 0.2.2 decision. Updated the manifest version and the bulk-copy timeout release-note heading to 0.3.0. Earlier validation results above retain the version tested at that time. `Test-ModuleManifest` confirms version **0.3.0** and **six** exported commands; PSScriptAnalyzer reports **zero findings** for the changed manifest. Feature tests were not rerun for this metadata-only change. No release was published.
+

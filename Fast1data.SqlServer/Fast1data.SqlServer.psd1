@@ -11,7 +11,7 @@
 RootModule = 'Fast1data.SqlServer.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.2'
+ModuleVersion = '0.3.0'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -121,7 +121,7 @@ PrivateData = @{
 		# IconUri = ''
 
 		# ReleaseNotes of this module
-		ReleaseNotes = '0.2.2: Added per-table dbo.SourceTable.BulkCopyTimeout in seconds for source-key, destination-key and archive-data copies.
+		ReleaseNotes = '0.3.0: Added per-table dbo.SourceTable.BulkCopyTimeout in seconds for source-key, destination-key and archive-data copies.
 		Omitted inserts default to 30; zero allows unlimited bulk waiting; negatives and explicit nulls are rejected.
 		Ordinary query timeouts remain unchanged. Existing installations require manual storage preparation, backfill of every old row
 		to 30, and deployment of the updated dbo.stp_GetSourceTable before using this version. Table setup remains create-only.
