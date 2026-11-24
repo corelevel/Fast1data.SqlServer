@@ -38,6 +38,8 @@ The module login needs permission to execute:
 - `dbo.stp_get_import_state`
 - `dbo.stp_import_audit_files`
 
+The module's database user also needs `EXECUTE` and `REFERENCES` on the table type `dbo.guid_array`, or equivalent permissions on its schema or database, because `dbo.stp_get_import_state` receives a table-valued parameter of that type. Procedure execution permissions alone do not grant these type permissions. See Microsoft's [table-valued parameter permissions reference](https://learn.microsoft.com/en-us/sql/relational-databases/tables/use-table-valued-parameters-database-engine#permissions).
+
 The importer calls `sys.fn_get_audit_file` through dynamic SQL. In addition to procedure execution permissions, the module login needs the following server-level permission on the SQL Server instance used for importing:
 
 - SQL Server 2019 (15.x) and earlier: `CONTROL SERVER`
@@ -51,7 +53,7 @@ The SQL Server service account must independently have read access to the audit 
 
 | Parameter    | Required | Description                                     |
 | ------------ | -------- | ----------------------------------------------- |
-| `ConnStr`    | Yes      | Cconnection string for the target database      |
+| `ConnStr`    | Yes      | Connection string for the target database       |
 | `Folder`     | Yes      | Existing directory containing `.sqlaudit` files |
 | `Credential` | On Linux | SMB listing credentials; unused on Windows      |
 

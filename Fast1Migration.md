@@ -21,7 +21,7 @@ It is designed for migration scripts that are idempotent and safe to rerun. This
 ## Requirements
 
 - Permission to execute the migration scripts in the target database
-- Permission to read and update `dbo.fast1_migration_history`
+- `SELECT` and `INSERT` permissions on `dbo.fast1_migration_history`; `UPDATE` permission is also required for forced reruns of previously recorded scripts
 
 ## Database setup
 
