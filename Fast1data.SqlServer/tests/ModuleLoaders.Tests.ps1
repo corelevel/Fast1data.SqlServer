@@ -33,7 +33,6 @@ BeforeAll {
 		$result.Complete | Should -BeTrue
 		$result.Root | Should -Be $root
 		$result.Scenario | Should -Be $Scenario
-		Write-Information ('MODULE_LOADER_OBSERVATION:' + ($result | ConvertTo-Json -Depth 10 -Compress)) -InformationAction Continue
 		$result
 	}
 }

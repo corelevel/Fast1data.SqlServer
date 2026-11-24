@@ -74,6 +74,7 @@ Each archiving job operates on a table group. A group defines the source and des
 | `DataCopyBatchSize`    | Maximum rows copied in each archive batch.                      |
 | `KeyCopyBatchSize`     | Maximum keys copied in each key batch.                          |
 | `PurgeBatchSize`       | Maximum rows deleted in each purge batch.                       |
+| `BulkCopyTimeout`      | Bulk-copy timeout in seconds per source table; default 30, zero means unlimited. |
 | `KeyQuery`             | Query that selects only the source table's primary-key columns. |
 | `Archive`              | Whether rows are copied to the destination.                     |
 | `Purge`                | Whether selected rows are deleted from the source.              |
@@ -95,6 +96,8 @@ where OrderDate >= dateadd(day, -1, cast(getdate() as date))
 ```
 
 Make the selection criteria stable for the duration of a run. Rows returned by the query become the exact working set for that process.
+
+`BulkCopyTimeout` applies before every write in all three operations: source primary keys into the source working table, destination primary keys into the destination working table (each reconciliation page), and archive data into the destination table (each batch). The database supplies the 30-second default for omitted inserts. Zero explicitly removes the bulk-copy time limit. Negative values and explicit `NULL` are rejected by the database; rejected updates preserve the prior value. Each table, including tables in the same group, uses its own loaded setting. Edits take effect when configuration is next loaded.
 
 ### `dbo.ProcessState`
 
@@ -174,7 +177,7 @@ when the Integration tag is excluded.
 
 ## Failure and recovery
 
-One invocation owns initialization, preparation, copying, purging, progress writes and cleanup. Active tables retain their supplied traversal; preparation and archiving finish before purge runs in `PurgeOrder`. Unknown groups fail; empty groups and disabled tables release their resources normally. The command has no new parameters or success object, and existing installations need no persistence or stored-procedure upgrade.
+One invocation owns initialization, preparation, copying, purging, progress writes and cleanup. Active tables retain their supplied traversal; preparation and archiving finish before purge runs in `PurgeOrder`. Unknown groups fail; empty groups and disabled tables release their resources normally.
 
 Copy, delete and checkpoint effects commit independently. No distributed transaction is introduced. A copy can commit before its checkpoint fails, and a delete can remain committed even though its saved position lags. Processing stops on a failed effect or required transition. Progress callbacks do not prove durability. Recorded row totals describe confirmed processing and can be lower than actual copied/deleted rows; retry does not reconstruct missing historical counts or promise exactly-once accounting.
 

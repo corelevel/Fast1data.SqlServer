@@ -4,6 +4,11 @@ BeforeAll {
 	$modulePath = Join-Path $script:moduleRoot 'Fast1data.SqlServer.psd1'
 	Import-Module $modulePath -Force
 	. (Join-Path $PSScriptRoot 'fixtures/Import-SharedHelperDependency.ps1') -DistributionRoot $script:moduleRoot
+	$models = @(Get-Module -All | Where-Object { $_.Path -eq (Join-Path $script:moduleRoot 'private/archiving/ArchivingModel.psm1') })
+	if ($models.Count -ne 1) {
+		throw 'Expected exactly one loaded archiving model scope.'
+	}
+	$script:archivingModuleName = $models[0].Name
 
 	# The SQL login must be allowed to create/drop databases.
 	$connectionString = $env:FAST1_TEST_ARCHIVING_SQL_CONN_STR
@@ -85,7 +90,11 @@ BeforeAll {
 			[string]$Path
 		)
 
-		$sql = Get-Content -LiteralPath $Path -Raw
+		Invoke-ArchivingTestSqlText -ConnectionString $ConnectionString -Sql (Get-Content -LiteralPath $Path -Raw)
+	}
+
+	function Invoke-ArchivingTestSqlText {
+		param ([string]$ConnectionString, [string]$Sql)
 		$batches = [regex]::Split(
 			$sql,
 			'(?im)^\s*go\s*(?:--.*)?$'
@@ -96,6 +105,26 @@ BeforeAll {
 				Invoke-ArchivingTestSql `
 					-ConnectionString $ConnectionString `
 					-Query $batch
+			}
+		}
+	}
+
+	function Confirm-ArchivingTestTimeout {
+		param ([string]$ConnectionString, [string]$GroupName, [string]$TableName, [int]$Timeout)
+		Invoke-ArchivingTestSql -ConnectionString $ConnectionString -Scalar -Query 'select BulkCopyTimeout from dbo.SourceTable where TableName = @name' -Parameters @{ name = $TableName } | Should -Be $Timeout
+		InModuleScope $script:archivingModuleName -Parameters @{ ConnStr = $ConnectionString; GroupName = $GroupName; TableName = $TableName; Timeout = $Timeout } {
+			$group = [TableGroup]::new($ConnStr, $GroupName)
+			try {
+				$group.Initialize()
+				$group.ReadSourceTables()
+				$tables = @($group.SourceTables | Where-Object TableName -EQ $TableName)
+				$tables | Should -HaveCount 1
+				$tables[0] | Should -BeOfType ([Table])
+				$tables[0].BulkCopyTimeout | Should -Be $Timeout
+				$tables[0].BulkCopyTimeout | Should -BeOfType ([int])
+			}
+			finally {
+				$group.Dispose()
 			}
 		}
 	}
@@ -193,6 +222,12 @@ where name in (@first, @second) order by name for json path
 	Invoke-ArchivingTestSqlFile `
 		-ConnectionString $script:configConnectionString `
 		-Path $sprocsPath
+	$serverEvidence = Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Scalar -Query @'
+select concat(N'SQL Server ', cast(serverproperty('ProductVersion') as nvarchar(100)),
+	N'; compatibility ', compatibility_level, N'; CREATE ANY DATABASE ', has_perms_by_name(null, 'SERVER', 'CREATE ANY DATABASE'),
+	N'; sysadmin ', is_srvrolemember('sysadmin')) from sys.databases where name = db_name();
+'@
+	Write-Information $serverEvidence -InformationAction Continue
 }
 
 AfterAll {
@@ -374,6 +409,317 @@ if object_id(N'dbo.$script:tableName', N'U') is not null
 		}
 	}
 
+	It 'preserves group and active filtering for independent timeout metadata' {
+		$otherGroup = "$($script:groupName)_other"
+		$script:injections.Add(@{ ConnectionString = $script:configConnectionString; Query = "delete dbo.SourceTable where TableGroupId in (select TableGroupId from dbo.TableGroup where Name = N'$otherGroup'); delete dbo.TableGroup where Name = N'$otherGroup';" })
+		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Query @'
+insert dbo.TableGroup(Name, SrcServerName, SrcDatabaseName, SrcConnOptions, DstServerName, DstDatabaseName, DstConnOptions, DisableFK)
+select @other, SrcServerName, SrcDatabaseName, SrcConnOptions, DstServerName, DstDatabaseName, DstConnOptions, DisableFK from dbo.TableGroup where Name = @group_name;
+declare @other_id int = scope_identity();
+update dbo.SourceTable set BulkCopyTimeout = 60 where TableName = @table_name;
+insert dbo.SourceTable(TableGroupId, SchemaName, TableName, Active, DataCopyBatchSize, KeyCopyBatchSize, PurgeBatchSize, KeyQuery, Archive, Purge, PurgeOrder, DelayInterval, AlwaysRunCheck, BulkCopyTimeout)
+select @other_id, SchemaName, TableName, Active, DataCopyBatchSize, KeyCopyBatchSize, PurgeBatchSize, KeyQuery, Archive, Purge, PurgeOrder, DelayInterval, AlwaysRunCheck, 120 from dbo.SourceTable where TableName = @table_name;
+insert dbo.SourceTable(TableGroupId, SchemaName, TableName, Active, DataCopyBatchSize, KeyCopyBatchSize, PurgeBatchSize, KeyQuery, Archive, Purge, PurgeOrder, DelayInterval, AlwaysRunCheck, BulkCopyTimeout)
+select st.TableGroupId, SchemaName, TableName + N'_inactive', 0, DataCopyBatchSize, KeyCopyBatchSize, PurgeBatchSize, KeyQuery, Archive, Purge, PurgeOrder, DelayInterval, AlwaysRunCheck, 0
+from dbo.SourceTable st join dbo.TableGroup tg on tg.TableGroupId = st.TableGroupId where tg.Name = @group_name;
+'@ -Parameters @{ other = $otherGroup; group_name = $script:groupName; table_name = $script:tableName }
+		foreach ($entry in @(@{ Name = $script:groupName; Timeout = 60 }, @{ Name = $otherGroup; Timeout = 120 })) {
+			InModuleScope $script:archivingModuleName -Parameters @{ ConnStr = $script:configConnectionString; GroupName = $entry.Name; Timeout = $entry.Timeout } {
+				$group = [TableGroup]::new($ConnStr, $GroupName)
+				try {
+					$group.Initialize()
+					$group.ReadSourceTables()
+					$group.SourceTables | Should -HaveCount 1
+					$group.SourceTables[0].BulkCopyTimeout | Should -Be $Timeout
+				}
+				finally {
+					$group.Dispose()
+				}
+			}
+		}
+	}
+
+	It 'rejects invalid timeout <Label> on <Operation> without changing the valid value' -ForEach @(
+		@{ Label = 'negative one'; Value = -1; Operation = 'insert'; Number = 547 }
+		@{ Label = 'Int32 minimum'; Value = [int]::MinValue; Operation = 'insert'; Number = 547 }
+		@{ Label = 'explicit null'; Value = [DBNull]::Value; Operation = 'insert'; Number = 515 }
+		@{ Label = 'negative one'; Value = -1; Operation = 'update'; Number = 547 }
+		@{ Label = 'Int32 minimum'; Value = [int]::MinValue; Operation = 'update'; Number = 547 }
+		@{ Label = 'explicit null'; Value = [DBNull]::Value; Operation = 'update'; Number = 515 }
+	) {
+		$query = 'update dbo.SourceTable set BulkCopyTimeout = @timeout where TableName = @name'
+		if ($Operation -eq 'insert') {
+			$query = @'
+insert dbo.SourceTable(TableGroupId, SchemaName, TableName, Active, DataCopyBatchSize, KeyCopyBatchSize, PurgeBatchSize, KeyQuery, Archive, Purge, PurgeOrder, DelayInterval, AlwaysRunCheck, BulkCopyTimeout)
+select TableGroupId, SchemaName, TableName + N'_invalid', Active, DataCopyBatchSize, KeyCopyBatchSize, PurgeBatchSize, KeyQuery, Archive, Purge, PurgeOrder, DelayInterval, AlwaysRunCheck, @timeout
+from dbo.SourceTable where TableName = @name;
+'@
+		}
+		try {
+			Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Query $query -Parameters @{ timeout = $Value; name = $script:tableName }
+			throw 'Expected database rejection.'
+		}
+		catch {
+			$_.Exception.InnerException.Number | Should -Be $Number
+			if ($Number -eq 547) {
+				$_.Exception.Message | Should -Match 'CK_SourceTable__BulkCopyTimeout'
+			}
+			else {
+				$_.Exception.Message | Should -Match 'BulkCopyTimeout'
+			}
+		}
+		Confirm-ArchivingTestTimeout -ConnectionString $script:configConnectionString -GroupName $script:groupName -TableName $script:tableName -Timeout 30
+		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Scalar -Query 'select count(*) from dbo.SourceTable where TableName = @name' -Parameters @{ name = "$($script:tableName)_invalid" } | Should -Be 0
+		Write-Information "Rejected $Label $Operation with SQL error $Number; prior valid value remains 30." -InformationAction Continue
+	}
+
+	It 'round-trips accepted timeout <Timeout> on insert and update' -ForEach @(
+		@{ Timeout = 0 }
+		@{ Timeout = 1 }
+		@{ Timeout = 120 }
+		@{ Timeout = 2147483647 }
+	) {
+		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Query @'
+update dbo.SourceTable set BulkCopyTimeout = @timeout where TableName = @name;
+insert dbo.SourceTable(TableGroupId, SchemaName, TableName, Active, DataCopyBatchSize, KeyCopyBatchSize, PurgeBatchSize, KeyQuery, Archive, Purge, PurgeOrder, DelayInterval, AlwaysRunCheck, BulkCopyTimeout)
+select TableGroupId, SchemaName, TableName + N'_boundary', Active, DataCopyBatchSize, KeyCopyBatchSize, PurgeBatchSize, KeyQuery, Archive, Purge, PurgeOrder, DelayInterval, AlwaysRunCheck, @timeout
+from dbo.SourceTable where TableName = @name;
+'@ -Parameters @{ timeout = $Timeout; name = $script:tableName }
+		foreach ($name in @($script:tableName, "$($script:tableName)_boundary")) {
+			Confirm-ArchivingTestTimeout -ConnectionString $script:configConnectionString -GroupName $script:groupName -TableName $name -Timeout $Timeout
+		}
+	}
+
+	It 'creates the required integer timeout and trusted named constraints' {
+		$json = Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Scalar -Query @'
+select type_name(c.user_type_id) SqlType, c.is_nullable IsNullable,
+	d.name DefaultName, d.definition DefaultExpression,
+	k.name CheckName, k.definition CheckExpression, k.is_disabled IsDisabled, k.is_not_trusted IsNotTrusted
+from sys.columns c
+join sys.default_constraints d on d.object_id = c.default_object_id
+join sys.check_constraints k on k.parent_object_id = c.object_id and k.name = N'CK_SourceTable__BulkCopyTimeout'
+where c.object_id = object_id(N'dbo.SourceTable') and c.name = N'BulkCopyTimeout'
+for json path
+'@
+		$columns = @($json | ConvertFrom-Json)
+		$columns | Should -HaveCount 1
+		$columns[0].SqlType | Should -Be 'int'
+		$columns[0].IsNullable | Should -BeFalse
+		$columns[0].DefaultName | Should -Be 'DF_SourceTable__BulkCopyTimeout'
+		($columns[0].DefaultExpression -replace '[()\s]', '') | Should -Be '30'
+		$columns[0].CheckName | Should -Be 'CK_SourceTable__BulkCopyTimeout'
+		($columns[0].CheckExpression -replace '[\[\]()\s]', '') | Should -Be 'BulkCopyTimeout>=0'
+		$columns[0].IsDisabled | Should -BeFalse
+		$columns[0].IsNotTrusted | Should -BeFalse
+	}
+
+	It 'propagates <Mode> timeouts through metadata and every real write' -ForEach @(
+		@{ Mode = 'independent positive'; First = 60; Second = 120 }
+		@{ Mode = 'default and unlimited'; First = 30; Second = 0 }
+	) {
+		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Scalar -Query 'select BulkCopyTimeout from dbo.SourceTable where TableName = @name' -Parameters @{ name = $script:tableName } | Should -Be 30
+		$laterName = "$($script:tableName)_later"
+		foreach ($connectionString in @($script:sourceConnectionString, $script:destinationConnectionString)) {
+			$script:injections.Add(@{ ConnectionString = $connectionString; Query = "drop table if exists dbo.[$laterName]" })
+		}
+		Invoke-ArchivingTestSql -ConnectionString $script:sourceConnectionString -Query "select * into dbo.[$laterName] from dbo.[$script:tableName]; alter table dbo.[$laterName] add constraint [PK_$laterName] primary key(Id);"
+		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Query @"
+update dbo.SourceTable set BulkCopyTimeout = @first, AlwaysRunCheck = 1 where TableName = @table_name;
+insert dbo.SourceTable(TableGroupId, SchemaName, TableName, Active, DataCopyBatchSize, KeyCopyBatchSize, PurgeBatchSize, KeyQuery, Archive, Purge, PurgeOrder, DelayInterval, AlwaysRunCheck, BulkCopyTimeout)
+select TableGroupId, SchemaName, @later_name, Active, DataCopyBatchSize, KeyCopyBatchSize, PurgeBatchSize,
+N'select Id from dbo.[$laterName]', Archive, Purge, 2, DelayInterval, 1, @second
+from dbo.SourceTable where TableName = @table_name;
+"@ -Parameters @{ table_name = $script:tableName; later_name = $laterName; first = $First; second = $Second }
+		$observations = [System.Collections.Generic.List[object]]::new()
+		InModuleScope $script:archivingModuleName -Parameters @{ Observations = $observations; ConnStr = $script:configConnectionString; GroupName = $script:groupName; First = $First; Second = $Second } {
+			$group = [TableGroup]::new($ConnStr, $GroupName)
+			try {
+				$group.Initialize()
+				$group.ReadSourceTables()
+				$group.SourceTables | Should -HaveCount 2
+				@($group.SourceTables.BulkCopyTimeout | Sort-Object) -join ',' | Should -Be (@($First, $Second | Sort-Object) -join ',')
+				foreach ($table in $group.SourceTables) {
+					$table | Should -BeOfType ([Table])
+				}
+			}
+			finally {
+				$group.Dispose()
+			}
+			$script:timeoutWrites = $Observations
+			Mock Get-ArchivingBulkCopy {
+				param ($Connection, [Microsoft.Data.SqlClient.SqlBulkCopyOptions]$Options = 0)
+				$bulk = [Microsoft.Data.SqlClient.SqlBulkCopy]::new($Connection, $Options, $null)
+				$bulk | Add-Member -NotePropertyName Observations -NotePropertyValue $script:timeoutWrites
+				$bulk | Add-Member -MemberType ScriptMethod -Name WriteToServer -Force -Value {
+					param ([System.Data.IDataReader]$Reader)
+					$this.Observations.Add([pscustomobject]@{ Target = $this.DestinationTableName; Timeout = $this.BulkCopyTimeout })
+					$this.psbase.WriteToServer($Reader)
+				}
+				$bulk
+			}
+		}
+		Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName
+		foreach ($entry in @(@{ Name = $script:tableName; Timeout = $First }, @{ Name = $laterName; Timeout = $Second })) {
+			$writes = @($observations | Where-Object { $_.Target -in @("dbo_$($entry.Name)__src", "dbo.[dbo_$($entry.Name)__dst]", "[dbo].[$($entry.Name)]") })
+			# One source capture, three destination-key pages, three data batches.
+			$writes | Should -HaveCount 7
+			@($writes.Timeout | Select-Object -Unique) | Should -HaveCount 1
+			$writes[0].Timeout | Should -Be $entry.Timeout
+			Invoke-ArchivingTestSql -ConnectionString $script:destinationConnectionString -Scalar -Query "select count(*) from dbo.[$($entry.Name)] where Id between 1 and 5" | Should -Be 5
+		}
+		(Get-ArchivingTestState).CompleteDate | Should -Not -BeNullOrEmpty
+		Write-Information ($observations | ConvertTo-Json -Compress) -InformationAction Continue
+	}
+
+	It 'retains ordinary command limits with bulk timeout <Timeout>' -ForEach @(
+		@{ Timeout = 30 }
+		@{ Timeout = 120 }
+		@{ Timeout = 0 }
+	) {
+		$builder = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($script:configConnectionString)
+		$builder['Command Timeout'] = 2
+		InModuleScope $script:archivingModuleName -Parameters @{ ConnStr = $builder.ConnectionString; Timeout = $Timeout } {
+			$table = [Table]@{ BulkCopyTimeout = $Timeout }
+			$connection = Get-ArchivingConnection -ConnectionString $ConnStr -Role Configuration
+			$command = $null
+			try {
+				$connection.Open()
+				$command = Get-ArchivingCommand -Query "waitfor delay '00:00:05'; select 1" -Connection $connection
+				$command.CommandTimeout | Should -Be 2
+				$table.BulkCopyTimeout | Should -Be $Timeout
+				try {
+					[void]$command.ExecuteScalar()
+					throw 'Expected the ordinary query to time out.'
+				}
+				catch {
+					$_.Exception.InnerException.Number | Should -Be -2
+				}
+			}
+			finally {
+				if ($null -ne $command) {
+					$command.Dispose()
+				}
+				$connection.Dispose()
+			}
+		}
+	}
+
+	It 'honors <Mode> at an isolated real bulk write with bounded cleanup' -ForEach @(
+		@{ Mode = 'positive timeout and retry'; Timeout = 2; Delay = '00:00:06' }
+		@{ Mode = 'unlimited waiting beyond thirty seconds'; Timeout = 0; Delay = '00:00:35' }
+	) {
+		Invoke-ArchivingTestSql -ConnectionString $script:destinationConnectionString -Query "create table dbo.[$script:tableName](Id int not null primary key, Value nvarchar(100) not null)"
+		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Query 'update dbo.SourceTable set BulkCopyTimeout = @timeout where TableName = @name' -Parameters @{ name = $script:tableName; timeout = $Timeout }
+		$builder = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($script:configConnectionString)
+		$builder['Command Timeout'] = 120
+		$runConnectionString = $builder.ConnectionString
+		$options = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($script:connectionOptions)
+		$options['Command Timeout'] = 120
+		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Query 'update dbo.TableGroup set SrcConnOptions = @options, DstConnOptions = @options where Name = @name' -Parameters @{ name = $script:groupName; options = $options.ConnectionString }
+		$barrier = [pscustomobject]@{ ConnectionString = $script:destinationConnectionString; Target = "[dbo].[$script:tableName]"; Delay = $Delay; Enabled = $true; Entered = $false; Elapsed = 0.0; Deadline = $false; Released = $false }
+		# Readers and target metadata are ready when the overridden write is entered.
+		# The server releases its own lock after a bounded delay, independently of assertions.
+		InModuleScope $script:archivingModuleName -Parameters @{ Barrier = $barrier } {
+			$script:writeBarrier = $Barrier
+			Mock Get-ArchivingBulkCopy {
+				param ($Connection, [Microsoft.Data.SqlClient.SqlBulkCopyOptions]$Options = 0)
+				$bulk = [Microsoft.Data.SqlClient.SqlBulkCopy]::new($Connection, $Options, $null)
+				$bulk | Add-Member -NotePropertyName Barrier -NotePropertyValue $script:writeBarrier
+				$bulk | Add-Member -MemberType ScriptMethod -Name WriteToServer -Force -Value {
+					param ([System.Data.IDataReader]$Reader)
+					if (-not $this.Barrier.Enabled -or $this.DestinationTableName -ne $this.Barrier.Target) {
+						$this.psbase.WriteToServer($Reader)
+						return
+					}
+					$blocker = [Microsoft.Data.SqlClient.SqlConnection]::new($this.Barrier.ConnectionString)
+					$lockCommand = $null
+					$releaseCommand = $null
+					$releaseTask = $null
+					$deadline = [System.Threading.CancellationTokenSource]::new([timespan]::FromSeconds(90))
+					$timer = [System.Diagnostics.Stopwatch]::new()
+					try {
+						$blocker.Open()
+						$lockCommand = $blocker.CreateCommand()
+						$lockCommand.CommandText = "begin transaction; select count(*) from $($this.Barrier.Target) with (tablockx, holdlock)"
+						$lockCommand.CommandTimeout = 90
+						[void]$lockCommand.ExecuteScalar()
+						$releaseCommand = $blocker.CreateCommand()
+						$releaseCommand.CommandText = 'waitfor delay @delay; rollback transaction;'
+						$releaseCommand.CommandTimeout = 90
+						$releaseCommand.Parameters.Add('@delay', [System.Data.SqlDbType]::VarChar, 8).Value = $this.Barrier.Delay
+						$releaseTask = $releaseCommand.ExecuteNonQueryAsync($deadline.Token)
+						$this.Barrier.Entered = $true
+						$timer.Start()
+						# Real provider async write allows an independent cancellation watchdog.
+						$this.psbase.WriteToServerAsync($Reader, $deadline.Token).GetAwaiter().GetResult()
+					}
+					finally {
+						$timer.Stop()
+						$this.Barrier.Elapsed = $timer.Elapsed.TotalSeconds
+						$this.Barrier.Deadline = $deadline.IsCancellationRequested
+						if ($null -ne $releaseCommand) {
+							$releaseCommand.Cancel()
+						}
+						$blocker.Dispose()
+						if ($null -ne $releaseTask) {
+							try {
+								[void]$releaseTask.GetAwaiter().GetResult()
+							}
+							catch {
+								# Cancellation/disconnection is expected when a positive timeout wins.
+								$null = $_
+							}
+						}
+						if ($null -ne $lockCommand) {
+							$lockCommand.Dispose()
+						}
+						if ($null -ne $releaseCommand) {
+							$releaseCommand.Dispose()
+						}
+						$deadline.Dispose()
+						$this.Barrier.Released = $true
+						$this.Barrier.Enabled = $false
+					}
+				}
+				$bulk
+			}
+		}
+		if ($Timeout -gt 0) {
+			try {
+				Invoke-Fast1Archiving -ConnStr $runConnectionString -GroupName $script:groupName
+				throw 'Expected a provider bulk timeout.'
+			}
+			catch {
+				$errorChain = $_.Exception
+				while ($null -ne $errorChain -and $errorChain -isnot [Microsoft.Data.SqlClient.SqlException]) {
+					$errorChain = $errorChain.InnerException
+				}
+				$errorChain | Should -Not -BeNullOrEmpty
+				$errorChain.Number | Should -Be -2
+			}
+			$barrier.Elapsed | Should -BeLessThan 25
+			$state = Get-ArchivingTestState
+			$state.KeyCopyDate | Should -Not -BeNullOrEmpty
+			$state.LastArchivedKey | Should -Be 0
+			$state.ArchiveCompleteDate | Should -BeNullOrEmpty
+			$state.CompleteDate | Should -BeNullOrEmpty
+			$state.WorkingSetExists | Should -Be 1
+			Save-ArchivingTestEvidence -Stage 'real bulk timeout'
+			Invoke-Fast1Archiving -ConnStr $runConnectionString -GroupName $script:groupName
+		}
+		else {
+			Invoke-Fast1Archiving -ConnStr $runConnectionString -GroupName $script:groupName
+			$barrier.Elapsed | Should -BeGreaterOrEqual 34
+			$barrier.Elapsed | Should -BeLessThan 85
+		}
+		$barrier.Entered | Should -BeTrue
+		$barrier.Deadline | Should -BeFalse
+		$barrier.Released | Should -BeTrue
+		(Get-ArchivingTestState).CompleteDate | Should -Not -BeNullOrEmpty
+		Invoke-ArchivingTestSql -ConnectionString $script:destinationConnectionString -Scalar -Query "select count(*) from dbo.[$script:tableName]" | Should -Be 5
+		Write-Information "Provider bulk $Mode`: $($barrier.Elapsed) seconds; completed; blocker released=$($barrier.Released); watchdog=$($barrier.Deadline)." -InformationAction Continue
+	}
+
 	It 'retries a committed copy after its checkpoint fails with changed eligibility' {
 		Invoke-ArchivingTestCheckpointFault -Condition 'i.LastArchivedKey > isnull(d.LastArchivedKey, 0)'
 		Save-ArchivingTestEvidence -Stage 'before copy checkpoint fixture'
@@ -488,7 +834,7 @@ if object_id(N'dbo.$script:tableName', N'U') is not null
 		if ($EarlierError) {
 			Invoke-ArchivingTestCheckpointFault -Condition 'i.LastPurgedKey > isnull(d.LastPurgedKey, 0)'
 		}
-		InModuleScope ArchivingModel -Parameters @{ Fault = $Fault } {
+		InModuleScope $script:archivingModuleName -Parameters @{ Fault = $Fault } {
 			$script:realConstraintAction = (Get-Command Invoke-ArchivingConstraintAction).ScriptBlock
 			$script:constraintFault = $Fault
 			$script:constraintAttempts = [System.Collections.Generic.List[string]]::new()
@@ -523,7 +869,7 @@ if object_id(N'dbo.$script:tableName', N'U') is not null
 			$entries.ConstraintName | Should -Contain "FK_$($script:tableName)_a"
 			$entries.DatabaseName | Should -Contain $script:sourceDatabase
 		}
-		InModuleScope ArchivingModel {
+		InModuleScope $script:archivingModuleName {
 			@($script:constraintAttempts | Where-Object { $_ -like '*:False' }).Count | Should -Be 2
 			$script:constraintFault = ''
 		}
@@ -564,7 +910,7 @@ where st.TableName = @table_name and ps.CompleteDate is not null;
 	}
 
 	It 'recaptures an unconfirmed partial key set after a real partial bulk write' {
-		InModuleScope ArchivingModel {
+		InModuleScope $script:archivingModuleName {
 			$script:captureFault = $true
 			Mock Get-ArchivingBulkCopy {
 				param ($Connection, [Microsoft.Data.SqlClient.SqlBulkCopyOptions]$Options = 0)
@@ -587,7 +933,7 @@ where st.TableName = @table_name and ps.CompleteDate is not null;
 		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue } | Should -Throw '*partial capture interruption*'
 		(Get-ArchivingTestState).KeyCopyDate | Should -BeNullOrEmpty
 		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Scalar -Query "select count(*) from dbo.[dbo_$($script:tableName)__src]" | Should -Be 2
-		InModuleScope ArchivingModel { $script:captureFault = $false }
+		InModuleScope $script:archivingModuleName { $script:captureFault = $false }
 		Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName
 		(Get-ArchivingTestState).KeyMaxValue | Should -Be 5
 		(Get-ArchivingTestState).RowsArchived | Should -Be 5
@@ -613,7 +959,7 @@ select value * 7, concat(N'key', value * 17), value * 11.25, N'eligible' from ge
 		Invoke-ArchivingTestSql -ConnectionString $script:sourceConnectionString -Query "update dbo.[$script:tableName] set Value = N'excluded' where Id in (select top (1) Id from dbo.[$script:tableName]); insert dbo.[$script:tableName] values (99999, N'outside', 99999.99, N'eligible');"
 		Invoke-ArchivingTestSql -ConnectionString $script:destinationConnectionString -Query "update dbo.[$script:tableName] set Value = N'excluded'"
 		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Query "drop trigger dbo.[$script:checkpointTrigger]"
-		InModuleScope ArchivingModel -Parameters @{ Catalog = $script:configDatabase } {
+		InModuleScope $script:archivingModuleName -Parameters @{ Catalog = $script:configDatabase } {
 			$script:snapshotFault = $true
 			$script:snapshotCatalog = $Catalog
 			Mock Get-ArchivingBulkCopy {
@@ -633,7 +979,7 @@ select value * 7, concat(N'key', value * 17), value * 11.25, N'eligible' from ge
 		(Get-ArchivingTestState).LastArchivedKey | Should -Be 0
 		(Get-ArchivingTestState).WorkingSetExists | Should -Be 1
 		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Scalar -Query "select count(*) from dbo.[dbo_$($script:tableName)__dst]" | Should -BeGreaterThan 0
-		InModuleScope ArchivingModel { $script:snapshotFault = $false }
+		InModuleScope $script:archivingModuleName { $script:snapshotFault = $false }
 		Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName
 		Invoke-ArchivingTestSql -ConnectionString $script:destinationConnectionString -Scalar -Query "select count(*) from dbo.[$script:tableName]" | Should -Be 1105
 		Invoke-ArchivingTestSql -ConnectionString $script:destinationConnectionString -Scalar -Query "select count(*) from (select Code, Sequence from dbo.[$script:tableName] group by Code, Sequence) k" | Should -Be 1105
@@ -690,11 +1036,11 @@ where st.TableName = @later_name and ps.CompleteDate is null;
 	It 'does not acquire or toggle FK scope with DisableFK off' {
 		Initialize-ArchivingTestForeignKey
 		Invoke-ArchivingTestSql -ConnectionString $script:configConnectionString -Query 'update dbo.TableGroup set DisableFK = 0 where Name = @group_name' -Parameters @{ group_name = $script:groupName }
-		InModuleScope ArchivingModel {
+		InModuleScope $script:archivingModuleName {
 			Mock Invoke-ArchivingConstraintAction { throw 'Unexpected FK toggle' }
 		}
 		{ Invoke-Fast1Archiving -ConnStr $script:configConnectionString -GroupName $script:groupName -ErrorAction SilentlyContinue } | Should -Throw '*REFERENCE constraint*'
-		InModuleScope ArchivingModel { Should -Invoke Invoke-ArchivingConstraintAction -Exactly -Times 0 }
+		InModuleScope $script:archivingModuleName { Should -Invoke Invoke-ArchivingConstraintAction -Exactly -Times 0 }
 		$fks = @(Get-ArchivingTestForeignKey)
 		($fks | Where-Object { $_.name.EndsWith('_a') }).is_disabled | Should -BeFalse
 		($fks | Where-Object { $_.name.EndsWith('_a') }).is_not_trusted | Should -BeFalse

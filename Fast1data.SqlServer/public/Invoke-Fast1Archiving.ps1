@@ -8,6 +8,12 @@ eligible rows from source tables to archive tables, purge source rows in
 batches, and resume incomplete work. Progress messages use the verbose stream;
 warnings use the warning stream. Use -Verbose to display progress.
 
+dbo.SourceTable.BulkCopyTimeout configures each table's bulk-copy timeout in
+seconds: omitted inserts default to 30; zero means unlimited bulk waiting.
+The nonnegative integer applies to source-key, destination-key and archive-data
+copy writes, including every reconciliation page and data batch. Ordinary query
+timeouts remain unchanged. Negative values and explicit nulls are rejected.
+
 One request owns initialization, effects, checkpoints, constraint restoration and
 resource release. Copy/delete effects and checkpoints commit independently. A
 failed checkpoint can leave durable effects with lagging recorded totals. Retry

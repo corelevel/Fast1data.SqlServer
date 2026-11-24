@@ -64,11 +64,17 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 				Failures = @{}
 				CommitThenThrow = ''
 				Found = $true
-				Tables = @(@{ Id = 11; Archive = $true; Purge = $true; PurgeOrder = 1 })
+				Tables = @(@{ Id = 11; Archive = $true; Purge = $true; PurgeOrder = 1; BulkCopyTimeout = 30 })
 				Persisted = @{}
 				Instances = [System.Collections.Generic.List[object]]::new()
 				Constraints = @()
 				RealCopy = $false
+				ActualSource = $false
+				ActualDestination = $false
+				MissingTimeout = $false
+				EmptyCopy = $false
+				Writes = [System.Collections.Generic.List[object]]::new()
+				Commands = [System.Collections.Generic.List[object]]::new()
 			}
 			$script:h | Add-Member -MemberType ScriptMethod -Name Record -Value {
 				param ([string]$RecordedEvent)
@@ -104,21 +110,61 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 				elseif ($Query -eq 'dbo.stp_GetSourceTable') {
 					$rows = @(
 						foreach ($table in $script:h.Tables) {
-							@{ SourceTableId = $table.Id; SchemaName = 'dbo'; TableName = "t$($table.Id)"; DataCopyBatchSize = 2; KeyCopyBatchSize = 3; PurgeBatchSize = 2; KeyQuery = 'never executed'; Archive = $table.Archive; Purge = $table.Purge; PurgeOrder = $table.PurgeOrder; DelayInterval = '00:00:01'; AlwaysRunCheck = $false; SrcWorkingTableName = "w$($table.Id)"; DstWorkingTableName = "d$($table.Id)"; WorkingTableKeyName = 'position'; WorkingTableFlagName = 'skip' }
+							$values = @{ SourceTableId = $table.Id; SchemaName = 'dbo'; TableName = "t$($table.Id)"; DataCopyBatchSize = 2; KeyCopyBatchSize = 3; PurgeBatchSize = 2; KeyQuery = 'controlled keys'; Archive = $table.Archive; Purge = $table.Purge; PurgeOrder = [short]$table.PurgeOrder; DelayInterval = '00:00:01'; AlwaysRunCheck = $false; SrcWorkingTableName = "w$($table.Id)"; DstWorkingTableName = "d$($table.Id)"; WorkingTableKeyName = 'position'; WorkingTableFlagName = 'skip' }
+							if (-not $script:h.MissingTimeout) {
+								$values.BulkCopyTimeout = 30
+								if ($table.ContainsKey('BulkCopyTimeout')) {
+									$values.BulkCopyTimeout = $table.BulkCopyTimeout
+								}
+							}
+							$values
 						}
 					)
 				}
 				elseif ($Query -eq 'dbo.stp_GetBulkCopyData') {
 					$rows = @(@{ Id = 1 }, @{ Id = 2 })
 				}
+				elseif ($Query -eq 'controlled keys' -or $Query -eq '') {
+					$rows = @(@{ Id = 1 }, @{ Id = 2 })
+				}
+				elseif ($Query -match 'select top \(@PageSize\)') {
+					# Read these rows after parameters are supplied by the real method.
+					$rows = @()
+				}
 				else {
 					throw "Unexpected SQL in controlled suite: $Query"
 				}
 				$command = [Microsoft.Data.SqlClient.SqlCommand]::new($Query, $Connection)
+				$script:h.Commands.Add($command)
 				$command | Add-Member -NotePropertyName Harness -NotePropertyValue $script:h
 				$command | Add-Member -NotePropertyName TestReader -NotePropertyValue (Get-ControlledReader -Rows $rows -Role $Query)
 				$command | Add-Member -MemberType ScriptMethod -Name ExecuteReader -Force -Value {
 					$this.Harness.Record("read $($this.CommandText)")
+					if ($this.CommandText -match 'select top \(@PageSize\)') {
+						$rows = @(
+							foreach ($id in 1..5) {
+								if (-not $this.Harness.EmptyCopy -and $id -gt $this.Parameters['@After'].Value) {
+									@{ position = $id; Id = $id }
+								}
+							}
+						) | Select-Object -First $this.Parameters['@PageSize'].Value
+						# The real method reads position at ordinal zero.
+						$data = [System.Data.DataTable]::new()
+						[void]$data.Columns.Add('position', [int])
+						[void]$data.Columns.Add('Id', [int])
+						foreach ($row in $rows) {
+							[void]$data.Rows.Add($row.position, $row.Id)
+						}
+						$this.TestReader.Dispose()
+						$this.TestReader = $data.CreateDataReader()
+					}
+					elseif ($this.Harness.EmptyCopy -and $this.CommandText -ne 'dbo.stp_GetSourceTable' -and $this.CommandText -ne 'dbo.stp_GetTableGroup') {
+						$this.TestReader.Dispose()
+						$this.TestReader = Get-ControlledReader -Rows @() -Role $this.CommandText
+					}
+					if ($this.TestReader.PSObject.Properties['Role']) {
+						$this.TestReader.Role = $this.CommandText
+					}
 					return ,$this.TestReader
 				}
 				$command | Add-Member -MemberType ScriptMethod -Name Dispose -Force -Value {
@@ -138,7 +184,7 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 					$this.SrcPkColumns = [System.Collections.Generic.List[IndexColumn]]::new()
 					$this.SrcPkColumns.Add([IndexColumn]@{ Id = 1; Name = 'Id'; Order = 'asc' })
 					$this.SrcColumns = [System.Collections.Generic.Dictionary[string, TableColumn]]::new()
-					$this.SrcColumns.Add('Id', [TableColumn]@{ Name = 'Id'; DataType = 'int' })
+					$this.SrcColumns.Add('Id', [TableColumn]@{ Name = 'Id'; DataType = 'int'; SqlType = 'int' })
 				}
 				$table | Add-Member -MemberType ScriptMethod -Name ReadDstTableColumns -Force -Value { $this.DstColumns = $this.SrcColumns }
 				$table | Add-Member -MemberType ScriptMethod -Name AddMissedColumns -Force -Value { $false }
@@ -147,9 +193,13 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 						$this.Harness.Persisted[$this.Id] = @{ Id = $this.Id + 100; SourceTableId = $this.Id; KeyMaxValue = 5; KeyCopyDate = [datetime]::Now; LastArchivedKey = 0; RowsArchived = 0; LastPurgedKey = 0; RowsPurged = 0; IncompleteProcess = $true }
 					}
 					$this.State = [ProcessState]($this.Harness.Persisted[$this.Id] + @{ ArcSqlConn = $this.Group.ArcSqlConn })
+					if ($this.Harness.ActualSource) {
+						$this.State.KeyCopyDate = [datetime]::MinValue
+					}
 					$this.Harness.Record("load $($this.Id) $($this.State.LastArchivedKey)")
 				}
 				$table | Add-Member -MemberType ScriptMethod -Name CreateDestinationWorkingTable -Force -Value { $this.Harness.Record("snapshot create $($this.Id)") }
+				$table | Add-Member -MemberType ScriptMethod -Name CreateSourceWorkingTable -Force -Value { $this.Harness.Record("capture create $($this.Id)") }
 				$table | Add-Member -MemberType ScriptMethod -Name BulkCopyDestinationPK -Force -Value { $this.Harness.Record("snapshot copy $($this.Id)") }
 				$table | Add-Member -MemberType ScriptMethod -Name BulkCopyTable -Force -Value {
 					$this.Harness.Record("copy reset $($this.State.RowsArchivedForBatch)")
@@ -167,15 +217,27 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 				if ($script:h.RealCopy) {
 					$table.PSObject.Methods.Remove('BulkCopyTable')
 				}
+				if ($script:h.ActualDestination) {
+					$table.PSObject.Methods.Remove('BulkCopyDestinationPK')
+				}
 				$table
 			}
 			Mock Get-ArchivingBulkCopy -ModuleName 'Fast1data.SqlServer/ArchivingModel' {
 				param ($Connection, [Microsoft.Data.SqlClient.SqlBulkCopyOptions]$Options = 0)
 				$bulk = [Microsoft.Data.SqlClient.SqlBulkCopy]::new($Connection, $Options, $null)
 				$bulk | Add-Member -NotePropertyName Harness -NotePropertyValue $script:h
+				$bulk | Add-Member -NotePropertyName CopyOptions -NotePropertyValue $Options
 				$bulk | Add-Member -MemberType ScriptMethod -Name WriteToServer -Force -Value {
 					param ($Reader)
 					$null = $Reader
+					$this.Harness.Writes.Add([pscustomobject]@{
+						Target = $this.DestinationTableName
+						Timeout = $this.BulkCopyTimeout
+						Streaming = $this.EnableStreaming
+						BatchSize = $this.BatchSize
+						Options = $this.CopyOptions
+						Mappings = @($this.ColumnMappings | ForEach-Object { "$($_.SourceColumn):$($_.DestinationColumn)" })
+					})
 					$this.Harness.Record('bulk write')
 				}
 				$bulk | Add-Member -MemberType ScriptMethod -Name Dispose -Force -Value {
@@ -211,6 +273,137 @@ Describe 'Execution lifetime, transitions and cleanup through the same request' 
 				$script:h.Record("constraint $($Constraint.ConstraintName) $Disable")
 			}
 			Mock Start-Sleep -ModuleName 'Fast1data.SqlServer/ArchivingModel' { $script:h.Record("delay $Seconds") }
+		}
+	}
+
+	It 'loads independent typed timeout values in <Order> traversal order' -ForEach @(
+		@{ Order = 'forward'; Values = @(60, 120) }
+		@{ Order = 'reverse'; Values = @(120, 60) }
+	) {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' -Parameters @{ Values = $Values } {
+			$script:h.Tables = @(
+				@{ Id = 11; Archive = $false; Purge = $false; PurgeOrder = 1; BulkCopyTimeout = $Values[0] }
+				@{ Id = 12; Archive = $false; Purge = $false; PurgeOrder = 2; BulkCopyTimeout = $Values[1] }
+			)
+			Invoke-Fast1Archiving -ConnStr 'Server=controlled' -GroupName controlled
+			$script:h.Instances | Should -HaveCount 2
+			for ($index = 0; $index -lt 2; $index++) {
+				$script:h.Instances[$index] | Should -BeOfType ([Table])
+				$script:h.Instances[$index].BulkCopyTimeout | Should -Be $Values[$index]
+				$script:h.Instances[$index].BulkCopyTimeout | Should -BeOfType ([int])
+			}
+			$script:h.Writes | Should -HaveCount 0
+		}
+	}
+
+	It 'fails normal metadata loading if the required timeout field is absent' {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
+			$script:h.MissingTimeout = $true
+			{ Invoke-Fast1Archiving -ConnStr 'Server=controlled' -GroupName controlled } | Should -Throw '*BulkCopyTimeout*'
+			$script:h.Instances | Should -HaveCount 0
+		}
+	}
+
+	It 'preserves <Timeout> at every actual write across tables, pages and batches' -ForEach @(
+		@{ Timeout = 60 }
+		@{ Timeout = 120 }
+		@{ Timeout = 30 }
+		@{ Timeout = 0 }
+		@{ Timeout = 2147483647 }
+	) {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' -Parameters @{ Timeout = $Timeout } {
+			$otherTimeout = 60
+			if ($Timeout -eq 60) {
+				$otherTimeout = 120
+			}
+			$script:h.Tables = @(
+				@{ Id = 11; Archive = $true; Purge = $false; PurgeOrder = 1; BulkCopyTimeout = $Timeout }
+				@{ Id = 12; Archive = $true; Purge = $false; PurgeOrder = 2; BulkCopyTimeout = $otherTimeout }
+			)
+			$script:h.RealCopy = $true
+			$script:h.ActualDestination = $true
+			$group = [TableGroup]::new('Server=controlled;Command Timeout=2', 'controlled')
+			try {
+				$group.Initialize()
+				$group.ReadSourceTables()
+				foreach ($table in $group.SourceTables) {
+					$table.ReadSrcTableColumns()
+					$table.GetState()
+					$table.BulkCopySourcePK()
+					$table.BulkCopyDestinationPK()
+					$table.ExecuteArchive()
+					$writes = @($script:h.Writes | Where-Object { $_.Target -in @($table.SrcWorkingTableName, "dbo.[$($table.DstWorkingTableName)]", "[dbo].[$($table.TableName)]") })
+					$writes | Should -HaveCount 6
+					foreach ($write in $writes) {
+						$write.Timeout | Should -Be $table.BulkCopyTimeout
+						$write.Streaming | Should -BeTrue
+						$write.Mappings -join ',' | Should -Be 'Id:Id'
+						if ($write.Target -eq "[dbo].[$($table.TableName)]") {
+							$write.BatchSize | Should -Be 2
+							[int]$write.Options | Should -Be ([int]([Microsoft.Data.SqlClient.SqlBulkCopyOptions]::KeepIdentity -bor [Microsoft.Data.SqlClient.SqlBulkCopyOptions]::KeepNulls))
+						}
+						else {
+							$write.BatchSize | Should -Be 3
+							[int]$write.Options | Should -Be 0
+						}
+					}
+				}
+				$script:h.Commands[0].CommandTimeout | Should -Be 2
+				$script:h.Commands[1].CommandTimeout | Should -Be 2
+				# Source/destination options retain their independent provider default.
+				@($script:h.Commands | Where-Object { $_.CommandTimeout -notin @(2, 30) }) | Should -HaveCount 0
+			}
+			finally {
+				$group.Dispose()
+			}
+		}
+	}
+
+	It 'loads the configured timeout and skips empty source and archive readers' {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' {
+			$script:h.RealCopy = $true
+			$script:h.ActualDestination = $true
+			$script:h.EmptyCopy = $true
+			$group = [TableGroup]::new('Server=controlled', 'controlled')
+			try {
+				$group.Initialize()
+				$group.ReadSourceTables()
+				$table = $group.SourceTables[0]
+				$table.BulkCopyTimeout | Should -Be 30
+				$table.ReadSrcTableColumns()
+				$table.GetState()
+				$table.BulkCopySourcePK()
+				$table.BulkCopyDestinationPK()
+				$table.BulkCopyTable()
+				$script:h.Writes | Should -HaveCount 0
+				$script:h.Events | Should -Contain 'release reader controlled keys'
+				$script:h.Events | Should -Contain 'release reader dbo.stp_GetBulkCopyData'
+			}
+			finally {
+				$group.Dispose()
+			}
+		}
+	}
+
+	It 'retains primary failure and prevents checkpoints at the actual <Stage> write' -ForEach @(
+		@{ Stage = 'source'; Reader = 'controlled keys'; Source = $true; Destination = $false; Archive = $false }
+		@{ Stage = 'destination'; Reader = 'set nocount on; select [Id] from [dbo].[t11] where ([Id] = @k0_0) or ([Id] = @k1_0) or ([Id] = @k2_0)'; Source = $false; Destination = $true; Archive = $false }
+		@{ Stage = 'archive'; Reader = 'dbo.stp_GetBulkCopyData'; Source = $false; Destination = $false; Archive = $true }
+	) {
+		InModuleScope 'Fast1data.SqlServer/ArchivingModel' -Parameters @{ Reader = $Reader; Source = $Source; Destination = $Destination; Archive = $Archive } {
+			$script:h.ActualSource = $Source
+			$script:h.ActualDestination = $Destination
+			$script:h.RealCopy = $Archive
+			$script:h.Failures['bulk write'] = [OperationCanceledException]::new('write interrupted')
+			$script:h.Failures['release bulk'] = [InvalidOperationException]::new('bulk disposal failed')
+			$script:h.Failures["release reader $Reader"] = [InvalidOperationException]::new('reader disposal failed')
+			{ Invoke-Fast1Archiving -ConnStr 'Server=controlled' -GroupName controlled } | Should -Throw '*write interrupted*'
+			$script:h.Events | Should -Contain "release command $Reader"
+			$script:h.Events | Should -Contain "release reader $Reader"
+			$script:h.Events | Should -Contain 'release bulk'
+			$script:h.Events | Should -Not -Contain 'write 11 LastArchivedKey'
+			$script:h.Events | Should -Not -Contain 'write 11 CompleteDate'
+			$script:h.Events[-1] | Should -Be 'release Configuration'
 		}
 	}
 

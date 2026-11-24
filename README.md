@@ -95,7 +95,7 @@ their commands and readers and leave your connection open. SQL text and procedur
 names are executable administrator inputs. Existing command timeout defaults apply.
 
 ```powershell
-Import-Module ./Fast1data.SqlServer/Fast1data.SqlServer.psd1
+Import-Module Fast1data.SqlServer
 # Supply the connection string locally or through your secret store.
 $connection = [Microsoft.Data.SqlClient.SqlConnection]::new($env:MY_SQL_CONNECTION_STRING)
 try {
