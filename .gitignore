@@ -2,6 +2,7 @@ build/bin
 build/obj
 Fast1data.SqlServer/lib/*
 out/Fast1data.SqlServer
+build/.vs/*
 
 .DS_Store
 Thumbs.db
