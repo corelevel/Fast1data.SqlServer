@@ -142,64 +142,6 @@ Get-Help Invoke-Fast1GenericSqlQueryReader -Full
 Get-Help New-Fast1GenericSqlParam -Full
 ```
 
-## Tests
-
-All suites in `Fast1data.SqlServer/tests` end in `.Tests.ps1`. Files containing
-`.Integration.` require live SQL Server or audit resources; platform-specific
-suites include `.Linux.` or `.Windows.` before the suffix.
-
-Run the suites that do not require live services from the repository root:
-
-```powershell
-$testPaths = Get-ChildItem ./Fast1data.SqlServer/tests/*.Tests.ps1 |
-	Where-Object Name -NotLike '*.Integration.*' |
-	Select-Object -ExpandProperty FullName
-Invoke-Pester -Path $testPaths -Output Detailed
-```
-
-Migration command tests are in `Migration.Tests.ps1`, phase validation is in
-`Migration.Phase.Tests.ps1`, and live SQL cases are in
-`Migration.Integration.Tests.ps1`.
-Factory, row/schema/native-value tests live in `GenericSqlQuery.Tests.ps1`;
-streaming and failure ownership cases run through `SqlCleanup.Tests.ps1` and its
-controlled fixtures. Real provider acceptance is in `GenericSqlQuery.Integration.Tests.ps1`.
-
-### Live integration tests
-
-Set the variables required by the selected suite in the PowerShell session before
-calling Pester. Child PowerShell processes inherit these environment variables.
-
-| Environment variable | Used by | Value |
-| --- | --- | --- |
-| `FAST1_TEST_MIGRATION_SQL_CONN_STR` | Migration and generic SQL queries | SQL Server connection string for a disposable test instance |
-| `FAST1_TEST_ARCHIVING_SQL_CONN_STR` | Archiving | SQL Server connection string for a disposable test instance |
-| `FAST1_TEST_AUDIT_SQL_CONN_STR` | Audit on Windows and Linux | SQL Server connection string for a disposable test instance |
-| `FAST1_TEST_AUDIT_FOLDER` | Audit on Windows and Linux | Folder containing closed, immutable, nonempty `.sqlaudit` files |
-| `FAST1_TEST_AUDIT_SMB_USER` | Audit on Linux | SMB user name with access to the audit share |
-| `FAST1_TEST_AUDIT_SMB_PASSWORD` | Audit on Linux | SMB user password |
-
-For example, configure migration tests and run them from the repository root:
-
-```powershell
-$env:FAST1_TEST_MIGRATION_SQL_CONN_STR = 'Server=YOUR_TEST_SERVER;Initial Catalog=master;Integrated Security=True;Encrypt=True'
-Invoke-Pester -Path ./Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1 -Output Detailed
-```
-
-Use the authentication and encryption options required by your test environment.
-Supply credentials locally or through your CI secret store. The SQL login needs
-permission to create/drop test databases and create/execute the suite's fixtures.
-The suites create uniquely named databases and attempt to drop them during cleanup.
-
-Migration and generic SQL query integration skip when their connection variable is missing or blank. Archiving and
-the audit suite for the current operating system fail setup if required variables
-are missing. Audit suites skip on other operating systems. Windows audit discovery
-uses the current Windows identity; Linux requires `smbclient` and a backslash UNC
-folder accessible to both the SMB account and SQL Server service.
-
-See [migration](Fast1Migration.md#live-integration-tests),
-[archiving](Fast1Archiving.md#tests), and [audit](Fast1Audit.md#live-integration-tests)
-for suite-specific commands and prerequisites.
-
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

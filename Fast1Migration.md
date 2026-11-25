@@ -182,29 +182,6 @@ failure, then retry. A script that executed successfully but was not recorded ma
 execute again on retry. Force deliberately reruns recorded work and does not make
 non-idempotent scripts safe.
 
-Isolated command tests are in [`Fast1data.SqlServer/tests/Migration.Tests.ps1`](Fast1data.SqlServer/tests/Migration.Tests.ps1);
-phase validation tests are in [`Fast1data.SqlServer/tests/Migration.Phase.Tests.ps1`](Fast1data.SqlServer/tests/Migration.Phase.Tests.ps1).
-Neither suite connects to SQL Server.
-
-### Live integration tests
-
-Live SQL tests are in `Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1`.
-Set `$env:FAST1_TEST_MIGRATION_SQL_CONN_STR` in the PowerShell session to select
-the SQL Server test instance. Missing or blank configuration skips the suite.
-Run from the repository root:
-
-```powershell
-$env:FAST1_TEST_MIGRATION_SQL_CONN_STR = 'Server=YOUR_TEST_SERVER;Initial Catalog=master;Integrated Security=True;Encrypt=True'
-Invoke-Pester -Path ./Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1 -Output Detailed
-```
-
-Use the authentication and encryption options required by your test environment.
-The suite creates uniquely named disposable databases, installs the migration
-schema, and drops the
-databases during cleanup. The SQL login needs database creation/drop, schema and
-fixture creation, and migration execution/history permissions. See the
-[validation commands](specs/002-consolidate-migration-phases/quickstart.md).
-
 ## Dry run
 
 Use PowerShell's `-WhatIf` support to preview the phase:
