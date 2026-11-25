@@ -62,6 +62,27 @@
 	containment and existence still apply. Unknown names warn without adding work.
 	Example: "job007/000-kill-all-user-processes.sql"
 
+.EXAMPLE
+	$connectionString = 'Server=sql01.example.com;Database=AppDatabase;' +
+		'Integrated Security=True;Encrypt=True;TrustServerCertificate=False'
+	Invoke-Fast1Migration -ConnStr $connectionString `
+		-BasePath './migrations' -Phase 'phase01' -Verbose
+
+	Runs eligible scripts in phase01 and records each successful file in migration
+	history. First deploy the history schema, prepare ./migrations/migration.json and
+	the phase01 scripts, and grant execution/history permissions. This example uses
+	provisioned Windows authentication and a SQL Server certificate trusted by the client.
+
+.EXAMPLE
+	$connectionString = 'Server=sql01.example.com;Database=AppDatabase;' +
+		'Integrated Security=True;Encrypt=True;TrustServerCertificate=False'
+	Invoke-Fast1Migration -ConnStr $connectionString `
+		-BasePath './migrations' -Phase 'phase01' -WhatIf -Verbose
+
+	Previews ordered run/skip decisions after the same setup as the execution example.
+	Reads migration history and validates configuration, paths, files, and checksums.
+	Preview does not parse SQL, execute scripts, or write history.
+
 .INPUTS
 	{
 		"phase01": {

@@ -99,6 +99,8 @@ Make the selection criteria stable for the duration of a run. Rows returned by t
 
 `BulkCopyTimeout` applies before every write in all three operations: source primary keys into the source working table, destination primary keys into the destination working table (each reconciliation page), and archive data into the destination table (each batch). The database supplies the 30-second default for omitted inserts. Zero explicitly removes the bulk-copy time limit. Negative values and explicit `NULL` are rejected by the database; rejected updates preserve the prior value. Each table, including tables in the same group, uses its own loaded setting. Edits take effect when configuration is next loaded.
 
+Ordinary SQL query timeouts remain unchanged, including the connection string's `Command Timeout` where already applicable. Setting `BulkCopyTimeout = 0` removes only the bulk-copy time limit; it does not remove query time limits.
+
 ### `dbo.ProcessState`
 
 The module manages this table automatically.
@@ -143,7 +145,7 @@ $connectionString = @(
 	'User ID=archiving_user'
 	'Password=replace-me'
 	'Encrypt=True'
-	'TrustServerCertificate=True'
+	'TrustServerCertificate=False'
 ) -join ';'
 
 Invoke-Fast1Archiving `
@@ -155,25 +157,7 @@ Invoke-Fast1Archiving `
 An additional executable example is available in [`example/archiving/archive-StackOverflow2013.ps1`](example/archiving/archive-StackOverflow2013.ps1).
 Review its connection strings and configuration before running it.
 
-## Tests
-
-Controlled tests in `Fast1data.SqlServer/tests/Archiving.Execution.Tests.ps1` need
-no live SQL Server. The live suite reads its connection string from
-`$env:FAST1_TEST_ARCHIVING_SQL_CONN_STR`; missing or blank values fail setup.
-Run from the repository root:
-
-```powershell
-$env:FAST1_TEST_ARCHIVING_SQL_CONN_STR = 'Server=YOUR_TEST_SERVER;Initial Catalog=master;Integrated Security=True;Encrypt=True'
-Invoke-Pester -Path ./Fast1data.SqlServer/tests/Archiving.Integration.Tests.ps1 -Output Detailed
-```
-
-Use the authentication and encryption options required by your test environment.
-The login must be able to create/drop databases, deploy the archiving schema, and
-perform source/destination operations and fixture constraint changes. The suite
-creates three uniquely named configuration/source/destination databases on the
-selected instance and attempts to drop them during cleanup. Exclude this file by
-filename when running offline tests; its global setup accesses SQL Server even
-when the Integration tag is excluded.
+The connection example validates the server certificate. Configure SQL Server with a certificate trusted by the client and use a server name matching that certificate. See Microsoft's [`TrustServerCertificate` reference](https://learn.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnectionstringbuilder.trustservercertificate).
 
 ## Failure and recovery
 

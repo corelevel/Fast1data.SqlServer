@@ -6,8 +6,8 @@ Validates a complete migration file and executes its original T-SQL batches.
 Uses the bundled TSql160Parser with quoted identifiers initially enabled. Reads and
 validates the whole file before allocating execution resources. Rejects SQLCMD
 directives, counted GO and reserved substitutions. Rejected and zero-batch files
-allocate no execution resources. Zero-batch files do not validate ConnStr beyond
-mandatory parameter binding.
+allocate no execution resources. Rejects blank ConnStr and locally validates its
+syntax, keywords, and typed values even for zero-batch files, without a login probe.
 
 For an executable file, suppresses ambient transactions, creates/opens a connection
 from the original ConnStr, and creates an owned command with timeout 0. Runs original
@@ -24,7 +24,7 @@ underlying exceptions remain available programmatically.
 
 .PARAMETER ConnStr
 Original target connection string. Mandatory and forwarded unchanged to a new
-owned connection for executable files. Empty files do not validate its contents.
+owned connection for executable files. Validated locally even for empty files.
 Authentication and configured/default catalog come from
 this string. No caller-created connection, command or external token object is needed.
 .PARAMETER Script
@@ -39,6 +39,18 @@ function Invoke-Migration {
 		[Parameter(Mandatory)]
 		[string]$Script
 	)
+
+	if ([string]::IsNullOrWhiteSpace($ConnStr)) {
+		throw [System.ArgumentException]::new("Migration '$Script': ConnStr must not be blank.", 'ConnStr')
+	}
+	try {
+		$null = [Microsoft.Data.SqlClient.SqlConnectionStringBuilder]::new($ConnStr)
+	}
+	catch {
+		throw [System.ArgumentException]::new(
+			"Migration '$Script': connection string validation failed.", 'ConnStr', $_.Exception
+		)
+	}
 
 	try {
 		$path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Script)

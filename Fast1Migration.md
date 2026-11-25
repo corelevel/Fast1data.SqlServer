@@ -21,7 +21,7 @@ It is designed for migration scripts that are idempotent and safe to rerun. This
 ## Requirements
 
 - Permission to execute the migration scripts in the target database
-- Permission to read and update `dbo.fast1_migration_history`
+- `SELECT` and `INSERT` permissions on `dbo.fast1_migration_history`; `UPDATE` permission is also required for forced reruns of previously recorded scripts
 
 ## Database setup
 
@@ -62,14 +62,19 @@ full-path containment; it does not add a symbolic-link resolution policy.
 {
 	"phase01": {
 		"scripts": [
-			"000-fix-This.sql",
-			"001-fix-That.sql",
+			"000-fix.sql",
+			"001-delete-old.sql",
 			"job007/000-kill-all-user-processes.sql"
 		]
 	},
 	"phase02": {
 		"scripts": [
-			"000-do-cool-stuff.sql"
+			"000-do-stuff.sql"
+		]
+	},
+	"phase03": {
+		"scripts": [
+			"000-fix-This.sql"
 		]
 	}
 }
@@ -108,8 +113,8 @@ For the selected phase, the module:
 3. Validates the entire phase: duplicates, ignored/forced conflicts, paths, files, and checksums.
 4. Skips previously executed scripts whose checksums have not changed.
 5. Stops if an executed script has been modified.
-6. Validates each selected file completely with the bundled TSql160Parser, then executes its original batches on a shared SqlClient command.
-7. Restores the original target database if the script used `USE`, then records completion once for the entire file, including an empty file.
+6. Validates each selected file completely with the bundled TSql160Parser, then executes its original batches on one command and a separate owned connection per file, isolating session state (including `USE`) from history and later files.
+7. Records completion once for the entire file after successful execution, transaction completion checks, and resource cleanup, including an empty file that requires no execution connection.
 
 All phase validation finishes before confirmation, execution, or history writes.
 A valid first script followed by an invalid later entry executes no scripts.
@@ -177,28 +182,6 @@ failure, then retry. A script that executed successfully but was not recorded ma
 execute again on retry. Force deliberately reruns recorded work and does not make
 non-idempotent scripts safe.
 
-Isolated command tests are in `tests/Migration.Tests.ps1`; phase validation tests
-are in `tests/Migration.Phase.Tests.ps1`. Neither suite connects to SQL Server.
-
-### Live integration tests
-
-Live SQL tests are in `Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1`.
-Set `$env:FAST1_TEST_MIGRATION_SQL_CONN_STR` in the PowerShell session to select
-the SQL Server test instance. Missing or blank configuration skips the suite.
-Run from the repository root:
-
-```powershell
-$env:FAST1_TEST_MIGRATION_SQL_CONN_STR = 'Server=YOUR_TEST_SERVER;Initial Catalog=master;Integrated Security=True;Encrypt=True'
-Invoke-Pester -Path ./Fast1data.SqlServer/tests/Migration.Integration.Tests.ps1 -Output Detailed
-```
-
-Use the authentication and encryption options required by your test environment.
-The suite creates uniquely named disposable databases, installs the migration
-schema, and drops the
-databases during cleanup. The SQL login needs database creation/drop, schema and
-fixture creation, and migration execution/history permissions. See the
-[validation commands](specs/002-consolidate-migration-phases/quickstart.md).
-
 ## Dry run
 
 Use PowerShell's `-WhatIf` support to preview the phase:
@@ -212,11 +195,16 @@ Invoke-Fast1Migration `
 	-Verbose
 ```
 
-The command reads migration history and validates the entire phase, including files
-and checksums. Verbose output reports every run/skip decision and skip reason in
-configured order; warnings and validation errors agree with execution for identical
-inputs. Preview calls neither script execution nor history writing, including force.
-Declining confirmation also leaves both mutation steps uncalled.
+The command reads migration history and validates the phase configuration, paths,
+files, and checksums. Verbose output reports every run/skip decision and skip reason
+in configured order; phase-validation warnings and errors agree with execution for
+identical inputs.
+
+Preview does not parse SQL. SQL parsing happens inside the executor, after
+confirmation, so a script with invalid SQL such as `SELECT FROM;` can pass preview
+and fail during execution. Preview calls neither script execution nor history
+writing, including force. Declining confirmation also leaves both mutation steps
+uncalled.
 
 ## CI/CD
 
@@ -238,7 +226,7 @@ An executable example is available in [`example/migration/deploy-tempdb.ps1`](ex
 
 Review its connection string before running it.
 
-## Script language and command ownership (0.1.0)
+## Script language and command ownership
 
 No SqlServer PowerShell module installation is required. The distribution bundles
 SqlClient and ScriptDom for the supported runtimes. The public invocation and history
@@ -289,6 +277,7 @@ The executor owns command, connection and suppression scope and attempts disposa
 that order, keeping ambient suppression active through SQL cleanup. The public owner
 allocates history resources only for confirmed eligible work, then disposes its
 command and connection on every exit. Callers remain responsible for history transactions.
+
 ## Failure and retry
 
 Files execute in configured order. After all batches, the runner requires zero
